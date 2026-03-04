@@ -1,0 +1,11 @@
+services:
+    - type: web
+      name: noisehaus-web
+
+      autoDeploy: true
+      branch: main
+      buildCommand: npm install && npm run build
+      pullRequestPreviewsEnabled: true
+      rootDir: apps/web
+      runtime: static
+      staticPublishPath: out

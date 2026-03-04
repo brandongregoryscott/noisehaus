@@ -1,0 +1,10 @@
+{
+    "[sql]": {
+        "editor.defaultFormatter": "mtxr.sqltools"
+    },
+    "sqltools.format": {
+        "reservedWordCase": "upper",
+        "linesBetweenQueries": 2
+    },
+    "typescript.tsdk": "node_modules/typescript/lib"
+}

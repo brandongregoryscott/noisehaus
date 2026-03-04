@@ -1,0 +1,11 @@
+{
+    "main": "index.ts",
+    "name": "common",
+    "private": true,
+    "types": "index.ts",
+    "version": "0.0.0",
+    "scripts": {
+        "lint": "eslint \"**/*.{ts,js}\"",
+        "lint:fix": "eslint \"**/*.{ts,js}\" --fix"
+    }
+}

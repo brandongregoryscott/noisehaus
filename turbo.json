@@ -1,0 +1,17 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "globalDependencies": ["**/.env.*local"],
+    "globalEnv": ["VITE_API_URL"],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["dist/**"]
+        },
+        "lint": {},
+        "lint:fix": {},
+        "dev": {
+            "cache": false,
+            "persistent": true
+        }
+    }
+}

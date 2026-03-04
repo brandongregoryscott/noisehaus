@@ -1,0 +1,38 @@
+{
+    "dependencies": {
+        "@supabase/storage-js": "2.5.1",
+        "@supabase/supabase-js": "2.26.0",
+        "body-parser": "1.20.2",
+        "common": "*",
+        "cors": "^2.8.5",
+        "dotenv": "16.3.1",
+        "esbuild": "0.18.18",
+        "express": "5.0.0-beta.1",
+        "express-rate-limit": "6.8.1",
+        "lodash-es": "4.17.23",
+        "multer": "1.4.5-lts.1"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.13",
+        "@types/express": "4.17.17",
+        "@types/lodash-es": "4.17.12",
+        "@types/multer": "1.4.7",
+        "@types/node": "20.4.2",
+        "concurrently": "8.2.0",
+        "eslint-config-custom": "*",
+        "nodemon": "3.0.1",
+        "tsconfig": "*",
+        "typescript": "5.9.3"
+    },
+    "name": "api",
+    "private": true,
+    "scripts": {
+        "build": "esbuild server.ts --bundle --platform=node --target=node20 --outfile=dist/server.js",
+        "clean": "rm -rf dist",
+        "dev": "concurrently --names esbuild,nodemon \"npm run build -- --watch\" \"nodemon -q dist/server.js\"",
+        "start": "node dist/server.js",
+        "lint": "eslint \"**/*.{ts,js}\"",
+        "lint:fix": "eslint \"**/*.{ts,js}\" --fix"
+    },
+    "version": "1.0.0"
+}

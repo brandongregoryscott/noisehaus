@@ -1,0 +1,35 @@
+# Build stage
+FROM node:24 AS build
+
+WORKDIR /app
+
+# Copy workspace package.json files for dependency resolution
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/common/package.json packages/common/
+COPY packages/tsconfig/package.json packages/tsconfig/
+COPY packages/eslint-config-custom/package.json packages/eslint-config-custom/
+
+RUN npm ci
+
+# Copy source code
+COPY apps/api/ apps/api/
+COPY packages/common/ packages/common/
+COPY packages/tsconfig/ packages/tsconfig/
+
+# Build the API
+RUN npm run build --workspace=api
+
+# Runtime stage
+FROM node:24-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/apps/api/dist/server.js dist/server.js
+
+EXPOSE 3434
+
+CMD ["node", "dist/server.js"]

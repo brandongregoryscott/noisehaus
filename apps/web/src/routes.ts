@@ -1,0 +1,18 @@
+import type { FileRouteTypes } from "@/routeTree.gen";
+
+type RoutePath = FileRouteTypes["to"];
+
+// Note: These routes are strongly typed based on the generated route tree, but cannot reference
+// the `Route` objects directly, or they will be `undefined` at runtime due to a circular dependency.
+const Routes = {
+    Board: "/boards/$slug",
+    BoardByToken: "/boards/$slug/$token",
+    CreateBoard: "/create-board",
+    CreateSound: "/boards/$slug/$token/edit/sounds/create",
+    EditBoardByToken: "/boards/$slug/$token/edit",
+    EditSound: "/boards/$slug/$token/edit/sounds/$id",
+    Home: "/",
+} as const satisfies Record<string, RoutePath>;
+
+export { Routes };
+export type { RoutePath };

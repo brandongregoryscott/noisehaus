@@ -1,0 +1,28 @@
+{
+    "devDependencies": {
+        "@turbo/gen": "2.8.11",
+        "eslint": "9.39.3",
+        "eslint-config-custom": "*",
+        "prettier": "3.8.1",
+        "supabase": "2.76.14",
+        "turbo": "2.8.11"
+    },
+    "name": "noisehaus",
+    "packageManager": "npm@9.6.7",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "db:reset:linked": "supabase db reset --linked",
+        "dev": "turbo run dev",
+        "format": "prettier --write \"**/*.{json,mjs,js,jsx,ts,tsx,md,yml}\"",
+        "format:fix": "prettier --write \"**/*.{json,mjs,js,jsx,ts,tsx,md,yml}\"",
+        "generate:types:linked": "mkdir -p packages/common/generated && touch packages/common/generated/database.ts && supabase gen types typescript --linked > packages/common/generated/database.ts",
+        "lint": "turbo run lint",
+        "lint:fix": "turbo run lint:fix",
+        "rm:node_modules": "rm -rf node_modules apps/api/node_modules apps/web/node_modules packages/ui/node_modules"
+    },
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ]
+}
