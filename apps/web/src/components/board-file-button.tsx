@@ -79,7 +79,8 @@ const BoardFileButton: React.FC<BoardFileButtonProps> = (props) => {
     };
 
     const iconName = isPlaying ? "Pause" : "Play";
-    let icon = unicodeEmoji ?? <Icon name={iconName} size={16} />;
+    const pauseOrPlayIcon = <Icon name={iconName} size={16} />;
+    let icon = isPlaying ? pauseOrPlayIcon : (unicodeEmoji ?? pauseOrPlayIcon);
 
     if (isPlaying && !isLoaded) {
         icon = <Spinner color="$black" size="Small" />;
