@@ -62,6 +62,7 @@ const getInnerColumnStyles = (breakpoint: BreakpointName): CSS => {
         case "desktop":
         default:
             return {
+                height: "100%",
                 marginLeft: "auto",
                 marginRight: "auto",
                 paddingBottom: 16,

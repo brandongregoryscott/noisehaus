@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Column } from "@/components/column";
 import { CoolButton } from "@/components/cool-button";
 import { Icon } from "@/components/icon";
+import { Spinner } from "@/components/spinner";
 import { Text } from "@/components/text";
 import { useAudioContext } from "@/hooks/use-audio-context";
 
@@ -21,7 +22,8 @@ const BoardFileButton: React.FC<BoardFileButtonProps> = (props) => {
     const unicodeEmoji = emoji == null ? undefined : colonCodeToUnicode(emoji);
     const audioRef = useRef<AudioElement | null>(null);
     const { device } = useAudioContext();
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -61,9 +63,39 @@ const BoardFileButton: React.FC<BoardFileButtonProps> = (props) => {
         setIsPlaying(true);
     };
 
+    const handleCanPlay = () => {
+        setIsLoaded(true);
+        if (isPlaying) {
+            audioRef.current?.play();
+        }
+    };
+
+    const handleEnded = () => {
+        setIsPlaying(false);
+    };
+
+    const handlePause = () => {
+        setIsPlaying(false);
+    };
+
+    const iconName = isPlaying ? "Pause" : "Play";
+    let icon = unicodeEmoji ?? <Icon name={iconName} size={16} />;
+
+    if (isPlaying && !isLoaded) {
+        icon = <Spinner color="$black" size="Small" />;
+    }
+
     return (
         <>
-            <audio ref={audioRef} src={signedUrl} />
+            {(isLoaded || isPlaying) && (
+                <audio
+                    onCanPlay={handleCanPlay}
+                    onEnded={handleEnded}
+                    onPause={handlePause}
+                    ref={audioRef}
+                    src={signedUrl}
+                />
+            )}
             <Column
                 css={{
                     alignItems: "center",
@@ -80,14 +112,7 @@ const BoardFileButton: React.FC<BoardFileButtonProps> = (props) => {
                             alignItems: "center",
                             justifyContent: "center",
                         }}>
-                        {isPlaying || unicodeEmoji === undefined ? (
-                            <Icon
-                                name={isPlaying ? "Pause" : "Play"}
-                                size={16}
-                            />
-                        ) : (
-                            unicodeEmoji
-                        )}
+                        {icon}
                     </Column>
                 </CoolButton>
                 <Text fontWeight="bold">{displayName}</Text>

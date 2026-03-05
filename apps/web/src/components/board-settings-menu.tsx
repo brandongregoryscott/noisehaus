@@ -44,58 +44,38 @@ const BoardSettingsMenu: React.FC<BoardSettingsMenuProps> = (props) => {
                 <Popover.Portal>
                     <Popover.Content>
                         <Button
+                            align="left"
                             fillStyle="Ghost"
-                            onClick={handleOpenShareDialog}>
-                            <Box
-                                css={{
-                                    alignItems: "center",
-                                    display: "flex",
-                                    gap: 4,
-                                }}>
-                                <Icon name="Link" />
-                                <span>Share Link</span>
-                            </Box>
+                            onClick={handleOpenShareDialog}
+                            width="100%">
+                            <Icon name="Link" />
+                            <span>Share Link</span>
                         </Button>
                         {token !== undefined && (
                             <>
                                 <Button
+                                    align="left"
                                     fillStyle="Ghost"
-                                    onClick={handleOpenAddDialog}>
-                                    <Box
-                                        css={{
-                                            alignItems: "center",
-                                            display: "flex",
-                                            gap: 4,
-                                        }}>
-                                        <Icon name="Plus" />
-                                        <span>Add Sound</span>
-                                    </Box>
+                                    onClick={handleOpenAddDialog}
+                                    width="100%">
+                                    <Icon name="Plus" />
+                                    <span>Add Sound</span>
                                 </Button>
                                 <Button
+                                    align="left"
                                     fillStyle="Ghost"
-                                    onClick={handleOpenEditDialog}>
-                                    <Box
-                                        css={{
-                                            alignItems: "center",
-                                            display: "flex",
-                                            gap: 4,
-                                        }}>
-                                        <Icon name="Pencil" />
-                                        <span>Edit Board</span>
-                                    </Box>
+                                    onClick={handleOpenEditDialog}
+                                    width="100%">
+                                    <Icon name="Pencil" />
+                                    <span>Edit Board</span>
                                 </Button>
                                 <Button
+                                    align="left"
                                     fillStyle="Ghost"
-                                    onClick={handleOpenDeleteConfirmation}>
-                                    <Box
-                                        css={{
-                                            alignItems: "center",
-                                            display: "flex",
-                                            gap: 4,
-                                        }}>
-                                        <Icon name="Trashcan" />
-                                        <span>Delete Board</span>
-                                    </Box>
+                                    onClick={handleOpenDeleteConfirmation}
+                                    width="100%">
+                                    <Icon name="Trashcan" />
+                                    <span>Delete Board</span>
                                 </Button>
                             </>
                         )}

@@ -94,47 +94,40 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
             <ResponsiveDialogHeader>
                 <Heading size="h3">Edit Board</Heading>
             </ResponsiveDialogHeader>
-            <ResponsiveDialogBody>
-                <Box
-                    css={{
-                        display: "flex",
-                        flexDirection: "column",
-                        rowGap: 24,
-                    }}>
-                    <Field fullWidth={true} label="Board Name">
-                        <Input
-                            errorMessage={nameErrorMessage}
-                            onChange={handleNameChange}
-                            onClear={handleNameClear}
-                            onInput={handleNameInput}
-                            placeholder="Board Name"
-                            showClearAffordance={true}
-                            value={name}
-                            width="100%"
-                        />
-                    </Field>
-                    <Field fullWidth={true} label="Board Slug">
-                        <Input
-                            errorMessage={slugErrorMessage}
-                            onChange={handleSlugChange}
-                            onClear={handleSlugClear}
-                            onInput={handleSlugInput}
-                            placeholder="Board Slug"
-                            showClearAffordance={true}
-                            value={slug}
-                            width="100%"
-                        />
-                    </Field>
-                    <Field fullWidth={true} label="Board Visibility">
-                        <ViewPermissionAlert
-                            viewPermission={ViewPermission.BySlug}
-                        />
-                        <ViewPermissionSelect
-                            onChange={handleViewPermissionChange}
-                            value={viewPermission}
-                        />
-                    </Field>
-                </Box>
+            <ResponsiveDialogBody css={{ rowGap: 24 }}>
+                <Field fullWidth={true} label="Board Name">
+                    <Input
+                        errorMessage={nameErrorMessage}
+                        onChange={handleNameChange}
+                        onClear={handleNameClear}
+                        onInput={handleNameInput}
+                        placeholder="Board Name"
+                        showClearAffordance={true}
+                        value={name}
+                        width="100%"
+                    />
+                </Field>
+                <Field fullWidth={true} label="Board Slug">
+                    <Input
+                        errorMessage={slugErrorMessage}
+                        onChange={handleSlugChange}
+                        onClear={handleSlugClear}
+                        onInput={handleSlugInput}
+                        placeholder="Board Slug"
+                        showClearAffordance={true}
+                        value={slug}
+                        width="100%"
+                    />
+                </Field>
+                <Field fullWidth={true} label="Board Visibility">
+                    <ViewPermissionAlert
+                        viewPermission={ViewPermission.BySlug}
+                    />
+                    <ViewPermissionSelect
+                        onChange={handleViewPermissionChange}
+                        value={viewPermission}
+                    />
+                </Field>
             </ResponsiveDialogBody>
             <ResponsiveDialogFooter>
                 <Button fillStyle="Ghost" onClick={onClose}>

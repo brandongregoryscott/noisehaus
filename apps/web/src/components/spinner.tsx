@@ -1,12 +1,26 @@
 import { keyframes, styled } from "@/utils/theme";
 
 type SpinnerProps = {
+    color?: "$black";
     size?: "Default" | "Small";
 };
 
 const Spinner: React.FC<SpinnerProps> = (props) => {
-    const { size = "Default" } = props;
-    return <StyledSpinner size={size} />;
+    const { color, size = "Default" } = props;
+    return (
+        <StyledSpinner
+            css={
+                color != null
+                    ? {
+                          borderBottomColor: "transparent",
+                          borderColor: color,
+                          borderInlineStartColor: "transparent",
+                      }
+                    : undefined
+            }
+            size={size}
+        />
+    );
 };
 
 const spin = keyframes({
