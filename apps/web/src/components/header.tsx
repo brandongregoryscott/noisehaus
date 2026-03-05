@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             <Row
                 css={{
                     borderBottom: "1px solid $white",
-                    height: 8,
+                    marginY: 16,
                     width: "100%",
                 }}
             />
