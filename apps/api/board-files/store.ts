@@ -269,6 +269,8 @@ const unsafe__getSizeByBoardId = async (
 const unsafe__listByBoardId = async (boardId: string): Promise<BoardFile[]> => {
     const { data } = await table()
         .select("*")
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true })
         .throwOnError()
         .eq("board_id", boardId);
 
