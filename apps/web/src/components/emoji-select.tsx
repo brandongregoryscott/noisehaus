@@ -22,11 +22,17 @@ const EmojiSelect: React.FC<EmojiSelectProps> = (props) => {
         onSelect(emoji);
     };
 
+    const handleClear = () => {
+        onSelect(undefined);
+    };
+
     return (
         <Select
             onChange={handleChange}
+            onClear={handleClear}
             options={OPTIONS}
             placeholder="Select an emoji..."
+            showClearAffordance={true}
             value={value?.colonCode}
         />
     );

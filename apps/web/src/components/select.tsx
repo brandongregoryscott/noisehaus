@@ -1,16 +1,17 @@
-import type { PropsWithChildren } from "react";
 import { Select as RadixSelect } from "radix-ui";
-import { forwardRef } from "react";
 import type { IconName } from "@/components/icon";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { Icon } from "@/components/icon";
+import { Row } from "@/components/row";
 
 type SelectProps<T extends string = string> = {
     maxWidth?: `${number}%` | number;
     onChange: (value: T) => void;
+    onClear?: () => void;
     options: Array<SelectOption<T>>;
     placeholder?: string;
+    showClearAffordance?: boolean;
     value?: T;
     width?: `${number}%` | number;
 };
@@ -25,12 +26,20 @@ const Select = <T extends string = string>(props: SelectProps<T>) => {
     const {
         maxWidth,
         onChange,
+        onClear,
         options,
         placeholder = "Select a value...",
-        value,
+        showClearAffordance = false,
+        // We're using an empty string here to denote "no value", since changing from a set value back to `undefined` will log a warning:
+        // Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+        value = "",
         width = "100%",
     } = props;
     const selectedOption = options.find((option) => option.value === value);
+    const handleClear = (event: React.MouseEvent) => {
+        event.stopPropagation();
+        onClear?.();
+    };
 
     return (
         <RadixSelect.Root onValueChange={onChange} value={value}>
@@ -59,9 +68,32 @@ const Select = <T extends string = string>(props: SelectProps<T>) => {
                                 <span>{selectedOption?.label}</span>
                             </RadixSelect.Value>
                         </Box>
-                        <Box css={{ paddingLeft: 8 }}>
+                        <Row
+                            css={{
+                                alignItems: "center",
+                                gap: 8,
+                            }}>
+                            {showClearAffordance && (
+                                <Button
+                                    as="div"
+                                    css={{
+                                        "& svg": {
+                                            height: 16,
+                                            width: 16,
+                                        },
+                                        backgroundColor: "$black",
+                                        borderRadius: 4,
+                                        height: 20,
+                                        padding: 0,
+                                        width: 20,
+                                    }}
+                                    fillStyle="Ghost"
+                                    onClick={handleClear}>
+                                    <Icon name="X" />
+                                </Button>
+                            )}
                             <Icon name="ChevronDown" />
-                        </Box>
+                        </Row>
                     </Box>
                 </Button>
             </RadixSelect.Trigger>
