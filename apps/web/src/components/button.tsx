@@ -7,6 +7,7 @@ import { styled } from "@/utils/theme";
 
 type ButtonProps = {
     align?: "center" | "left" | "right";
+    as?: keyof JSX.IntrinsicElements;
     autoFocus?: boolean;
     colorType?: "Destructive" | "Neutral";
     /**
@@ -26,6 +27,7 @@ type ButtonProps = {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
     const {
         align = "center",
+        as,
         autoFocus,
         children,
         colorType = "Neutral",
@@ -49,6 +51,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
         <StyledButton
             _disabled={disabled}
             align={align}
+            as={as}
             autoFocus={autoFocus}
             colorType={colorType}
             css={{ maxWidth, width, ...css }}
@@ -58,8 +61,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
             iconOnly={iconOnly}
             onClick={onClick}
             ref={ref}
+            role={as != null ? "button" : undefined}
             size={size}
-            slot={slot}>
+            slot={slot}
+            tabIndex={as != null ? 0 : undefined}>
             {isLoading && <Spinner size="Small" />}
             {children}
         </StyledButton>
