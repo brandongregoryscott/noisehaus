@@ -24,7 +24,7 @@ const StyledDialogBody = styled("div", {
     variants: {
         breakpoint: {
             desktop: {
-                paddingX: 24,
+                padding: 24,
             },
             mobile: {
                 paddingX: 12,
