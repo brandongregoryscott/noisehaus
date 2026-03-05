@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Column } from "@/components/column";
 import { CoolButton } from "@/components/cool-button";
 import { Icon } from "@/components/icon";
-import { ReelSpinner } from "@/components/reel-spinner";
 import { Spinner } from "@/components/spinner";
 import { Text } from "@/components/text";
 import { useAudioContext } from "@/hooks/use-audio-context";
