@@ -16,7 +16,7 @@ const EditBoardFilePage: React.FC = () => {
         data: boardFile,
         error: boardFileError,
         isLoading: isLoadingBoardFile,
-    } = useGetBoardFile({ boardSlug: slug, id });
+    } = useGetBoardFile({ boardSlug: slug, id, token });
 
     const isLoading = isLoadingBoard || isLoadingBoardFile;
     const error = boardError ?? boardFileError;

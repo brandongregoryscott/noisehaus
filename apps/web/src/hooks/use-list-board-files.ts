@@ -10,14 +10,17 @@ import { isEmpty } from "lodash-es";
 import { get } from "@/utils/fetch";
 import { generateRoute } from "@/utils/route-utils";
 
-type UseListBoardFilesOptions = {
+type UseListBoardFilesOptions<TData> = {
     boardSlug: string;
+    select?: (boardFiles: PresignedBoardFile[]) => TData;
     token: string | undefined;
 };
 
-const useListBoardFiles = (options: UseListBoardFilesOptions) => {
-    const { boardSlug, token } = options;
-    const result = useQuery<PresignedBoardFile[], ApiError>({
+const useListBoardFiles = <TData = PresignedBoardFile[]>(
+    options: UseListBoardFilesOptions<TData>
+) => {
+    const { boardSlug, select, token } = options;
+    const result = useQuery<PresignedBoardFile[], ApiError, TData>({
         enabled: !isEmpty(boardSlug),
         queryFn: async () => {
             const queryParams =
@@ -40,6 +43,7 @@ const useListBoardFiles = (options: UseListBoardFilesOptions) => {
             return data;
         },
         queryKey: [LIST_BOARD_FILE_ROUTE, boardSlug, token],
+        select,
     });
 
     return result;
