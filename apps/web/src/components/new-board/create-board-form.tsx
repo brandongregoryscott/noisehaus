@@ -99,7 +99,7 @@ const CreateBoardForm: React.FC = () => {
             to: Routes.BoardByToken,
         });
     };
-    const { isLoading: isCreatingBoard, mutate: createBoard } = useCreateBoard({
+    const { isPending: isCreatingBoard, mutate: createBoard } = useCreateBoard({
         onError: handleError,
         onSuccess: handleSuccess,
     });

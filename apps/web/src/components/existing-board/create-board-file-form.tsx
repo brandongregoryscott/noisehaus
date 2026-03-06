@@ -53,7 +53,7 @@ const CreateBoardFileForm: React.FC<CreateBoardFileFormProps> = (props) => {
         });
     };
 
-    const { isLoading, mutate: createBoardFile } = useCreateBoardFile({
+    const { isPending, mutate: createBoardFile } = useCreateBoardFile({
         boardSlug,
         onSuccess: handleSuccess,
         token,
@@ -103,7 +103,7 @@ const CreateBoardFileForm: React.FC<CreateBoardFileFormProps> = (props) => {
         createBoardFile(files);
     };
 
-    if (isLoading) {
+    if (isPending) {
         return <FullScreenSpinner message="Creating Sound" />;
     }
 

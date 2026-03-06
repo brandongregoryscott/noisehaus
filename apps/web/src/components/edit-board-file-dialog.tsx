@@ -45,7 +45,7 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
         handleNameClear,
         handleNameInput,
         handleSave,
-        isLoading,
+        isPending: isLoading,
         name,
         nameErrorMessage,
         setFile,

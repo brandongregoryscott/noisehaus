@@ -52,7 +52,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         handleNameChange,
         handleNameClear,
         handleSave,
-        isLoading,
+        isPending: isLoading,
         name,
         nameErrorMessage,
         setFile,

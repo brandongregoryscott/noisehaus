@@ -41,7 +41,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
         client.invalidateQueries({ queryKey: [LIST_BOARD_FILE_ROUTE] });
     };
 
-    const { isLoading: isDeletingBoardFile, mutate: deleteBoardFile } =
+    const { isPending: isDeletingBoardFile, mutate: deleteBoardFile } =
         useDeleteBoardFile({
             onSuccess: handleDeleteSuccess,
         });
@@ -108,7 +108,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
         handleSlugChange,
         handleSlugClear,
         handleSlugInput,
-        isLoading: isSavingBoard,
+        isPending: isSavingBoard,
         name,
         nameErrorMessage,
         slug,
