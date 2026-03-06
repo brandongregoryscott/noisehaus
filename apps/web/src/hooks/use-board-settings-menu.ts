@@ -19,7 +19,7 @@ const useBoardSettingsMenu = (options: UseBoardSettingsMenuOptions) => {
         client.invalidateQueries({ queryKey: [GET_BOARD_ROUTE] });
         navigate({ to: Routes.Home });
     };
-    const { isLoading: isDeletingBoard, mutate: deleteBoard } = useDeleteBoard({
+    const { isPending: isDeletingBoard, mutate: deleteBoard } = useDeleteBoard({
         onSuccess: handleDeleteSuccess,
     });
     const {

@@ -86,6 +86,11 @@ const StyledButton = styled("button", {
                 "&:hover": {
                     backgroundColor: "$gray",
                 },
+                "& .spinner": {
+                    borderBottomColor: "transparent",
+                    borderColor: "$black",
+                    borderInlineStartColor: "transparent",
+                },
                 "& span": {
                     color: "$black",
                 },

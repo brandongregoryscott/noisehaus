@@ -27,7 +27,7 @@ type UseEditBoardResult = {
     handleSlugClear: () => void;
     handleSlugInput: (event: FormEvent<HTMLInputElement>) => void;
     handleViewPermissionChange: (value: ViewPermission) => void;
-    isLoading: boolean;
+    isPending: boolean;
     name: string;
     nameErrorMessage: string | undefined;
     slug: string;
@@ -55,7 +55,7 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
     const [viewPermission, setViewPermission] = useState<ViewPermission>(
         initialViewPermission
     );
-    const { isLoading, mutate: updateBoard } = useUpdateBoard({
+    const { isPending, mutate: updateBoard } = useUpdateBoard({
         onError,
         onSuccess,
         slug: initialSlug,
@@ -119,7 +119,7 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
         handleSlugClear,
         handleSlugInput,
         handleViewPermissionChange: setViewPermission,
-        isLoading,
+        isPending,
         name,
         nameErrorMessage,
         slug,

@@ -75,6 +75,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
         handleSlugClear,
         handleSlugInput,
         handleViewPermissionChange,
+        isPending,
         name,
         nameErrorMessage,
         slug,
@@ -133,7 +134,9 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
                 <Button fillStyle="Ghost" onClick={onClose}>
                     Cancel
                 </Button>
-                <Button onClick={handleSave}>Save</Button>
+                <Button isLoading={isPending} onClick={handleSave}>
+                    Save
+                </Button>
             </ResponsiveDialogFooter>
         </ResponsiveDialog>
     );

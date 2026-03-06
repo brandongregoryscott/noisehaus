@@ -42,7 +42,7 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
         onClose();
     };
 
-    const { isLoading, mutate: createBoardFile } = useCreateBoardFile({
+    const { isPending, mutate: createBoardFile } = useCreateBoardFile({
         boardSlug,
         onSuccess: handleSuccess,
         token,
@@ -97,7 +97,7 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
         createBoardFile(files);
     };
 
-    if (isLoading && breakpoint === "mobile") {
+    if (isPending && breakpoint === "mobile") {
         return <FullScreenSpinner message="Creating Sound" />;
     }
 
@@ -137,12 +137,12 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
                 {breakpoint === "desktop" && (
                     <>
                         <Button
-                            disabled={isLoading}
+                            disabled={isPending}
                             fillStyle="Ghost"
                             onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button isLoading={isLoading} onClick={handleSave}>
+                        <Button isLoading={isPending} onClick={handleSave}>
                             Save
                         </Button>
                     </>

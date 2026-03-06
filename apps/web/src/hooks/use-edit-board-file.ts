@@ -32,7 +32,7 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
         getFile(boardFile)
     );
 
-    const { isLoading, mutate: updateBoard } = useUpdateBoardFile({
+    const { isPending, mutate: updateBoard } = useUpdateBoardFile({
         boardSlug,
         id,
         onError,
@@ -99,7 +99,7 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
         handleNameClear,
         handleNameInput,
         handleSave,
-        isLoading,
+        isPending,
         name,
         nameErrorMessage,
         setFile,

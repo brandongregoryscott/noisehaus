@@ -9,6 +9,7 @@ const Spinner: React.FC<SpinnerProps> = (props) => {
     const { color, size = "Default" } = props;
     return (
         <StyledSpinner
+            className="spinner"
             css={
                 color != null
                     ? {

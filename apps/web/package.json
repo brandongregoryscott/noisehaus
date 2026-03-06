@@ -2,7 +2,7 @@
     "dependencies": {
         "@faker-js/faker": "10.3.0",
         "@stitches/react": "1.2.8",
-        "@tanstack/react-query": "4.32.6",
+        "@tanstack/react-query": "5.90.21",
         "@tanstack/react-router": "1.163.2",
         "@tanstack/react-start": "1.163.2",
         "common": "*",
