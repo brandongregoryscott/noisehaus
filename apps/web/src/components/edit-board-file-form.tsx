@@ -52,7 +52,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         handleNameChange,
         handleNameClear,
         handleSave,
-        isPending: isLoading,
+        isPending,
         name,
         nameErrorMessage,
         setFile,
@@ -62,7 +62,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         router.history.back();
     };
 
-    if (isLoading) {
+    if (isPending) {
         return <FullScreenSpinner message="Saving Sound" />;
     }
 

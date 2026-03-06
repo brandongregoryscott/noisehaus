@@ -42,7 +42,10 @@ const useUpdateBoard = (options: UseUpdateBoardOptions) => {
         mutationKey: [UPDATE_BOARD_ROUTE],
         onError,
         onSuccess,
+        scope: { id: "global" },
     });
+
+    console.log(result.status);
 
     return result;
 };

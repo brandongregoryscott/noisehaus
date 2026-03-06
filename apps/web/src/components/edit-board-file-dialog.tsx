@@ -45,7 +45,7 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
         handleNameClear,
         handleNameInput,
         handleSave,
-        isPending: isLoading,
+        isPending,
         name,
         nameErrorMessage,
         setFile,
@@ -95,7 +95,9 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
                 <Button fillStyle="Ghost" onClick={onClose}>
                     Cancel
                 </Button>
-                <Button onClick={handleSave}>Save</Button>
+                <Button isLoading={isPending} onClick={handleSave}>
+                    Save
+                </Button>
             </ResponsiveDialogFooter>
         </ResponsiveDialog>
     );
