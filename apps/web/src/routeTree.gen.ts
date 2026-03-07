@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as CreateBoardRouteImport } from './routes/create-board'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BoardsSlugIndexRouteImport } from './routes/boards/$slug/index'
-import { Route as BoardsSlugTokenIndexRouteImport } from './routes/boards/$slug/$token/index'
-import { Route as BoardsSlugTokenEditIndexRouteImport } from './routes/boards/$slug/$token/edit/index'
-import { Route as BoardsSlugTokenEditSoundsCreateRouteImport } from './routes/boards/$slug/$token/edit/sounds/create'
-import { Route as BoardsSlugTokenEditSoundsIdRouteImport } from './routes/boards/$slug/$token/edit/sounds/$id'
+import { Route as BoardsSlugTokenTokenIndexRouteImport } from './routes/boards/$slug/token/$token/index'
+import { Route as BoardsSlugTokenTokenEditIndexRouteImport } from './routes/boards/$slug/token/$token/edit/index'
+import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './routes/boards/$slug/token/$token/edit/sounds/create'
+import { Route as BoardsSlugTokenTokenEditSoundsIdRouteImport } from './routes/boards/$slug/token/$token/edit/sounds/$id'
 
 const CreateBoardRoute = CreateBoardRouteImport.update({
   id: '/create-board',
@@ -32,27 +32,28 @@ const BoardsSlugIndexRoute = BoardsSlugIndexRouteImport.update({
   path: '/boards/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BoardsSlugTokenIndexRoute = BoardsSlugTokenIndexRouteImport.update({
-  id: '/boards/$slug/$token/',
-  path: '/boards/$slug/$token/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BoardsSlugTokenEditIndexRoute =
-  BoardsSlugTokenEditIndexRouteImport.update({
-    id: '/boards/$slug/$token/edit/',
-    path: '/boards/$slug/$token/edit/',
+const BoardsSlugTokenTokenIndexRoute =
+  BoardsSlugTokenTokenIndexRouteImport.update({
+    id: '/boards/$slug/token/$token/',
+    path: '/boards/$slug/token/$token/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const BoardsSlugTokenEditSoundsCreateRoute =
-  BoardsSlugTokenEditSoundsCreateRouteImport.update({
-    id: '/boards/$slug/$token/edit/sounds/create',
-    path: '/boards/$slug/$token/edit/sounds/create',
+const BoardsSlugTokenTokenEditIndexRoute =
+  BoardsSlugTokenTokenEditIndexRouteImport.update({
+    id: '/boards/$slug/token/$token/edit/',
+    path: '/boards/$slug/token/$token/edit/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const BoardsSlugTokenEditSoundsIdRoute =
-  BoardsSlugTokenEditSoundsIdRouteImport.update({
-    id: '/boards/$slug/$token/edit/sounds/$id',
-    path: '/boards/$slug/$token/edit/sounds/$id',
+const BoardsSlugTokenTokenEditSoundsCreateRoute =
+  BoardsSlugTokenTokenEditSoundsCreateRouteImport.update({
+    id: '/boards/$slug/token/$token/edit/sounds/create',
+    path: '/boards/$slug/token/$token/edit/sounds/create',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BoardsSlugTokenTokenEditSoundsIdRoute =
+  BoardsSlugTokenTokenEditSoundsIdRouteImport.update({
+    id: '/boards/$slug/token/$token/edit/sounds/$id',
+    path: '/boards/$slug/token/$token/edit/sounds/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -60,29 +61,29 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
   '/boards/$slug/': typeof BoardsSlugIndexRoute
-  '/boards/$slug/$token/': typeof BoardsSlugTokenIndexRoute
-  '/boards/$slug/$token/edit/': typeof BoardsSlugTokenEditIndexRoute
-  '/boards/$slug/$token/edit/sounds/$id': typeof BoardsSlugTokenEditSoundsIdRoute
-  '/boards/$slug/$token/edit/sounds/create': typeof BoardsSlugTokenEditSoundsCreateRoute
+  '/boards/$slug/token/$token/': typeof BoardsSlugTokenTokenIndexRoute
+  '/boards/$slug/token/$token/edit/': typeof BoardsSlugTokenTokenEditIndexRoute
+  '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
+  '/boards/$slug/token/$token/edit/sounds/create': typeof BoardsSlugTokenTokenEditSoundsCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
   '/boards/$slug': typeof BoardsSlugIndexRoute
-  '/boards/$slug/$token': typeof BoardsSlugTokenIndexRoute
-  '/boards/$slug/$token/edit': typeof BoardsSlugTokenEditIndexRoute
-  '/boards/$slug/$token/edit/sounds/$id': typeof BoardsSlugTokenEditSoundsIdRoute
-  '/boards/$slug/$token/edit/sounds/create': typeof BoardsSlugTokenEditSoundsCreateRoute
+  '/boards/$slug/token/$token': typeof BoardsSlugTokenTokenIndexRoute
+  '/boards/$slug/token/$token/edit': typeof BoardsSlugTokenTokenEditIndexRoute
+  '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
+  '/boards/$slug/token/$token/edit/sounds/create': typeof BoardsSlugTokenTokenEditSoundsCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
   '/boards/$slug/': typeof BoardsSlugIndexRoute
-  '/boards/$slug/$token/': typeof BoardsSlugTokenIndexRoute
-  '/boards/$slug/$token/edit/': typeof BoardsSlugTokenEditIndexRoute
-  '/boards/$slug/$token/edit/sounds/$id': typeof BoardsSlugTokenEditSoundsIdRoute
-  '/boards/$slug/$token/edit/sounds/create': typeof BoardsSlugTokenEditSoundsCreateRoute
+  '/boards/$slug/token/$token/': typeof BoardsSlugTokenTokenIndexRoute
+  '/boards/$slug/token/$token/edit/': typeof BoardsSlugTokenTokenEditIndexRoute
+  '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
+  '/boards/$slug/token/$token/edit/sounds/create': typeof BoardsSlugTokenTokenEditSoundsCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,38 +91,38 @@ export interface FileRouteTypes {
     | '/'
     | '/create-board'
     | '/boards/$slug/'
-    | '/boards/$slug/$token/'
-    | '/boards/$slug/$token/edit/'
-    | '/boards/$slug/$token/edit/sounds/$id'
-    | '/boards/$slug/$token/edit/sounds/create'
+    | '/boards/$slug/token/$token/'
+    | '/boards/$slug/token/$token/edit/'
+    | '/boards/$slug/token/$token/edit/sounds/$id'
+    | '/boards/$slug/token/$token/edit/sounds/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/create-board'
     | '/boards/$slug'
-    | '/boards/$slug/$token'
-    | '/boards/$slug/$token/edit'
-    | '/boards/$slug/$token/edit/sounds/$id'
-    | '/boards/$slug/$token/edit/sounds/create'
+    | '/boards/$slug/token/$token'
+    | '/boards/$slug/token/$token/edit'
+    | '/boards/$slug/token/$token/edit/sounds/$id'
+    | '/boards/$slug/token/$token/edit/sounds/create'
   id:
     | '__root__'
     | '/'
     | '/create-board'
     | '/boards/$slug/'
-    | '/boards/$slug/$token/'
-    | '/boards/$slug/$token/edit/'
-    | '/boards/$slug/$token/edit/sounds/$id'
-    | '/boards/$slug/$token/edit/sounds/create'
+    | '/boards/$slug/token/$token/'
+    | '/boards/$slug/token/$token/edit/'
+    | '/boards/$slug/token/$token/edit/sounds/$id'
+    | '/boards/$slug/token/$token/edit/sounds/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateBoardRoute: typeof CreateBoardRoute
   BoardsSlugIndexRoute: typeof BoardsSlugIndexRoute
-  BoardsSlugTokenIndexRoute: typeof BoardsSlugTokenIndexRoute
-  BoardsSlugTokenEditIndexRoute: typeof BoardsSlugTokenEditIndexRoute
-  BoardsSlugTokenEditSoundsIdRoute: typeof BoardsSlugTokenEditSoundsIdRoute
-  BoardsSlugTokenEditSoundsCreateRoute: typeof BoardsSlugTokenEditSoundsCreateRoute
+  BoardsSlugTokenTokenIndexRoute: typeof BoardsSlugTokenTokenIndexRoute
+  BoardsSlugTokenTokenEditIndexRoute: typeof BoardsSlugTokenTokenEditIndexRoute
+  BoardsSlugTokenTokenEditSoundsIdRoute: typeof BoardsSlugTokenTokenEditSoundsIdRoute
+  BoardsSlugTokenTokenEditSoundsCreateRoute: typeof BoardsSlugTokenTokenEditSoundsCreateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -147,32 +148,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/$token/': {
-      id: '/boards/$slug/$token/'
-      path: '/boards/$slug/$token'
-      fullPath: '/boards/$slug/$token/'
-      preLoaderRoute: typeof BoardsSlugTokenIndexRouteImport
+    '/boards/$slug/token/$token/': {
+      id: '/boards/$slug/token/$token/'
+      path: '/boards/$slug/token/$token'
+      fullPath: '/boards/$slug/token/$token/'
+      preLoaderRoute: typeof BoardsSlugTokenTokenIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/$token/edit/': {
-      id: '/boards/$slug/$token/edit/'
-      path: '/boards/$slug/$token/edit'
-      fullPath: '/boards/$slug/$token/edit/'
-      preLoaderRoute: typeof BoardsSlugTokenEditIndexRouteImport
+    '/boards/$slug/token/$token/edit/': {
+      id: '/boards/$slug/token/$token/edit/'
+      path: '/boards/$slug/token/$token/edit'
+      fullPath: '/boards/$slug/token/$token/edit/'
+      preLoaderRoute: typeof BoardsSlugTokenTokenEditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/$token/edit/sounds/create': {
-      id: '/boards/$slug/$token/edit/sounds/create'
-      path: '/boards/$slug/$token/edit/sounds/create'
-      fullPath: '/boards/$slug/$token/edit/sounds/create'
-      preLoaderRoute: typeof BoardsSlugTokenEditSoundsCreateRouteImport
+    '/boards/$slug/token/$token/edit/sounds/create': {
+      id: '/boards/$slug/token/$token/edit/sounds/create'
+      path: '/boards/$slug/token/$token/edit/sounds/create'
+      fullPath: '/boards/$slug/token/$token/edit/sounds/create'
+      preLoaderRoute: typeof BoardsSlugTokenTokenEditSoundsCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/$token/edit/sounds/$id': {
-      id: '/boards/$slug/$token/edit/sounds/$id'
-      path: '/boards/$slug/$token/edit/sounds/$id'
-      fullPath: '/boards/$slug/$token/edit/sounds/$id'
-      preLoaderRoute: typeof BoardsSlugTokenEditSoundsIdRouteImport
+    '/boards/$slug/token/$token/edit/sounds/$id': {
+      id: '/boards/$slug/token/$token/edit/sounds/$id'
+      path: '/boards/$slug/token/$token/edit/sounds/$id'
+      fullPath: '/boards/$slug/token/$token/edit/sounds/$id'
+      preLoaderRoute: typeof BoardsSlugTokenTokenEditSoundsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -182,10 +183,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateBoardRoute: CreateBoardRoute,
   BoardsSlugIndexRoute: BoardsSlugIndexRoute,
-  BoardsSlugTokenIndexRoute: BoardsSlugTokenIndexRoute,
-  BoardsSlugTokenEditIndexRoute: BoardsSlugTokenEditIndexRoute,
-  BoardsSlugTokenEditSoundsIdRoute: BoardsSlugTokenEditSoundsIdRoute,
-  BoardsSlugTokenEditSoundsCreateRoute: BoardsSlugTokenEditSoundsCreateRoute,
+  BoardsSlugTokenTokenIndexRoute: BoardsSlugTokenTokenIndexRoute,
+  BoardsSlugTokenTokenEditIndexRoute: BoardsSlugTokenTokenEditIndexRoute,
+  BoardsSlugTokenTokenEditSoundsIdRoute: BoardsSlugTokenTokenEditSoundsIdRoute,
+  BoardsSlugTokenTokenEditSoundsCreateRoute:
+    BoardsSlugTokenTokenEditSoundsCreateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -32,7 +32,7 @@ const BoardByTokenPage: React.FC = () => {
     return <Board board={board!} boardFiles={boardFiles ?? []} token={token} />;
 };
 
-const Route = createFileRoute("/boards/$slug/$token/")({
+const Route = createFileRoute("/boards/$slug/token/$token/")({
     component: BoardByTokenPage,
 });
 

@@ -38,7 +38,7 @@ const EditBoardPage: React.FC = () => {
     );
 };
 
-const Route = createFileRoute("/boards/$slug/$token/edit/")({
+const Route = createFileRoute("/boards/$slug/token/$token/edit/")({
     component: EditBoardPage,
 });
 
