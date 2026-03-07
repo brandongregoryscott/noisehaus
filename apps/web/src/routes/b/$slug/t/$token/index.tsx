@@ -6,7 +6,7 @@ const BoardByTokenPage: React.FC = () => {
     return <SharedBoardByTokenPage slug={slug} token={token} />;
 };
 
-const Route = createFileRoute("/boards/$slug/token/$token/")({
+const Route = createFileRoute("/b/$slug/t/$token/")({
     component: BoardByTokenPage,
 });
 

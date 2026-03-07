@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './../routes/__root'
 import { Route as CreateBoardRouteImport } from './../routes/create-board'
 import { Route as IndexRouteImport } from './../routes/index'
 import { Route as BoardsSlugIndexRouteImport } from './../routes/boards/$slug/index'
+import { Route as BSlugIndexRouteImport } from './../routes/b/$slug/index'
 import { Route as BoardsSlugTokenTokenIndexRouteImport } from './../routes/boards/$slug/token/$token/index'
+import { Route as BSlugTTokenIndexRouteImport } from './../routes/b/$slug/t/$token/index'
 import { Route as BoardsSlugTokenTokenEditIndexRouteImport } from './../routes/boards/$slug/token/$token/edit/index'
 import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/create'
 import { Route as BoardsSlugTokenTokenEditSoundsIdRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/$id'
@@ -32,12 +34,22 @@ const BoardsSlugIndexRoute = BoardsSlugIndexRouteImport.update({
   path: '/boards/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BSlugIndexRoute = BSlugIndexRouteImport.update({
+  id: '/b/$slug/',
+  path: '/b/$slug/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardsSlugTokenTokenIndexRoute =
   BoardsSlugTokenTokenIndexRouteImport.update({
     id: '/boards/$slug/token/$token/',
     path: '/boards/$slug/token/$token/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const BSlugTTokenIndexRoute = BSlugTTokenIndexRouteImport.update({
+  id: '/b/$slug/t/$token/',
+  path: '/b/$slug/t/$token/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardsSlugTokenTokenEditIndexRoute =
   BoardsSlugTokenTokenEditIndexRouteImport.update({
     id: '/boards/$slug/token/$token/edit/',
@@ -60,7 +72,9 @@ const BoardsSlugTokenTokenEditSoundsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
+  '/b/$slug/': typeof BSlugIndexRoute
   '/boards/$slug/': typeof BoardsSlugIndexRoute
+  '/b/$slug/t/$token/': typeof BSlugTTokenIndexRoute
   '/boards/$slug/token/$token/': typeof BoardsSlugTokenTokenIndexRoute
   '/boards/$slug/token/$token/edit/': typeof BoardsSlugTokenTokenEditIndexRoute
   '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
+  '/b/$slug': typeof BSlugIndexRoute
   '/boards/$slug': typeof BoardsSlugIndexRoute
+  '/b/$slug/t/$token': typeof BSlugTTokenIndexRoute
   '/boards/$slug/token/$token': typeof BoardsSlugTokenTokenIndexRoute
   '/boards/$slug/token/$token/edit': typeof BoardsSlugTokenTokenEditIndexRoute
   '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create-board': typeof CreateBoardRoute
+  '/b/$slug/': typeof BSlugIndexRoute
   '/boards/$slug/': typeof BoardsSlugIndexRoute
+  '/b/$slug/t/$token/': typeof BSlugTTokenIndexRoute
   '/boards/$slug/token/$token/': typeof BoardsSlugTokenTokenIndexRoute
   '/boards/$slug/token/$token/edit/': typeof BoardsSlugTokenTokenEditIndexRoute
   '/boards/$slug/token/$token/edit/sounds/$id': typeof BoardsSlugTokenTokenEditSoundsIdRoute
@@ -90,7 +108,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/create-board'
+    | '/b/$slug/'
     | '/boards/$slug/'
+    | '/b/$slug/t/$token/'
     | '/boards/$slug/token/$token/'
     | '/boards/$slug/token/$token/edit/'
     | '/boards/$slug/token/$token/edit/sounds/$id'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/create-board'
+    | '/b/$slug'
     | '/boards/$slug'
+    | '/b/$slug/t/$token'
     | '/boards/$slug/token/$token'
     | '/boards/$slug/token/$token/edit'
     | '/boards/$slug/token/$token/edit/sounds/$id'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/create-board'
+    | '/b/$slug/'
     | '/boards/$slug/'
+    | '/b/$slug/t/$token/'
     | '/boards/$slug/token/$token/'
     | '/boards/$slug/token/$token/edit/'
     | '/boards/$slug/token/$token/edit/sounds/$id'
@@ -118,7 +142,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateBoardRoute: typeof CreateBoardRoute
+  BSlugIndexRoute: typeof BSlugIndexRoute
   BoardsSlugIndexRoute: typeof BoardsSlugIndexRoute
+  BSlugTTokenIndexRoute: typeof BSlugTTokenIndexRoute
   BoardsSlugTokenTokenIndexRoute: typeof BoardsSlugTokenTokenIndexRoute
   BoardsSlugTokenTokenEditIndexRoute: typeof BoardsSlugTokenTokenEditIndexRoute
   BoardsSlugTokenTokenEditSoundsIdRoute: typeof BoardsSlugTokenTokenEditSoundsIdRoute
@@ -148,11 +174,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/b/$slug/': {
+      id: '/b/$slug/'
+      path: '/b/$slug'
+      fullPath: '/b/$slug/'
+      preLoaderRoute: typeof BSlugIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/boards/$slug/token/$token/': {
       id: '/boards/$slug/token/$token/'
       path: '/boards/$slug/token/$token'
       fullPath: '/boards/$slug/token/$token/'
       preLoaderRoute: typeof BoardsSlugTokenTokenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/b/$slug/t/$token/': {
+      id: '/b/$slug/t/$token/'
+      path: '/b/$slug/t/$token'
+      fullPath: '/b/$slug/t/$token/'
+      preLoaderRoute: typeof BSlugTTokenIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boards/$slug/token/$token/edit/': {
@@ -182,7 +222,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateBoardRoute: CreateBoardRoute,
+  BSlugIndexRoute: BSlugIndexRoute,
   BoardsSlugIndexRoute: BoardsSlugIndexRoute,
+  BSlugTTokenIndexRoute: BSlugTTokenIndexRoute,
   BoardsSlugTokenTokenIndexRoute: BoardsSlugTokenTokenIndexRoute,
   BoardsSlugTokenTokenEditIndexRoute: BoardsSlugTokenTokenEditIndexRoute,
   BoardsSlugTokenTokenEditSoundsIdRoute: BoardsSlugTokenTokenEditSoundsIdRoute,

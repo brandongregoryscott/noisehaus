@@ -6,7 +6,7 @@ const BoardBySlugPage: React.FC = () => {
     return <SharedBoardBySlugPage slug={slug} />;
 };
 
-const Route = createFileRoute("/boards/$slug/")({
+const Route = createFileRoute("/b/$slug/")({
     component: BoardBySlugPage,
 });
 
