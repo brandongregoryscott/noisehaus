@@ -32,7 +32,7 @@ const EditBoardFilePage: React.FC = () => {
     return <EditBoardFileForm boardFile={boardFile!} token={token} />;
 };
 
-const Route = createFileRoute("/boards/$slug/$token/edit/sounds/$id")({
+const Route = createFileRoute("/boards/$slug/token/$token/edit/sounds/$id")({
     component: EditBoardFilePage,
 });
 
