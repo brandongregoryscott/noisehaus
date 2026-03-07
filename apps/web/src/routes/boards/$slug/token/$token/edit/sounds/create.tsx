@@ -19,7 +19,7 @@ const CreateBoardFilePage: React.FC = () => {
     return <CreateBoardFileForm boardSlug={boardSlug} token={token} />;
 };
 
-const Route = createFileRoute("/boards/$slug/$token/edit/sounds/create")({
+const Route = createFileRoute("/boards/$slug/token/$token/edit/sounds/create")({
     component: CreateBoardFilePage,
 });
 

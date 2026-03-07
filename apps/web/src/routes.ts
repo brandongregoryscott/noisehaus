@@ -6,11 +6,11 @@ type RoutePath = FileRouteTypes["to"];
 // the `Route` objects directly, or they will be `undefined` at runtime due to a circular dependency.
 const Routes = {
     Board: "/boards/$slug",
-    BoardByToken: "/boards/$slug/$token",
+    BoardByToken: "/boards/$slug/token/$token",
     CreateBoard: "/create-board",
-    CreateSound: "/boards/$slug/$token/edit/sounds/create",
-    EditBoardByToken: "/boards/$slug/$token/edit",
-    EditSound: "/boards/$slug/$token/edit/sounds/$id",
+    CreateSound: "/boards/$slug/token/$token/edit/sounds/create",
+    EditBoardByToken: "/boards/$slug/token/$token/edit",
+    EditSound: "/boards/$slug/token/$token/edit/sounds/$id",
     Home: "/",
 } as const satisfies Record<string, RoutePath>;
 
