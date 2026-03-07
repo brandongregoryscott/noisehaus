@@ -24,8 +24,8 @@ const ViewPermissionAlert: React.FC<ViewPermissionAlertProps> = (
                 </Row>
             ) : (
                 <>
-                    <Row css={{ columnGap: 4 }}>
-                        <Icon name="TriangleExclamationMark" />
+                    <Row css={{ alignItems: "center", gap: 4 }}>
+                        <Icon color="$white" name="TriangleExclamationMark" />
                         <span>{title}</span>
                     </Row>
                     <Row>{description}</Row>
