@@ -1,4 +1,4 @@
-import type { FileRouteTypes } from "@/routeTree.gen";
+import type { FileRouteTypes } from "@/generated/route-tree";
 
 type RoutePath = FileRouteTypes["to"];
 

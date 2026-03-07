@@ -8,14 +8,14 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as CreateBoardRouteImport } from './routes/create-board'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as BoardsSlugIndexRouteImport } from './routes/boards/$slug/index'
-import { Route as BoardsSlugTokenTokenIndexRouteImport } from './routes/boards/$slug/token/$token/index'
-import { Route as BoardsSlugTokenTokenEditIndexRouteImport } from './routes/boards/$slug/token/$token/edit/index'
-import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './routes/boards/$slug/token/$token/edit/sounds/create'
-import { Route as BoardsSlugTokenTokenEditSoundsIdRouteImport } from './routes/boards/$slug/token/$token/edit/sounds/$id'
+import { Route as rootRouteImport } from './../routes/__root'
+import { Route as CreateBoardRouteImport } from './../routes/create-board'
+import { Route as IndexRouteImport } from './../routes/index'
+import { Route as BoardsSlugIndexRouteImport } from './../routes/boards/$slug/index'
+import { Route as BoardsSlugTokenTokenIndexRouteImport } from './../routes/boards/$slug/token/$token/index'
+import { Route as BoardsSlugTokenTokenEditIndexRouteImport } from './../routes/boards/$slug/token/$token/edit/index'
+import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/create'
+import { Route as BoardsSlugTokenTokenEditSoundsIdRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/$id'
 
 const CreateBoardRoute = CreateBoardRouteImport.update({
   id: '/create-board',
@@ -193,7 +193,7 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
+import type { getRouter } from '../router.tsx'
 import type { createStart } from '@tanstack/react-start'
 declare module '@tanstack/react-start' {
   interface Register {

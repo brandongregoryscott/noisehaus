@@ -1,2 +1,1 @@
-*.gen.ts
-packages/common/generated/database.ts
+**/generated/*
