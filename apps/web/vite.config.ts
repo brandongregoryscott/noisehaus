@@ -7,6 +7,7 @@ const config = defineConfig({
     plugins: [
         tanstackStart({
             router: {
+                generatedRouteTree: "./generated/route-tree.ts",
                 routesDirectory: "routes",
             },
             spa: {

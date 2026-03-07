@@ -181,7 +181,7 @@ const config = defineConfig([
         },
     },
     {
-        ignores: ["dist", "eslint.config.mjs", "**/generated/*", "**/*.gen.ts"],
+        ignores: ["dist", "eslint.config.mjs", "**/generated/*"],
     },
 ]);
 
