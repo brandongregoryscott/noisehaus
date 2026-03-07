@@ -1,6 +1,6 @@
 import type { Board } from "common";
 import { useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { IconName } from "@/components/icon";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
@@ -15,6 +15,7 @@ import {
     ResponsiveDialogHeader,
 } from "@/components/responsive-dialog";
 import { Routes } from "@/routes";
+import { prependDomain } from "@/utils/route-utils";
 
 type ShareLinkDialogProps = {
     board: Board;
@@ -29,25 +30,23 @@ const ShareLinkDialog: React.FC<ShareLinkDialogProps> = (props) => {
 
     const [isPublicLinkCopied, setIsPublicLinkCopied] = useState(false);
     const [isAdminLinkCopied, setIsAdminLinkCopied] = useState(false);
-    const publicLink = useMemo(() => {
-        const { href } = router.buildLocation({
+
+    const publicLink = prependDomain(
+        router.buildLocation({
             params: { slug: board.slug },
-            to: Routes.Board,
-        });
-        return `https://noise.haus${href}`;
-    }, [board.slug, router]);
+            to: Routes.BoardShort,
+        }).publicHref
+    );
 
-    const adminLink = useMemo(() => {
-        if (token === undefined) {
-            return undefined;
-        }
-
-        const { href } = router.buildLocation({
-            params: { slug: board.slug, token },
-            to: Routes.BoardByToken,
-        });
-        return `https://noise.haus${href}`;
-    }, [board.slug, router, token]);
+    const adminLink =
+        token != null
+            ? prependDomain(
+                  router.buildLocation({
+                      params: { slug: board.slug, token },
+                      to: Routes.BoardByTokenShort,
+                  }).publicHref
+              )
+            : undefined;
 
     const handleCopyPublicLink = () => {
         window.navigator.clipboard.writeText(publicLink);

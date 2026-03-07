@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BoardByTokenPage } from "../../../../boards/$slug/token/$token";
+import { BoardByTokenPage as SharedBoardByTokenPage } from "@/pages/board-by-token-page";
+
+const BoardByTokenPage: React.FC = () => {
+    const { slug, token } = Route.useParams();
+    return <SharedBoardByTokenPage slug={slug} token={token} />;
+};
 
 const Route = createFileRoute("/b/$slug/t/$token/")({
     component: BoardByTokenPage,

@@ -23,4 +23,7 @@ const generateRoute = <T extends string>(
     return `${route}?${searchParams}`;
 };
 
-export { generateRoute };
+const prependDomain = (route: string): string =>
+    `https://noise.haus${route.startsWith("/") ? route : `/${route}`}`;
+
+export { generateRoute, prependDomain };
