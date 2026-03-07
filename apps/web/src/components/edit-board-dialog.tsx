@@ -1,7 +1,7 @@
-import type { ApiError, Board } from "common";
+import type { ApiError, Board, ViewPermission } from "common";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ErrorName, GET_BOARD_ROUTE, ViewPermission } from "common";
+import { ErrorName, GET_BOARD_ROUTE } from "common";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
@@ -121,9 +121,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
                     />
                 </Field>
                 <Field fullWidth={true} label="Board Visibility">
-                    <ViewPermissionAlert
-                        viewPermission={ViewPermission.BySlug}
-                    />
+                    <ViewPermissionAlert viewPermission={viewPermission} />
                     <ViewPermissionSelect
                         onChange={handleViewPermissionChange}
                         value={viewPermission}
