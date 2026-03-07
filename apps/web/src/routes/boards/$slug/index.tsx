@@ -36,4 +36,4 @@ const Route = createFileRoute("/boards/$slug/")({
     component: BoardBySlugPage,
 });
 
-export { Route };
+export { BoardBySlugPage, Route };

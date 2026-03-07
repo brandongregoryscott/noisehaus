@@ -36,4 +36,4 @@ const Route = createFileRoute("/boards/$slug/token/$token/")({
     component: BoardByTokenPage,
 });
 
-export { Route };
+export { BoardByTokenPage, Route };

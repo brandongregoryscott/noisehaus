@@ -7,6 +7,8 @@ type RoutePath = FileRouteTypes["to"];
 const Routes = {
     Board: "/boards/$slug",
     BoardByToken: "/boards/$slug/token/$token",
+    BoardByTokenShort: "/b/$slug/t/$token",
+    BoardShort: "/b/$slug",
     CreateBoard: "/create-board",
     CreateSound: "/boards/$slug/token/$token/edit/sounds/create",
     EditBoardByToken: "/boards/$slug/token/$token/edit",
