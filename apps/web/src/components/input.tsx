@@ -80,7 +80,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
                                     height: 16,
                                     width: 16,
                                 },
-                                backgroundColor: "$black",
                                 borderRadius: 4,
                                 height: 20,
                                 padding: 0,
