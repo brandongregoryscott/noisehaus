@@ -19,7 +19,9 @@
         "format:fix": "prettier --write \"**/*.{json,mjs,js,jsx,ts,tsx,md,yml}\"",
         "generate:types:linked": "mkdir -p packages/common/generated && touch packages/common/generated/database.ts && supabase gen types typescript --linked > packages/common/generated/database.ts",
         "lint": "turbo run lint",
-        "lint:fix": "turbo run lint:fix"
+        "lint:fix": "turbo run lint:fix",
+        "test": "turbo run test",
+        "test:watch": "turbo run test:watch"
     },
     "workspaces": [
         "apps/*",

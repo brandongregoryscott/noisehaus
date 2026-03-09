@@ -200,6 +200,7 @@ const BoardsStore = {
     getBySlug,
     getByToken,
     insert,
+    MAX_CREATE_ATTEMPTS,
     table,
     unsafe__delete,
     unsafe__getAllPublic,
