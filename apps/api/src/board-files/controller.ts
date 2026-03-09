@@ -1,5 +1,4 @@
 import type { Response, Request } from "express";
-import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
 import { BoardFilesStore } from "@/board-files/store";
 import { BoardsStore } from "@/boards/store";
