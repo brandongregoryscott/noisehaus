@@ -5,16 +5,16 @@
         "@supabase/supabase-js": "2.26.0",
         "body-parser": "1.20.2",
         "common": "*",
-        "cors": "^2.8.5",
+        "cors": "2.8.5",
         "dotenv": "16.3.1",
-        "esbuild": "0.18.18",
+        "esbuild": "0.27.3",
         "express": "5.0.0-beta.1",
         "express-rate-limit": "6.8.1",
         "lodash-es": "4.17.23",
         "multer": "1.4.5-lts.1"
     },
     "devDependencies": {
-        "@types/cors": "^2.8.13",
+        "@types/cors": "2.8.13",
         "@types/express": "4.17.17",
         "@types/lodash-es": "4.17.12",
         "@types/multer": "1.4.7",
@@ -29,7 +29,7 @@
     "name": "api",
     "private": true,
     "scripts": {
-        "build": "esbuild src/server.ts --bundle --platform=node --target=node20 --tsconfig=tsconfig.json --outfile=dist/server.js",
+        "build": "esbuild src/server.ts --bundle --platform=node --target=node24 --tsconfig=tsconfig.json --outfile=dist/server.js",
         "clean": "rm -rf dist",
         "dev": "concurrently --names esbuild,nodemon \"npm run build -- --watch\" \"nodemon -q dist/server.js\"",
         "start": "node dist/server.js",
