@@ -23,7 +23,8 @@
         "eslint-config-custom": "*",
         "nodemon": "3.0.1",
         "tsconfig": "*",
-        "typescript": "5.9.3"
+        "typescript": "5.9.3",
+        "vitest": "4.0.18"
     },
     "name": "api",
     "private": true,
@@ -32,6 +33,8 @@
         "clean": "rm -rf dist",
         "dev": "concurrently --names esbuild,nodemon \"npm run build -- --watch\" \"nodemon -q dist/server.js\"",
         "start": "node dist/server.js",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "lint": "eslint \"**/*.{ts,js}\"",
         "lint:fix": "eslint \"**/*.{ts,js}\" --fix"
     },
