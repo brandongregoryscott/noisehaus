@@ -12,9 +12,22 @@ import { BoardTokensStore } from "../board-tokens/store";
 import { SupabaseClient } from "../supabase-client";
 import {
     BOARD_NOT_FOUND_ERROR,
+    isPostgrestError,
+    isUniqueConstraintError,
     UnexpectedNullError,
     ValidationError,
 } from "../utilities/errors";
+import { randomSuffix } from "../utilities/string-utils";
+
+type InsertOptions = {
+    /**
+     * Attempt to create the board. If a unique constraint error is raised, the creation will be attempted
+     * again with a randomized suffix appended to the original slug.
+     */
+    attempt?: number;
+} & CreateBoardOptions;
+
+const MAX_CREATE_ATTEMPTS = 5;
 
 const VALID_GET_BY_SLUG_PERMISSIONS = [
     ViewPermission.Public,
@@ -71,8 +84,27 @@ const getByToken = async (options: GetBoardByTokenOptions): Promise<Board> => {
     return board;
 };
 
-const insert = async (input: CreateBoardOptions): Promise<CreateBoardResult> =>
-    unsafe__insert(input);
+const insert = async (options: InsertOptions): Promise<CreateBoardResult> => {
+    const { attempt = 0, name } = options;
+    let { slug } = options;
+    if (attempt > 0) {
+        slug = `${slug}-${randomSuffix()}`;
+    }
+
+    try {
+        return await unsafe__insert({ name, slug });
+    } catch (error) {
+        if (
+            isPostgrestError(error) &&
+            isUniqueConstraintError(error) &&
+            attempt < MAX_CREATE_ATTEMPTS
+        ) {
+            return insert({ ...options, attempt: attempt + 1 });
+        }
+
+        throw error;
+    }
+};
 
 const update = async (input: UpdateBoardOptions): Promise<Board> => {
     const { originalSlug, token, ...updatedBoard } = input;

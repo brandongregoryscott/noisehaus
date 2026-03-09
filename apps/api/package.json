@@ -1,5 +1,6 @@
 {
     "dependencies": {
+        "@faker-js/faker": "10.3.0",
         "@supabase/storage-js": "2.5.1",
         "@supabase/supabase-js": "2.26.0",
         "body-parser": "1.20.2",
