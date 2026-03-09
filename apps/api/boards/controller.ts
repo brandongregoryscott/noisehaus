@@ -12,9 +12,9 @@ import type {
 import type { Response } from "express";
 import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
-import { BOARD_NOT_FOUND_ERROR } from "../utilities/errors";
-import { created, ok } from "../utilities/responses";
-import { BoardsStore } from "./store";
+import { BoardsStore } from "@/boards/store";
+import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
+import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (

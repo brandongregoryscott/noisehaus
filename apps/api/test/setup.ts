@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { SupabaseClientMock } from "./mocks/supabase-client";
+import { SupabaseClientMock } from "@/test/mocks/supabase-client";
 
 vi.mock("../supabase-client", () => ({
     SupabaseClient: SupabaseClientMock,

@@ -6,11 +6,11 @@ import type {
     GetPresignedUrlsResult,
     PresignedFileObject,
     ReplaceObjectOptions,
-} from "./types";
-import { BucketName } from "../enums/bucket-name";
-import { SupabaseClient } from "../supabase-client";
-import { UnexpectedNullError } from "../utilities/errors";
-import { getPath } from "../utilities/file-utilities";
+} from "@/storage/types";
+import { BucketName } from "@/enums/bucket-name";
+import { SupabaseClient } from "@/supabase-client";
+import { UnexpectedNullError } from "@/utilities/errors";
+import { getPath } from "@/utilities/file-utilities";
 
 /**
  * Default expiration time for presigned URLs (4 hours)

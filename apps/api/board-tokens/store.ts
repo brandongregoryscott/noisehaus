@@ -1,6 +1,6 @@
 import type { BoardToken } from "common";
-import { SupabaseClient } from "../supabase-client";
-import { BOARD_NOT_FOUND_ERROR } from "../utilities/errors";
+import { SupabaseClient } from "@/supabase-client";
+import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
 
 const getByBoardSlugAndToken = async (
     boardSlug: string,

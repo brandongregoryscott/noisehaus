@@ -1,6 +1,6 @@
 import type { FileObject } from "@supabase/storage-js";
-import type { GetBoardByTokenOptions } from "../boards/types";
-import type { MulterFile } from "../storage/types";
+import type { GetBoardByTokenOptions } from "@/boards/types";
+import type { MulterFile } from "@/storage/types";
 
 type CreateBoardFileOptions = {
     boardSlug: string;
