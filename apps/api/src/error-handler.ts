@@ -1,17 +1,17 @@
 import type { NextFunction, Request, Response } from "express";
 import { ErrorName, isNotFoundError } from "common";
-import { isDevelopment } from "./utilities/environment";
+import { isDevelopment } from "@/utilities/environment";
 import {
     UnhandledError,
     isPostgrestError,
     isUniqueConstraintError,
-} from "./utilities/errors";
+} from "@/utilities/errors";
 import {
     badRequest,
     conflict,
     internalError,
     notFound,
-} from "./utilities/responses";
+} from "@/utilities/responses";
 
 /**
  * Global error handler for uncaught exceptions, which attempts to properly set the status code

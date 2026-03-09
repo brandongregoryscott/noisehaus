@@ -1,8 +1,14 @@
+import { resolve, join } from "node:path";
 import { defineConfig } from "vitest/config";
 
 const config = defineConfig({
+    resolve: {
+        alias: {
+            "@": resolve(join(process.cwd(), "src")),
+        },
+    },
     test: {
-        setupFiles: ["./test/setup.ts"],
+        setupFiles: ["./src/test/setup.ts"],
     },
 });
 

@@ -8,12 +8,12 @@ import type {
     ListBoardFilesByTokenOptions,
     UpdateBoardFileOptions,
     UnsafeCreateOptions,
-} from "./types";
-import { BoardsStore } from "../boards/store";
-import { StorageStore } from "../storage/store";
-import { SupabaseClient } from "../supabase-client";
-import { NotFoundError, ValidationError } from "../utilities/errors";
-import { formatFileSize } from "../utilities/file-utilities";
+} from "@/board-files/types";
+import { BoardsStore } from "@/boards/store";
+import { StorageStore } from "@/storage/store";
+import { SupabaseClient } from "@/supabase-client";
+import { NotFoundError, ValidationError } from "@/utilities/errors";
+import { formatFileSize } from "@/utilities/file-utilities";
 
 const bulkInsert = async (
     options: BulkCreateBoardFileOptions

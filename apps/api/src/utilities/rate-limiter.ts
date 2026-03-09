@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ErrorName } from "common";
 import rateLimit from "express-rate-limit";
-import { tooManyRequests } from "./responses";
+import { tooManyRequests } from "@/utilities/responses";
 
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 

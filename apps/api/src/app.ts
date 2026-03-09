@@ -16,12 +16,12 @@ import {
 } from "common";
 import cors from "cors";
 import express from "express";
-import { BoardFilesController } from "./board-files/controller";
-import { BoardsController } from "./boards/controller";
-import { BoardsStore } from "./boards/store";
-import { errorHandler } from "./error-handler";
-import { multer } from "./utilities/multer";
-import { createRateLimiter, readRateLimiter } from "./utilities/rate-limiter";
+import { BoardFilesController } from "@/board-files/controller";
+import { BoardsController } from "@/boards/controller";
+import { BoardsStore } from "@/boards/store";
+import { errorHandler } from "@/error-handler";
+import { multer } from "@/utilities/multer";
+import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
 
 const app = express();
 

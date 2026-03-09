@@ -1,6 +1,6 @@
 import { ACCEPTED_MIME_TYPES, MAX_FILE_SIZE_IN_BYTES } from "common";
 import Multer, { memoryStorage } from "multer";
-import { ValidationError } from "../utilities/errors";
+import { ValidationError } from "@/utilities/errors";
 
 const multer = Multer({
     fileFilter: (_req, file, callback) => {

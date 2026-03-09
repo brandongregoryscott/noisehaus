@@ -4,7 +4,7 @@ import {
     queueSingleResult,
     queueThrowOnError,
     resetSupabaseClientMock,
-} from "../test/mocks/supabase-client";
+} from "@/test/mocks/supabase-client";
 
 const { mockBoardTokenInsert } = vi.hoisted(() => ({
     mockBoardTokenInsert: vi.fn(),
@@ -20,8 +20,8 @@ vi.mock("../utilities/string-utils", () => ({
     randomSuffix: vi.fn(),
 }));
 
-import { randomSuffix } from "../utilities/string-utils";
-import { BoardsStore } from "./store";
+import { BoardsStore } from "@/boards/store";
+import { randomSuffix } from "@/utilities/string-utils";
 
 const uniqueConstraintError = {
     code: "23505",

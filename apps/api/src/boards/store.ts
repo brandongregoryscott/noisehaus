@@ -6,18 +6,18 @@ import type {
     CreateBoardResult,
     GetBoardByTokenOptions,
     UpdateBoardOptions,
-} from "./types";
-import { BoardFilesStore } from "../board-files/store";
-import { BoardTokensStore } from "../board-tokens/store";
-import { SupabaseClient } from "../supabase-client";
+} from "@/boards/types";
+import { BoardFilesStore } from "@/board-files/store";
+import { BoardTokensStore } from "@/board-tokens/store";
+import { SupabaseClient } from "@/supabase-client";
 import {
     BOARD_NOT_FOUND_ERROR,
     isPostgrestError,
     isUniqueConstraintError,
     UnexpectedNullError,
     ValidationError,
-} from "../utilities/errors";
-import { randomSuffix } from "../utilities/string-utils";
+} from "@/utilities/errors";
+import { randomSuffix } from "@/utilities/string-utils";
 
 type InsertOptions = {
     /**

@@ -1,11 +1,10 @@
 import type { Response, Request } from "express";
-import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
-import { BoardsStore } from "../boards/store";
-import { arrify } from "../utilities/collection-utils";
-import { BOARD_NOT_FOUND_ERROR, ValidationError } from "../utilities/errors";
-import { ok } from "../utilities/responses";
-import { BoardFilesStore } from "./store";
+import { BoardFilesStore } from "@/board-files/store";
+import { BoardsStore } from "@/boards/store";
+import { arrify } from "@/utilities/collection-utils";
+import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
+import { ok } from "@/utilities/responses";
 
 const BoardFilesController = {
     create: async (request: Request, response: Response): Promise<Response> => {
