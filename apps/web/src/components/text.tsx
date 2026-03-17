@@ -6,15 +6,23 @@ type TextProps = {
     as?: "code" | "p" | "span";
     children: React.ReactNode;
     color?: ColorToken;
+    fontSize?: number;
     fontWeight?: "bold";
     textAlign?: "center" | "left" | "right";
 };
 
 const Text: React.FC<TextProps> = (props) => {
-    const { as = "span", children, color, fontWeight, textAlign } = props;
+    const {
+        as = "span",
+        children,
+        color,
+        fontSize,
+        fontWeight,
+        textAlign,
+    } = props;
 
     return (
-        <Box as={as} css={{ color, fontWeight, textAlign }}>
+        <Box as={as} css={{ color, fontSize, fontWeight, textAlign }}>
             {children}
         </Box>
     );

@@ -97,12 +97,14 @@ const StyledToastRoot = styled("div", {
 });
 
 const StyledToastViewport = styled("div", {
+    alignItems: "flex-end",
     display: "flex",
     flexDirection: "column",
     gap: 8,
     position: "fixed",
     right: 8,
     top: 8,
+    zIndex: "$toast",
 });
 
 const ToastContextProvider: React.FC<PropsWithChildren> = (props) => {

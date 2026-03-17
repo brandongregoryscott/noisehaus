@@ -10,4 +10,6 @@ type PresignedBoardFile = {
 
 type BoardToken = Database["public"]["Tables"]["board_token"]["Row"];
 
-export type { Board, BoardFile, BoardToken, PresignedBoardFile };
+type Feedback = Database["public"]["Tables"]["feedback"]["Row"];
+
+export type { Board, BoardFile, BoardToken, Feedback, PresignedBoardFile };

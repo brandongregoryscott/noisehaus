@@ -12,8 +12,8 @@ import { AudioContextProvider } from "@/contexts/audio-context";
 import { CreateContextProvider } from "@/contexts/create-context";
 import { ApplicationLayout } from "@/layouts/application-layout";
 import { globalStyles } from "@/utils/theme";
-import "../css/reset.css";
-import "../css/global.css";
+import "@/css/reset.css";
+import "@/css/global.css";
 
 globalStyles();
 
@@ -40,17 +40,17 @@ const RootComponent: React.FC = () => {
             </head>
             <body>
                 <QueryClientProvider client={client}>
-                    <ApplicationLayout>
-                        <CreateContextProvider>
-                            <AudioContextProvider>
-                                <ToastContextProvider>
-                                    <Toast.Provider>
+                    <ToastContextProvider>
+                        <Toast.Provider>
+                            <CreateContextProvider>
+                                <AudioContextProvider>
+                                    <ApplicationLayout>
                                         <Outlet />
-                                    </Toast.Provider>
-                                </ToastContextProvider>
-                            </AudioContextProvider>
-                        </CreateContextProvider>
-                    </ApplicationLayout>
+                                    </ApplicationLayout>
+                                </AudioContextProvider>
+                            </CreateContextProvider>
+                        </Toast.Provider>
+                    </ToastContextProvider>
                 </QueryClientProvider>
                 <Scripts />
             </body>

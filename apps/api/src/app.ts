@@ -13,6 +13,7 @@ import {
     UPDATE_BOARD_ROUTE,
     DELETE_BOARD_ROUTE,
     GET_BOARD_FILE_ROUTE,
+    CREATE_FEEDBACK_ROUTE,
 } from "common";
 import cors from "cors";
 import express from "express";
@@ -20,6 +21,7 @@ import { BoardFilesController } from "@/board-files/controller";
 import { BoardsController } from "@/boards/controller";
 import { BoardsStore } from "@/boards/store";
 import { errorHandler } from "@/error-handler";
+import { FeedbackController } from "@/feedback/controller";
 import { multer } from "@/utilities/multer";
 import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
 
@@ -57,6 +59,7 @@ app.put(
 app.get(LIST_BOARD_FILE_ROUTE, BoardFilesController.list);
 app.delete(DELETE_BOARD_FILE_ROUTE, BoardFilesController.delete);
 app.get(GET_BOARD_FILE_SIZE_ROUTE, BoardFilesController.size);
+app.post(CREATE_FEEDBACK_ROUTE, FeedbackController.create);
 
 app.use(errorHandler);
 app.use(readRateLimiter);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { BreakpointName } from "@/hooks/use-breakpoint";
 import { Box } from "@/components/box";
 import { Column } from "@/components/column";
+import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { Link } from "@/components/link";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
@@ -30,19 +31,28 @@ const ApplicationLayout: React.FC<ApplicationLayoutProps> = (props) => {
         <Box
             css={{
                 backgroundColor: "$black",
+                display: "flex",
+                flexDirection: "column",
                 height: "100vh",
-                overflowX: "hidden",
-                overflowY: "auto",
+                overflow: "hidden",
                 width: "100vw",
             }}>
-            <Column css={getInnerColumnStyles(breakpoint)}>
-                {breakpoint === "desktop" && (
-                    <Header size="h1">
-                        <Link to={Routes.Home}>noise.haus</Link>
-                    </Header>
-                )}
-                {children}
-            </Column>
+            <Box
+                css={{
+                    flex: 1,
+                    overflowX: "hidden",
+                    overflowY: "auto",
+                }}>
+                <Column css={getInnerColumnStyles(breakpoint)}>
+                    {breakpoint === "desktop" && (
+                        <Header size="h1">
+                            <Link to={Routes.Home}>noise.haus</Link>
+                        </Header>
+                    )}
+                    {children}
+                </Column>
+            </Box>
+            <Footer />
         </Box>
     );
 };

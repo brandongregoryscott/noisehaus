@@ -33,7 +33,7 @@ nvm use
 npm install
 
 # Apply migrations to the remote database
-npx supabase migration up --linked
+npm run db:migrate:remote
 
 # Run the development servers for the web app and API
 npm run dev

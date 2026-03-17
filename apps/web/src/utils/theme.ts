@@ -15,6 +15,10 @@ const fonts = {
     code: "'Victor Mono', monospace",
 } as const;
 
+const zIndices = {
+    toast: 1000,
+} as const;
+
 type ColorToken = `$${keyof typeof colors}`;
 
 type FontFamilyToken = `$${keyof typeof fonts}`;
@@ -24,6 +28,7 @@ const { css, getCssText, globalCss, keyframes, styled } = createStitches({
         colors,
         fonts,
         shadows: { ...colors },
+        zIndices,
     },
     utils: {
         focusRing: (color: ColorToken) => ({
