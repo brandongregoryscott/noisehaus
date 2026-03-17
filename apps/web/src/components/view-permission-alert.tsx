@@ -37,10 +37,10 @@ const ViewPermissionAlert: React.FC<ViewPermissionAlertProps> = (
 
 const getTitle = (viewPermission: ViewPermission): string => {
     switch (viewPermission) {
-        case ViewPermission.ByToken:
-            return "This board is only viewable and editable from this link.";
         case ViewPermission.BySlug:
             return "This board is viewable by anyone with the slug.";
+        case ViewPermission.ByToken:
+            return "This board is only viewable and editable from this link.";
         case ViewPermission.Public:
             return "This board viewable by anyone with the slug and also shows up in the browse list.";
         default:
@@ -50,8 +50,8 @@ const getTitle = (viewPermission: ViewPermission): string => {
 
 const getDescription = (viewPermission: ViewPermission): string => {
     switch (viewPermission) {
-        case ViewPermission.ByToken:
         case ViewPermission.BySlug:
+        case ViewPermission.ByToken:
             return "If you lose the link to this board, you will be unable to edit it, and it may be deleted after a period of inactivity.";
         case ViewPermission.Public:
         default:

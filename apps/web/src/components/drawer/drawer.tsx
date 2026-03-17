@@ -40,7 +40,7 @@ const StyledDialogContent = styled(RadixDialog.Content, {
             bottom: {
                 borderTop: "1px solid $white",
                 bottom: 0,
-                maxHeight: 500,
+                maxHeight: "100vh",
                 width: "100%",
             },
             left: {
@@ -59,7 +59,7 @@ const StyledDialogContent = styled(RadixDialog.Content, {
             },
             top: {
                 borderBottom: "1px solid $white",
-                maxHeight: 500,
+                maxHeight: "100vh",
                 top: 0,
                 width: "100%",
             },
