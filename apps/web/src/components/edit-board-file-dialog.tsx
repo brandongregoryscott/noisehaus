@@ -38,8 +38,8 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
 
     const {
         emoji,
-        file,
         errors,
+        file,
         handleEmojiClear,
         handleEmojiSelect,
         handleNameChange,

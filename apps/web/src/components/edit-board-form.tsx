@@ -102,6 +102,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
     };
 
     const {
+        errors,
         handleNameChange,
         handleNameClear,
         handleNameInput,
@@ -111,7 +112,6 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
         handleSlugInput,
         isPending: isSavingBoard,
         name,
-        errors,
         slug,
     } = useEditBoard({
         initialName,

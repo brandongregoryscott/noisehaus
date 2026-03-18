@@ -68,6 +68,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
     };
 
     const {
+        errors,
         handleNameChange,
         handleNameClear,
         handleNameInput,
@@ -78,7 +79,6 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
         handleViewPermissionChange,
         isPending,
         name,
-        errors,
         slug,
         viewPermission,
     } = useEditBoard({

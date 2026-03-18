@@ -40,8 +40,8 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
     const handleNameChange = async (event: FormEvent<HTMLInputElement>) => {
         const updatedName = (event.target as HTMLInputElement).value;
         const validationState = validate(boardFileValidator, {
-            name: updatedName,
             file: file ?? null,
+            name: updatedName,
         });
         const validationErrors = getFieldErrors(validationState);
         setErrors((currentErrors) => ({
@@ -71,8 +71,8 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
 
     const handleSave = async () => {
         const validationState = validate(boardFileValidator, {
-            name,
             file: file ?? null,
+            name,
         });
         const validationErrors = getFieldErrors(validationState);
         setErrors(validationErrors);
@@ -91,8 +91,8 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
 
     return {
         emoji,
-        file,
         errors,
+        file,
         handleEmojiClear,
         handleEmojiSelect,
         handleNameChange,

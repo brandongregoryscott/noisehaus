@@ -1,7 +1,4 @@
-import type {
-    CreateFeedbackRequest,
-    CreateFeedbackResponse,
-} from "common";
+import type { CreateFeedbackRequest, CreateFeedbackResponse } from "common";
 import type { Response } from "express";
 import { FeedbackStore } from "@/feedback/store";
 import { created } from "@/utilities/responses";

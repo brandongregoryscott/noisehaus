@@ -47,6 +47,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
     };
     const {
         emoji,
+        errors,
         file,
         handleEmojiClear,
         handleEmojiSelect,
@@ -55,7 +56,6 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         handleSave,
         isPending,
         name,
-        errors,
         setFile,
     } = useEditBoardFile({ boardFile, onSuccess: handleSuccess, token });
 

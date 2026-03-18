@@ -1,8 +1,11 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
+const config = defineConfig({
     test: {
         environment: "node",
         include: ["src/**/*.test.ts"],
     },
 });
+
+// eslint-disable-next-line collation/no-default-export -- This config needs to be default exported
+export default config;

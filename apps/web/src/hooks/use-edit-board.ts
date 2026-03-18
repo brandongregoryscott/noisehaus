@@ -16,6 +16,10 @@ type UseEditBoardOptions = {
 };
 
 type UseEditBoardResult = {
+    errors: {
+        name?: string[];
+        slug?: string[];
+    };
     handleNameChange: (event: FormEvent<HTMLInputElement>) => void;
     handleNameClear: () => void;
     handleNameInput: (event: FormEvent<HTMLInputElement>) => void;
@@ -26,10 +30,6 @@ type UseEditBoardResult = {
     handleViewPermissionChange: (value: ViewPermission) => void;
     isPending: boolean;
     name: string;
-    errors: {
-        name?: string[];
-        slug?: string[];
-    };
     slug: string;
     viewPermission: ViewPermission;
 };
@@ -122,6 +122,7 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
     };
 
     return {
+        errors,
         handleNameChange,
         handleNameClear,
         handleNameInput,
@@ -132,7 +133,6 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
         handleViewPermissionChange: setViewPermission,
         isPending,
         name,
-        errors,
         slug,
         viewPermission,
     };

@@ -7,15 +7,12 @@ const feedbackValidator = z
 
 const emailValidator = z.string().trim().email("Email must be a valid format");
 
-const optionalEmailValidator = z.preprocess(
-    (value) => {
-        if (typeof value === "string" && value.trim() === "") {
-            return undefined;
-        }
-        return value;
-    },
-    emailValidator.optional()
-);
+const optionalEmailValidator = z.preprocess((value) => {
+    if (typeof value === "string" && value.trim() === "") {
+        return undefined;
+    }
+    return value;
+}, emailValidator.optional());
 
 const feedbackFormValidator = z.object({
     email: optionalEmailValidator,
