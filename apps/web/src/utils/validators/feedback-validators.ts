@@ -1,20 +1,25 @@
-const feedbackValidator = {
-    length: {
-        checkValidity: (value: string | undefined) =>
-            value != null && value.length > 0,
-        errorMessage: "Feedback must be at least 1 character long",
-    },
-};
+import { z } from "zod";
 
-const emailValidator = {
-    format: {
-        checkValidity: (value: string | undefined) =>
-            value != null &&
-            value.length >= 5 &&
-            value.includes("@") &&
-            value.includes("."),
-        errorMessage: "Email must be a valid format",
-    },
-};
+const feedbackValidator = z
+    .string()
+    .trim()
+    .min(1, "Feedback must be at least 1 character long");
 
-export { emailValidator, feedbackValidator };
+const emailValidator = z.string().trim().email("Email must be a valid format");
+
+const optionalEmailValidator = z.preprocess(
+    (value) => {
+        if (typeof value === "string" && value.trim() === "") {
+            return undefined;
+        }
+        return value;
+    },
+    emailValidator.optional()
+);
+
+const feedbackFormValidator = z.object({
+    email: optionalEmailValidator,
+    feedback: feedbackValidator,
+});
+
+export { emailValidator, feedbackFormValidator, feedbackValidator };

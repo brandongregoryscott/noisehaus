@@ -6,6 +6,7 @@ import {
     LIST_BOARD_FILE_ROUTE,
     GET_BOARD_FILE_ROUTE,
 } from "common";
+import { first } from "lodash-es";
 import { Button } from "@/components/button";
 import { Column } from "@/components/column";
 import { CoolButton } from "@/components/cool-button";
@@ -54,7 +55,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         handleSave,
         isPending,
         name,
-        nameErrorMessage,
+        errors,
         setFile,
     } = useEditBoardFile({ boardFile, onSuccess: handleSuccess, token });
 
@@ -92,7 +93,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
                 </Row>
                 <Field fullWidth={true} label="Sound Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
                         placeholder="Sound Name"

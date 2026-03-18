@@ -1,6 +1,7 @@
 import type { BoardFile } from "common";
 import { useQueryClient } from "@tanstack/react-query";
 import { LIST_BOARD_FILE_ROUTE, getEmojiByColonCode } from "common";
+import { first } from "lodash-es";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { EmojiSelect } from "@/components/emoji-select";
@@ -38,7 +39,7 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
     const {
         emoji,
         file,
-        fileErrorMessage,
+        errors,
         handleEmojiClear,
         handleEmojiSelect,
         handleNameChange,
@@ -47,7 +48,6 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
         handleSave,
         isPending,
         name,
-        nameErrorMessage,
         setFile,
     } = useEditBoardFile({ boardFile, onSuccess: handleSuccess, token });
 
@@ -65,7 +65,7 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
                     }}>
                     <Field fullWidth={true} label="Sound Name">
                         <Input
-                            errorMessage={nameErrorMessage}
+                            errorMessage={first(errors.name)}
                             onChange={handleNameChange}
                             onClear={handleNameClear}
                             onInput={handleNameInput}
@@ -84,7 +84,7 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
                     </Field>
                     <Field fullWidth={true}>
                         <FileUpload
-                            errorMessage={fileErrorMessage}
+                            errorMessage={first(errors.file)}
                             onChange={setFile}
                             value={file ?? undefined}
                         />

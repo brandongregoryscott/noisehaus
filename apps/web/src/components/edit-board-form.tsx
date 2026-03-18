@@ -7,6 +7,7 @@ import type {
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ErrorName, GET_BOARD_ROUTE, LIST_BOARD_FILE_ROUTE } from "common";
+import { first } from "lodash-es";
 import { BoardFileTable } from "@/components/board-file-table";
 import { Button } from "@/components/button";
 import { Column } from "@/components/column";
@@ -110,9 +111,8 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
         handleSlugInput,
         isPending: isSavingBoard,
         name,
-        nameErrorMessage,
+        errors,
         slug,
-        slugErrorMessage,
     } = useEditBoard({
         initialName,
         initialSlug,
@@ -153,7 +153,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
                 </Row>
                 <Field fullWidth={true} label="Board Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
                         onInput={handleNameInput}
@@ -165,7 +165,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
                 </Field>
                 <Field fullWidth={true} label="Board Slug">
                     <Input
-                        errorMessage={slugErrorMessage}
+                        errorMessage={first(errors.slug)}
                         onChange={handleSlugChange}
                         onClear={handleSlugClear}
                         onInput={handleSlugInput}

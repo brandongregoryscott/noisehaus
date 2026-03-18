@@ -2,6 +2,7 @@ import type { ApiError, Board, ViewPermission } from "common";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ErrorName, GET_BOARD_ROUTE } from "common";
+import { first } from "lodash-es";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
@@ -77,9 +78,8 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
         handleViewPermissionChange,
         isPending,
         name,
-        nameErrorMessage,
+        errors,
         slug,
-        slugErrorMessage,
         viewPermission,
     } = useEditBoard({
         initialName,
@@ -98,7 +98,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
             <ResponsiveDialogBody css={{ rowGap: 24 }}>
                 <Field fullWidth={true} label="Board Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
                         onInput={handleNameInput}
@@ -110,7 +110,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
                 </Field>
                 <Field fullWidth={true} label="Board Slug">
                     <Input
-                        errorMessage={slugErrorMessage}
+                        errorMessage={first(errors.slug)}
                         onChange={handleSlugChange}
                         onClear={handleSlugClear}
                         onInput={handleSlugInput}
