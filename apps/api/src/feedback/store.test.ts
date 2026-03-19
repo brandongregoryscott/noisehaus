@@ -31,15 +31,15 @@ describe("FeedbackStore", () => {
         queueSingleResult({
             board_id: "board-1",
             board_slug: "drums",
+            comment: "Nice work",
             email: "a@example.com",
-            feedback: "Nice work",
             id: "feedback-1",
         });
 
         await FeedbackStore.create({
             board_slug: "drums",
+            comment: "Nice work",
             email: "a@example.com",
-            feedback: "Nice work",
         });
 
         expect(mockGetBoardBySlug).toHaveBeenCalledWith("drums");
@@ -54,8 +54,8 @@ describe("FeedbackStore", () => {
             {
                 board_id: "board-1",
                 board_slug: "drums",
+                comment: "Nice work",
                 email: "a@example.com",
-                feedback: "Nice work",
             },
         ]);
     });
@@ -64,16 +64,16 @@ describe("FeedbackStore", () => {
         queueSingleResult({
             board_id: null,
             board_slug: null,
+            comment: "Thanks",
             email: "b@example.com",
-            feedback: "Thanks",
             id: "feedback-2",
         });
 
         await FeedbackStore.create({
             board_id: "board-ignored",
             board_slug: null,
+            comment: "Thanks",
             email: "b@example.com",
-            feedback: "Thanks",
         });
 
         expect(mockGetBoardBySlug).not.toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe("FeedbackStore", () => {
                         call.table === "feedback" && call.method === "insert"
                 )
                 .map((call) => call.args[0])
-        ).toEqual([{ email: "b@example.com", feedback: "Thanks" }]);
+        ).toEqual([{ comment: "Thanks", email: "b@example.com" }]);
     });
 
     it("does not set board fields when board_slug does not exist", async () => {
@@ -92,16 +92,16 @@ describe("FeedbackStore", () => {
         queueSingleResult({
             board_id: null,
             board_slug: null,
+            comment: "Neat",
             email: "c@example.com",
-            feedback: "Neat",
             id: "feedback-3",
         });
 
         await FeedbackStore.create({
             board_id: "board-ignored",
             board_slug: "missing",
+            comment: "Neat",
             email: "c@example.com",
-            feedback: "Neat",
         });
 
         expect(mockGetBoardBySlug).toHaveBeenCalledWith("missing");
@@ -112,6 +112,6 @@ describe("FeedbackStore", () => {
                         call.table === "feedback" && call.method === "insert"
                 )
                 .map((call) => call.args[0])
-        ).toEqual([{ email: "c@example.com", feedback: "Neat" }]);
+        ).toEqual([{ comment: "Neat", email: "c@example.com" }]);
     });
 });

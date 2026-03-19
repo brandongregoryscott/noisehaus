@@ -14,10 +14,10 @@ type UseFeedbackOptions = {
 
 const useFeedback = (options?: UseFeedbackOptions) => {
     const { boardSlug, onError, onSuccess } = options ?? {};
-    const [feedback, setFeedback] = useState<string>("");
+    const [comment, setComment] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [errors, setErrors] = useState<
-        FieldErrors<{ email?: string; feedback: string }>
+        FieldErrors<{ comment: string; email?: string }>
     >({});
 
     const { isPending, mutate: createFeedback } = useCreateFeedback({
@@ -31,16 +31,16 @@ const useFeedback = (options?: UseFeedbackOptions) => {
         setEmail(email);
     };
 
-    const handleFeedbackClear = () => setFeedback("");
+    const handleFeedbackClear = () => setComment("");
     const handleFeedbackChange = async (
         event: FormEvent<HTMLTextAreaElement>
     ) => {
-        const feedback = (event.target as HTMLTextAreaElement).value;
-        setFeedback(feedback);
+        const comment = (event.target as HTMLTextAreaElement).value;
+        setComment(comment);
     };
 
     const handleSave = async () => {
-        const result = validate(feedbackFormValidator, { email, feedback });
+        const result = validate(feedbackFormValidator, { comment, email });
         const errors = getFieldErrors(result);
         setErrors(errors);
 
@@ -50,15 +50,15 @@ const useFeedback = (options?: UseFeedbackOptions) => {
 
         createFeedback({
             board_slug: boardSlug,
+            comment: result.data.comment,
             email: result.data.email,
-            feedback: result.data.feedback,
         });
     };
 
     return {
+        comment,
         email,
         errors,
-        feedback,
         handleEmailChange,
         handleEmailClear,
         handleFeedbackChange,

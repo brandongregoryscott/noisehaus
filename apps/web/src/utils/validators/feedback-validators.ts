@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const feedbackValidator = z
+const commentValidator = z
     .string()
     .trim()
     .min(1, "Feedback must be at least 1 character long");
@@ -15,8 +15,8 @@ const optionalEmailValidator = z.preprocess((value) => {
 }, emailValidator.optional());
 
 const feedbackFormValidator = z.object({
+    comment: commentValidator,
     email: optionalEmailValidator,
-    feedback: feedbackValidator,
 });
 
-export { emailValidator, feedbackFormValidator, feedbackValidator };
+export { commentValidator, emailValidator, feedbackFormValidator };

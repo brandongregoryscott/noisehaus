@@ -4,7 +4,7 @@ import type { ApiSuccessResponse } from "../responses";
 type CreateFeedbackOptions = Partial<
     Pick<Feedback, "board_id" | "board_slug" | "email">
 > &
-    Pick<Feedback, "feedback">;
+    Pick<Feedback, "comment">;
 
 type CreateFeedbackRequest = {
     body: CreateFeedbackOptions;

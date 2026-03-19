@@ -3,29 +3,31 @@ import { validate } from "../validation";
 import {
     emailValidator,
     feedbackFormValidator,
-    feedbackValidator,
+    commentValidator,
 } from "./feedback-validators";
 
-describe("feedback validators", () => {
-    it("accepts valid feedback", () => {
+describe("commentValidator", () => {
+    it("accepts valid comment", () => {
         const input = "Thanks!";
 
-        const result = validate(feedbackValidator, input);
+        const result = validate(commentValidator, input);
 
         expect(result.success).toBe(true);
     });
 
-    it("rejects blank feedback", () => {
+    it("rejects blank comment", () => {
         const input = "   ";
 
-        const result = validate(feedbackValidator, input);
+        const result = validate(commentValidator, input);
 
         assert(!result.success);
         expect(result.error.issues[0]?.message).toBe(
             "Feedback must be at least 1 character long"
         );
     });
+});
 
+describe("emailValidator", () => {
     it("accepts valid email addresses", () => {
         const input = "person@example.com";
 
@@ -44,11 +46,13 @@ describe("feedback validators", () => {
             "Email must be a valid format"
         );
     });
+});
 
+describe("feedbackFormValidator", () => {
     it("allows blank email in feedback form", () => {
         const input = {
+            comment: "Nice work",
             email: "   ",
-            feedback: "Nice work",
         };
 
         const result = validate(feedbackFormValidator, input);

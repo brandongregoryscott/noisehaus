@@ -29,15 +29,15 @@ describe("FeedbackController", () => {
         mockCreateFeedback.mockResolvedValue({
             board_id: "board-1",
             board_slug: "drums",
+            comment: "Nice work",
             email: "a@example.com",
-            feedback: "Nice work",
             id: "feedback-1",
         });
 
         const body = {
             board_slug: "drums",
+            comment: "Nice work",
             email: "a@example.com",
-            feedback: "Nice work",
         };
 
         await FeedbackController.create({ body }, response);
@@ -50,8 +50,8 @@ describe("FeedbackController", () => {
             data: {
                 board_id: "board-1",
                 board_slug: "drums",
+                comment: "Nice work",
                 email: "a@example.com",
-                feedback: "Nice work",
                 id: "feedback-1",
             },
             error: null,

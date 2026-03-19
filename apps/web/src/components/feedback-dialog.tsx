@@ -46,9 +46,9 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
     };
 
     const {
+        comment,
         email,
         errors,
-        feedback,
         handleEmailChange,
         handleEmailClear,
         handleFeedbackChange,
@@ -88,12 +88,12 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
                 </Field>
                 <Field fullWidth={true} label="Comment">
                     <Textarea
-                        errorMessage={first(errors.feedback)}
+                        errorMessage={first(errors.comment)}
                         onChange={handleFeedbackChange}
                         onClear={handleFeedbackClear}
                         placeholder={placeholder}
                         showClearAffordance={true}
-                        value={feedback}
+                        value={comment}
                         width="100%"
                     />
                 </Field>
