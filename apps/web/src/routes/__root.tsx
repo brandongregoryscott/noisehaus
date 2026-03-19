@@ -61,6 +61,13 @@ const RootComponent: React.FC = () => {
 const Route = createRootRoute({
     component: RootComponent,
     head: () => ({
+        links: [
+            {
+                href: "/favicon.ico",
+                rel: "icon",
+                type: "image/x-icon",
+            },
+        ],
         meta: [
             {
                 charSet: "utf-8",
