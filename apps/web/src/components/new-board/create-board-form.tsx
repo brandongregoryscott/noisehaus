@@ -2,10 +2,11 @@ import type { ApiError } from "common/api/errors";
 import type { FormEvent } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ErrorName } from "common/api/errors";
-import { isEmpty, kebabCase } from "lodash-es";
+import { first, isEmpty, kebabCase } from "lodash-es";
 import { useState } from "react";
 import type { CreateBoardMutationResult } from "@/hooks/use-create-board";
 import type { CreateBoardFileOptions } from "@/hooks/use-create-board-file";
+import type { FieldErrors } from "@/utils/validation";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { Column } from "@/components/column";
@@ -23,11 +24,8 @@ import { useCreateContext } from "@/hooks/use-create-context";
 import { useToast } from "@/hooks/use-toast";
 import { Routes } from "@/routes";
 import { generateSlug } from "@/utils/string-utils";
-import { validate } from "@/utils/validation";
-import {
-    nameValidator,
-    slugValidator,
-} from "@/utils/validators/board-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { boardValidator } from "@/utils/validators/board-validators";
 
 const CreateBoardForm: React.FC = () => {
     const router = useRouter();
@@ -48,12 +46,9 @@ const CreateBoardForm: React.FC = () => {
     }
 
     const hasFiles = file !== null;
-    const [nameErrorMessage, setNameErrorMessage] = useState<
-        string | undefined
-    >(undefined);
-    const [slugErrorMessage, setSlugErrorMessage] = useState<
-        string | undefined
-    >(undefined);
+    const [errors, setErrors] = useState<
+        FieldErrors<{ name: string; slug: string }>
+    >({});
     const { openConstructive, openDestructive } = useToast();
 
     const handleBack = () => {
@@ -107,17 +102,10 @@ const CreateBoardForm: React.FC = () => {
     const handleNameClear = () => setBoardName("");
     const handleSlugClear = () => setBoardSlug("");
 
-    const handleNameInput = (event: FormEvent<HTMLInputElement>) => {
-        const name = (event.target as HTMLInputElement).value;
-        setBoardName(name);
-        if (isEmpty(boardSlug)) {
-            setBoardSlug(kebabCase(name));
-        }
-    };
-
     const handleNameChange = (event: FormEvent<HTMLInputElement>) => {
         const name = (event.target as HTMLInputElement).value;
         setBoardName(name);
+        setErrors((prevErrors) => ({ ...prevErrors, name: undefined }));
 
         if (isEmpty(boardSlug)) {
             setBoardSlug(kebabCase(name));
@@ -126,35 +114,25 @@ const CreateBoardForm: React.FC = () => {
 
     const handleSlugChange = (event: FormEvent<HTMLInputElement>) => {
         setBoardSlug((event.target as HTMLInputElement).value);
-    };
-
-    const handleSlugInput = (event: FormEvent<HTMLInputElement>) => {
-        setBoardSlug((event.target as HTMLInputElement).value);
+        setErrors((prevErrors) => ({ ...prevErrors, slug: undefined }));
     };
 
     const handleCreate = async () => {
-        const nameValidationState = validate(nameValidator, boardName);
-        const slugValidationState = validate(slugValidator, boardSlug);
+        const result = validate(boardValidator, {
+            name: boardName,
+            slug: boardSlug,
+        });
+        const errors = getFieldErrors(result);
+        setErrors(errors);
 
-        if (nameValidationState !== undefined) {
-            setNameErrorMessage(nameValidationState?.firstError);
-        }
-
-        if (slugValidationState !== undefined) {
-            setSlugErrorMessage(slugValidationState?.firstError);
-        }
-
-        if (
-            nameValidationState !== undefined ||
-            slugValidationState !== undefined
-        ) {
+        if (!result.success) {
             return;
         }
 
         const files: CreateBoardFileOptions[] = [
             { displayName: fileDisplayName, emoji: fileEmoji, file: file! },
         ];
-        createBoard({ files, name: boardName, slug: boardSlug });
+        createBoard({ files, name: result.data.name, slug: result.data.slug });
     };
 
     return (
@@ -200,10 +178,9 @@ const CreateBoardForm: React.FC = () => {
                 }}>
                 <Field fullWidth={true} label="Board Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
-                        onInput={handleNameInput}
                         placeholder="Board Name"
                         showClearAffordance={true}
                         value={boardName}
@@ -212,10 +189,9 @@ const CreateBoardForm: React.FC = () => {
                 </Field>
                 <Field fullWidth={true} label="Board Slug">
                     <Input
-                        errorMessage={slugErrorMessage}
+                        errorMessage={first(errors.slug)}
                         onChange={handleSlugChange}
                         onClear={handleSlugClear}
-                        onInput={handleSlugInput}
                         placeholder="Board Slug"
                         showClearAffordance={true}
                         value={boardSlug}

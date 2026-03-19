@@ -3,11 +3,8 @@ import type { FormEvent } from "react";
 import { isEmpty, kebabCase } from "lodash-es";
 import { useState } from "react";
 import { useUpdateBoard } from "@/hooks/use-update-board";
-import { validate } from "@/utils/validation";
-import {
-    nameValidator,
-    slugValidator,
-} from "@/utils/validators/board-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { boardValidator } from "@/utils/validators/board-validators";
 
 type UseEditBoardOptions = {
     initialName: string;
@@ -19,6 +16,10 @@ type UseEditBoardOptions = {
 };
 
 type UseEditBoardResult = {
+    errors: {
+        name?: string[];
+        slug?: string[];
+    };
     handleNameChange: (event: FormEvent<HTMLInputElement>) => void;
     handleNameClear: () => void;
     handleNameInput: (event: FormEvent<HTMLInputElement>) => void;
@@ -29,9 +30,7 @@ type UseEditBoardResult = {
     handleViewPermissionChange: (value: ViewPermission) => void;
     isPending: boolean;
     name: string;
-    nameErrorMessage: string | undefined;
     slug: string;
-    slugErrorMessage: string | undefined;
     viewPermission: ViewPermission;
 };
 
@@ -45,13 +44,11 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
         token,
     } = options;
     const [name, setName] = useState<string>(initialName);
-    const [nameErrorMessage, setNameErrorMessage] = useState<
-        string | undefined
-    >(undefined);
+    const [errors, setErrors] = useState<{
+        name?: string[];
+        slug?: string[];
+    }>({});
     const [slug, setSlug] = useState<string>(initialSlug);
-    const [slugErrorMessage, setSlugErrorMessage] = useState<
-        string | undefined
-    >(undefined);
     const [viewPermission, setViewPermission] = useState<ViewPermission>(
         initialViewPermission
     );
@@ -78,8 +75,15 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
             setSlug(kebabCase(updatedName));
         }
 
-        const validationState = validate(nameValidator, updatedName);
-        setNameErrorMessage(validationState?.firstError);
+        const validationState = validate(boardValidator, {
+            name: updatedName,
+            slug,
+        });
+        const validationErrors = getFieldErrors(validationState);
+        setErrors((currentErrors) => ({
+            ...currentErrors,
+            name: validationErrors.name,
+        }));
     };
 
     const handleSlugClear = () => setSlug("");
@@ -89,28 +93,36 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
         const updatedSlug = (event.target as HTMLInputElement).value;
         setSlug(updatedSlug);
 
-        const validationState = validate(slugValidator, updatedSlug);
-        setSlugErrorMessage(validationState?.firstError);
+        const validationState = validate(boardValidator, {
+            name,
+            slug: updatedSlug,
+        });
+        const validationErrors = getFieldErrors(validationState);
+        setErrors((currentErrors) => ({
+            ...currentErrors,
+            slug: validationErrors.slug,
+        }));
     };
 
     const handleSave = async () => {
-        const nameValidationState = validate(nameValidator, name);
-        const slugValidationState = validate(slugValidator, slug);
+        const result = validate(boardValidator, { name, slug });
+        const validationErrors = getFieldErrors(result);
+        setErrors(validationErrors);
 
-        setNameErrorMessage(nameValidationState?.firstError);
-        setSlugErrorMessage(slugValidationState?.firstError);
-
-        if (
-            nameValidationState !== undefined ||
-            slugValidationState !== undefined
-        ) {
+        if (!result.success) {
             return;
         }
 
-        updateBoard({ name, slug, token, view_permission: viewPermission });
+        updateBoard({
+            name: result.data.name,
+            slug: result.data.slug,
+            token,
+            view_permission: viewPermission,
+        });
     };
 
     return {
+        errors,
         handleNameChange,
         handleNameClear,
         handleNameInput,
@@ -121,9 +133,7 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
         handleViewPermissionChange: setViewPermission,
         isPending,
         name,
-        nameErrorMessage,
         slug,
-        slugErrorMessage,
         viewPermission,
     };
 };

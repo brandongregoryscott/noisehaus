@@ -2,8 +2,8 @@ import type { ApiError, BoardFile, Emoji } from "common";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useUpdateBoardFile } from "@/hooks/use-update-board-file";
-import { validate } from "@/utils/validation";
-import { nameValidator } from "@/utils/validators/board-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { boardFileValidator } from "@/utils/validators/board-file-validators";
 
 type UseEditBoardFileOptions = {
     boardFile: BoardFile;
@@ -21,13 +21,11 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
         id,
     } = boardFile;
     const [name, setName] = useState(initialName);
-    const [nameErrorMessage, setNameErrorMessage] = useState<
-        string | undefined
-    >(undefined);
+    const [errors, setErrors] = useState<{
+        file?: string[];
+        name?: string[];
+    }>({});
     const [emoji, setEmoji] = useState(initialEmoji);
-    const [fileErrorMessage, setFileErrorMessage] = useState<
-        string | undefined
-    >(undefined);
     const [file, setFile] = useState<File | null | undefined>(
         getFile(boardFile)
     );
@@ -41,8 +39,15 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
 
     const handleNameChange = async (event: FormEvent<HTMLInputElement>) => {
         const updatedName = (event.target as HTMLInputElement).value;
-        const validationState = validate(nameValidator, updatedName);
-        setNameErrorMessage(validationState?.firstError);
+        const validationState = validate(boardFileValidator, {
+            file: file ?? null,
+            name: updatedName,
+        });
+        const validationErrors = getFieldErrors(validationState);
+        setErrors((currentErrors) => ({
+            ...currentErrors,
+            name: validationErrors.name,
+        }));
         setName(updatedName);
     };
 
@@ -65,19 +70,14 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
     };
 
     const handleSave = async () => {
-        let hasError = false;
-        const validationState = validate(nameValidator, name);
-        setNameErrorMessage(validationState?.firstError);
-        if (validationState !== undefined) {
-            hasError = true;
-        }
+        const validationState = validate(boardFileValidator, {
+            file: file ?? null,
+            name,
+        });
+        const validationErrors = getFieldErrors(validationState);
+        setErrors(validationErrors);
 
-        if (file == null) {
-            setFileErrorMessage("File is required");
-            hasError = true;
-        }
-
-        if (hasError) {
+        if (!validationState.success) {
             return;
         }
 
@@ -91,8 +91,8 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
 
     return {
         emoji,
+        errors,
         file,
-        fileErrorMessage,
         handleEmojiClear,
         handleEmojiSelect,
         handleNameChange,
@@ -101,7 +101,6 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
         handleSave,
         isPending,
         name,
-        nameErrorMessage,
         setFile,
     };
 };

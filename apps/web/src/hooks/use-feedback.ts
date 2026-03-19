@@ -1,13 +1,10 @@
 import type { ApiError, Feedback } from "common";
 import type { FormEvent } from "react";
-import { isEmpty } from "lodash-es";
 import { useState } from "react";
+import type { FieldErrors } from "@/utils/validation";
 import { useCreateFeedback } from "@/hooks/use-create-feedback";
-import { validate } from "@/utils/validation";
-import {
-    emailValidator,
-    feedbackValidator,
-} from "@/utils/validators/feedback-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { feedbackFormValidator } from "@/utils/validators/feedback-validators";
 
 type UseFeedbackOptions = {
     boardSlug?: string;
@@ -18,13 +15,11 @@ type UseFeedbackOptions = {
 const useFeedback = (options?: UseFeedbackOptions) => {
     const { boardSlug, onError, onSuccess } = options ?? {};
     const [feedback, setFeedback] = useState<string>("");
-    const [feedbackErrorMessage, setFeedbackErrorMessage] = useState<
-        string | undefined
-    >(undefined);
-    const [email, setEmail] = useState<string | undefined>(undefined);
-    const [emailErrorMessage, setEmailErrorMessage] = useState<
-        string | undefined
-    >(undefined);
+    const [email, setEmail] = useState<string>("");
+    const [errors, setErrors] = useState<
+        FieldErrors<{ email?: string; feedback: string }>
+    >({});
+
     const { isPending, mutate: createFeedback } = useCreateFeedback({
         onError,
         onSuccess,
@@ -45,28 +40,25 @@ const useFeedback = (options?: UseFeedbackOptions) => {
     };
 
     const handleSave = async () => {
-        const feedbackValidationState = validate(feedbackValidator, feedback);
-        setFeedbackErrorMessage(feedbackValidationState?.firstError);
-        const emailValidationState = validate(emailValidator, email);
-        if (!isEmpty(email)) {
-            setEmailErrorMessage(emailValidationState?.firstError);
-        }
+        const result = validate(feedbackFormValidator, { email, feedback });
+        const errors = getFieldErrors(result);
+        setErrors(errors);
 
-        if (
-            feedbackValidationState != null ||
-            (!isEmpty(email) && emailValidationState != null)
-        ) {
+        if (!result.success) {
             return;
         }
 
-        createFeedback({ board_slug: boardSlug, email, feedback });
+        createFeedback({
+            board_slug: boardSlug,
+            email: result.data.email,
+            feedback: result.data.feedback,
+        });
     };
 
     return {
         email,
-        emailErrorMessage,
+        errors,
         feedback,
-        feedbackErrorMessage,
         handleEmailChange,
         handleEmailClear,
         handleFeedbackChange,

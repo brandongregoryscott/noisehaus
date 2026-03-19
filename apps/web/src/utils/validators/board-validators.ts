@@ -1,23 +1,22 @@
-const nameValidator = {
-    length: {
-        checkValidity: (value: string | undefined) =>
-            value !== undefined && value.length > 0,
-        errorMessage: "Name must be at least 1 character long",
-    },
-};
+import { z } from "zod";
 
-const slugValidator = {
-    case: {
-        checkValidity: (value: string | undefined) =>
-            value !== undefined && !/[^a-z0-9\-]+/g.test(value),
-        errorMessage:
-            "Slug must contain only lowercase letters, numbers, and hyphens",
-    },
-    length: {
-        checkValidity: (value: string | undefined) =>
-            value !== undefined && value.length >= 6,
-        errorMessage: "Slug must be 6 characters or longer",
-    },
-};
+const nameValidator = z
+    .string()
+    .trim()
+    .min(1, "Name must be at least 1 character long");
 
-export { nameValidator, slugValidator };
+const slugValidator = z
+    .string()
+    .trim()
+    .regex(
+        /^[a-z0-9-]*$/,
+        "Slug must contain only lowercase letters, numbers, and hyphens"
+    )
+    .min(6, "Slug must be 6 characters or longer");
+
+const boardValidator = z.object({
+    name: nameValidator,
+    slug: slugValidator,
+});
+
+export { boardValidator, nameValidator, slugValidator };

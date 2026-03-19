@@ -1,6 +1,5 @@
 import type { ApiError } from "common";
-import { useQueryClient } from "@tanstack/react-query";
-import { noop } from "lodash-es";
+import { first } from "lodash-es";
 import React, { useMemo } from "react";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
@@ -48,9 +47,8 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
 
     const {
         email,
-        emailErrorMessage,
+        errors,
         feedback,
-        feedbackErrorMessage,
         handleEmailChange,
         handleEmailClear,
         handleFeedbackChange,
@@ -79,7 +77,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
                 </span>
                 <Field fullWidth={true} label="Board Name">
                     <Input
-                        errorMessage={emailErrorMessage}
+                        errorMessage={first(errors.email)}
                         onChange={handleEmailChange}
                         onClear={handleEmailClear}
                         placeholder="Email address"
@@ -90,7 +88,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
                 </Field>
                 <Field fullWidth={true} label="Comment">
                     <Textarea
-                        errorMessage={feedbackErrorMessage}
+                        errorMessage={first(errors.feedback)}
                         onChange={handleFeedbackChange}
                         onClear={handleFeedbackClear}
                         placeholder={placeholder}

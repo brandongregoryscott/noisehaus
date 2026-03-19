@@ -2,8 +2,9 @@ import type { Emoji } from "common";
 import type { FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { MAX_FILE_SIZE_IN_BYTES, getEmojiByColonCode } from "common";
-import { isEmpty } from "lodash-es";
+import { first, isEmpty } from "lodash-es";
 import { useState } from "react";
+import type { FieldErrors } from "@/utils/validation";
 import { Box } from "@/components/box";
 import { Button } from "@/components/button";
 import { Column } from "@/components/column";
@@ -21,12 +22,9 @@ import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useCreateContext } from "@/hooks/use-create-context";
 import { Routes } from "@/routes";
 import { formatSize } from "@/utils/number-utils";
-import { validate } from "@/utils/validation";
-import { nameValidator } from "@/utils/validators/board-file-validators";
-import {
-    nameValidator as boardNameValidator,
-    slugValidator as boardSlugValidator,
-} from "@/utils/validators/board-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { boardFileValidator } from "@/utils/validators/board-file-validators";
+import { boardValidator } from "@/utils/validators/board-validators";
 
 const CreateBoardFileForm: React.FC = () => {
     const navigate = useNavigate();
@@ -41,15 +39,13 @@ const CreateBoardFileForm: React.FC = () => {
         setFileDisplayName,
         setFileEmoji,
     } = useCreateContext();
-    const [nameErrorMessage, setNameErrorMessage] = useState<
-        string | undefined
-    >(undefined);
-    const [fileErrorMessage, setFileErrorMessage] = useState<
-        string | undefined
-    >(undefined);
-    const hasValidBoard =
-        validate(boardNameValidator, boardName) === undefined &&
-        validate(boardSlugValidator, boardSlug) === undefined;
+    const [errors, setErrors] = useState<
+        FieldErrors<{ file: File; name: string }>
+    >({});
+    const hasValidBoard = validate(boardValidator, {
+        name: boardName,
+        slug: boardSlug,
+    }).success;
     const hasPartialBoard =
         (!isEmpty(boardName) || !isEmpty(boardSlug)) && !hasValidBoard;
 
@@ -65,36 +61,24 @@ const CreateBoardFileForm: React.FC = () => {
 
     const handleNameChange = async (event: FormEvent<HTMLInputElement>) => {
         const displayName = (event.target as HTMLInputElement).value;
-        const validationState = validate(nameValidator, displayName);
-        setNameErrorMessage(validationState?.firstError);
         setFileDisplayName(displayName);
-    };
-
-    const handleNameInput = async (event: FormEvent<HTMLInputElement>) => {
-        const displayName = (event.target as HTMLInputElement).value;
-        setFileDisplayName(displayName);
+        setErrors((prevErrors) => ({ ...prevErrors, name: undefined }));
     };
 
     const handleFileChange = async (file: File | null | undefined) => {
         setFile(file ?? null);
-        setFileErrorMessage(undefined);
+        setErrors((prevErrors) => ({ ...prevErrors, file: undefined }));
     };
 
     const handleNext = () => {
-        let hasError = false;
-        if (file == null) {
-            setFileErrorMessage("File is required");
-            hasError = true;
-        }
+        const result = validate(boardFileValidator, {
+            file,
+            name: fileDisplayName,
+        });
+        const errors = getFieldErrors(result);
+        setErrors(errors);
 
-        const nameValidationState = validate(nameValidator, fileDisplayName);
-
-        if (nameValidationState !== undefined) {
-            hasError = true;
-            setNameErrorMessage(nameValidationState?.firstError);
-        }
-
-        if (hasError) {
+        if (!result.success) {
             return;
         }
 
@@ -134,10 +118,9 @@ const CreateBoardFileForm: React.FC = () => {
                 }}>
                 <Field fullWidth={true} label="Sound Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
-                        onInput={handleNameInput}
                         placeholder="Sound Name"
                         showClearAffordance={true}
                         value={fileDisplayName}
@@ -171,7 +154,7 @@ const CreateBoardFileForm: React.FC = () => {
                         </>
                     ) : (
                         <FileUpload
-                            errorMessage={fileErrorMessage}
+                            errorMessage={first(errors.file)}
                             onChange={handleFileChange}
                             value={file ?? undefined}
                         />

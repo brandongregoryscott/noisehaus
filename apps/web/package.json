@@ -8,7 +8,8 @@
         "lodash-es": "4.17.23",
         "radix-ui": "1.4.3",
         "react": "18.2.0",
-        "react-dom": "18.2.0"
+        "react-dom": "18.2.0",
+        "zod": "3.24.2"
     },
     "devDependencies": {
         "@vitejs/plugin-react": "4.4.1",
@@ -21,7 +22,8 @@
         "serve": "14.2.5",
         "tsconfig": "*",
         "typescript": "5.9.3",
-        "vite": "7.3.1"
+        "vite": "7.3.1",
+        "vitest": "4.0.18"
     },
     "overrides": {
         "react": "18.2.0",
@@ -35,7 +37,9 @@
         "dev": "vite dev --port 3000",
         "start": "serve -s dist/client",
         "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
-        "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix"
+        "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "version": "1.0.0"
 }

@@ -47,8 +47,7 @@ describe("FeedbackStore", () => {
             getSupabaseQueryCalls()
                 .filter(
                     (call) =>
-                        call.table === "feedback" &&
-                        call.method === "insert"
+                        call.table === "feedback" && call.method === "insert"
                 )
                 .map((call) => call.args[0])
         ).toEqual([
@@ -82,8 +81,7 @@ describe("FeedbackStore", () => {
             getSupabaseQueryCalls()
                 .filter(
                     (call) =>
-                        call.table === "feedback" &&
-                        call.method === "insert"
+                        call.table === "feedback" && call.method === "insert"
                 )
                 .map((call) => call.args[0])
         ).toEqual([{ email: "b@example.com", feedback: "Thanks" }]);
@@ -111,8 +109,7 @@ describe("FeedbackStore", () => {
             getSupabaseQueryCalls()
                 .filter(
                     (call) =>
-                        call.table === "feedback" &&
-                        call.method === "insert"
+                        call.table === "feedback" && call.method === "insert"
                 )
                 .map((call) => call.args[0])
         ).toEqual([{ email: "c@example.com", feedback: "Neat" }]);

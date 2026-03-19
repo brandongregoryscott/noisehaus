@@ -1,9 +1,13 @@
-const nameValidator = {
-    length: {
-        checkValidity: (value: string | undefined) =>
-            value !== undefined && value.length > 0,
-        errorMessage: "Name must be at least 1 character long",
-    },
-};
+import { z } from "zod";
 
-export { nameValidator };
+const nameValidator = z
+    .string()
+    .trim()
+    .min(1, "Name must be at least 1 character long");
+
+const boardFileValidator = z.object({
+    file: z.custom<File>((value) => value instanceof File, "File is required"),
+    name: nameValidator,
+});
+
+export { boardFileValidator, nameValidator };

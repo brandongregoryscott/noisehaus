@@ -2,8 +2,10 @@ import type { Emoji } from "common";
 import type { FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LIST_BOARD_FILE_ROUTE } from "common";
+import { first } from "lodash-es";
 import { useState } from "react";
 import type { CreateBoardFileOptions } from "@/hooks/use-create-board-file";
+import type { FieldErrors } from "@/utils/validation";
 import { Button } from "@/components/button";
 import { CoolButton } from "@/components/cool-button";
 import { EmojiSelect } from "@/components/emoji-select";
@@ -20,8 +22,8 @@ import {
 } from "@/components/responsive-dialog";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useCreateBoardFile } from "@/hooks/use-create-board-file";
-import { validate } from "@/utils/validation";
-import { nameValidator } from "@/utils/validators/board-file-validators";
+import { getFieldErrors, validate } from "@/utils/validation";
+import { boardFileValidator } from "@/utils/validators/board-file-validators";
 
 type CreateBoardFileDialogProps = {
     boardSlug: string;
@@ -49,19 +51,23 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
     });
 
     const [name, setName] = useState<string>("");
-    const [nameErrorMessage, setNameErrorMessage] = useState<
-        string | undefined
-    >(undefined);
+    const [errors, setErrors] = useState<
+        FieldErrors<{ file: File; name: string }>
+    >({});
     const [emoji, setEmoji] = useState<Emoji | undefined>(undefined);
     const [file, setFile] = useState<File | null | undefined>(undefined);
-    const [fileErrorMessage, setFileErrorMessage] = useState<
-        string | undefined
-    >(undefined);
     const handleNameChange = async (event: FormEvent<HTMLInputElement>) => {
         const name = (event.target as HTMLInputElement).value;
-        const validationState = validate(nameValidator, name);
+        const result = validate(boardFileValidator, {
+            file: file ?? null,
+            name,
+        });
+        const errors = getFieldErrors(result);
 
-        setNameErrorMessage(validationState?.firstError);
+        setErrors((currentErrors) => ({
+            ...currentErrors,
+            name: errors.name,
+        }));
         setName(name);
     };
 
@@ -73,21 +79,21 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
         setEmoji(undefined);
     };
 
+    const handleFileChange = (file: File | null | undefined) => {
+        setFile(file ?? undefined);
+        setErrors((currentErrors) => ({ ...currentErrors, file: undefined }));
+    };
+
     const handleSave = () => {
-        let hasError = false;
-        if (file == null) {
-            setFileErrorMessage("File is required");
-            hasError = true;
-        }
+        const result = validate(boardFileValidator, {
+            file: file ?? null,
+            name,
+        });
+        const errors = getFieldErrors(result);
 
-        const nameValidationState = validate(nameValidator, name);
+        setErrors(errors);
 
-        if (nameValidationState !== undefined) {
-            hasError = true;
-            setNameErrorMessage(nameValidationState.firstError);
-        }
-
-        if (hasError) {
+        if (errors.name != null || errors.file != null) {
             return;
         }
 
@@ -109,7 +115,7 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
             <ResponsiveDialogBody css={{ rowGap: 24 }}>
                 <Field fullWidth={true} label="Sound Name">
                     <Input
-                        errorMessage={nameErrorMessage}
+                        errorMessage={first(errors.name)}
                         onChange={handleNameChange}
                         onClear={handleNameClear}
                         placeholder="Sound Name"
@@ -127,8 +133,8 @@ const CreateBoardFileDialog: React.FC<CreateBoardFileDialogProps> = (props) => {
                 </Field>
                 <Field fullWidth={true}>
                     <FileUpload
-                        errorMessage={fileErrorMessage}
-                        onChange={setFile}
+                        errorMessage={first(errors.file)}
+                        onChange={handleFileChange}
                         value={file ?? undefined}
                     />
                 </Field>
