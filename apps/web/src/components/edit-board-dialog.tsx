@@ -52,17 +52,26 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
         });
     };
 
-    const handleSuccess = () => {
-        client.invalidateQueries({
-            queryKey: [GET_BOARD_ROUTE],
-        });
+    const handleSuccess = async (updatedBoard: Board) => {
+        const nextSlug = updatedBoard.slug;
 
-        if (slug !== initialSlug) {
+        if (nextSlug !== initialSlug) {
+            client.removeQueries({
+                queryKey: [GET_BOARD_ROUTE, initialSlug],
+            });
+            client.setQueryData([GET_BOARD_ROUTE, nextSlug], updatedBoard);
+
             navigate({
-                params: { slug, token },
+                params: { slug: nextSlug, token },
                 to: Routes.BoardByToken,
             });
+            onClose();
+            return;
         }
+
+        await client.invalidateQueries({
+            queryKey: [GET_BOARD_ROUTE],
+        });
 
         onClose();
     };
