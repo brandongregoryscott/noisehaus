@@ -172,25 +172,25 @@ export type Database = {
         Row: {
           board_id: string | null
           board_slug: string | null
+          comment: string
           created_at: string
           email: string | null
-          feedback: string
           id: string
         }
         Insert: {
           board_id?: string | null
           board_slug?: string | null
+          comment: string
           created_at?: string
           email?: string | null
-          feedback: string
           id?: string
         }
         Update: {
           board_id?: string | null
           board_slug?: string | null
+          comment?: string
           created_at?: string
           email?: string | null
-          feedback?: string
           id?: string
         }
         Relationships: [
