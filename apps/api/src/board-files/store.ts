@@ -1,60 +1,58 @@
 import type { BoardFile, PresignedBoardFile } from "common";
 import { MAXIMUM_BOARD_SIZE_IN_BYTES } from "common";
-import { isEmpty, keyBy, sumBy } from "lodash-es";
+import { isEmpty, sumBy } from "lodash-es";
 import type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
-    GetBoardFileSizeResult,
     ListBoardFilesByTokenOptions,
     UpdateBoardFileOptions,
     UnsafeCreateOptions,
 } from "@/board-files/types";
 import { BoardsStore } from "@/boards/store";
-import { StorageStore } from "@/storage/store";
-import { SupabaseClient } from "@/supabase-client";
-import { NotFoundError, ValidationError } from "@/utilities/errors";
+import { PocketBaseClient } from "@/pocketbase-client";
+import {
+    NotFoundError,
+    UnexpectedNullError,
+    ValidationError,
+} from "@/utilities/errors";
 import { formatFileSize } from "@/utilities/file-utilities";
+
+type BoardFileRecord = {
+    boardId: string;
+    createdAt: string;
+    displayName: string;
+    emoji: string;
+    file?: string;
+    id: string;
+    position: number;
+    size: number;
+    updatedAt: string;
+};
+
+const BOARD_FILE_COLLECTION = "boardFiles";
 
 const bulkInsert = async (
     options: BulkCreateBoardFileOptions
 ): Promise<BoardFile[]> => {
     const { boardSlug, displayNames, emojis, files, token } = options;
-    const board = await BoardsStore.getByToken({
-        slug: boardSlug,
-        token,
-    });
-    const { id: boardId } = board;
+    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
 
     await BoardFilesStore.unsafe__verifyRemainingSize(
-        boardId,
+        board.id,
         sumBy(files, (file) => file.size)
     );
-    const fileResults = await Promise.all(
-        files.map(async (file, index) => {
-            const fileObject = await StorageStore.unsafe__create({
-                boardId,
-                file,
-            });
-            return { file, fileObject, index };
-        })
-    );
-    const boardFiles = await Promise.all(
-        fileResults.map((fileResult) => {
-            const { file, fileObject, index } = fileResult;
-            const displayName = displayNames[index];
-            const emoji = emojis[index];
-            return unsafe__create({
-                boardId,
-                boardSlug,
-                displayName,
-                emoji,
-                file,
-                fileObject,
-            });
-        })
-    );
 
-    return boardFiles;
+    return Promise.all(
+        files.map((file, index) =>
+            unsafe__create({
+                boardId: board.id,
+                boardSlug,
+                displayName: displayNames[index],
+                emoji: emojis[index],
+                file,
+            })
+        )
+    );
 };
 
 const _delete = async (
@@ -62,43 +60,29 @@ const _delete = async (
     boardSlug: string,
     token: string
 ): Promise<true> => {
-    const board = await BoardsStore.getByToken({
-        slug: boardSlug,
-        token,
-    });
+    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
     await unsafe__delete(id, board.id);
     return true;
 };
 
 const deleteAll = async (boardSlug: string, token: string): Promise<true> => {
-    const board = await BoardsStore.getByToken({
-        slug: boardSlug,
-        token,
-    });
+    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
     return unsafe__deleteAllByBoardId(board.id);
 };
 
 const insert = async (options: CreateBoardFileOptions): Promise<BoardFile> => {
     const { boardSlug, displayName, emoji, file, token } = options;
-    const board = await BoardsStore.getByToken({
-        slug: boardSlug,
-        token,
-    });
-    const { id: boardId } = board;
+    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
 
-    await BoardFilesStore.unsafe__verifyRemainingSize(boardId, file.size);
+    await BoardFilesStore.unsafe__verifyRemainingSize(board.id, file.size);
 
-    const fileObject = await StorageStore.unsafe__create({ boardId, file });
-    const boardFile = await unsafe__create({
-        boardId,
+    return unsafe__create({
+        boardId: board.id,
         boardSlug,
         displayName,
         emoji,
         file,
-        fileObject,
     });
-
-    return boardFile;
 };
 
 const getByIdBoardSlugAndToken = async (
@@ -107,7 +91,7 @@ const getByIdBoardSlugAndToken = async (
     token: string
 ): Promise<BoardFile> => {
     const [boardFile] = await Promise.all([
-        unsafe__getById(id),
+        getById(id),
         BoardsStore.authorizeWritePermissionOrThrow({ slug: boardSlug, token }),
     ]);
 
@@ -121,14 +105,6 @@ const getById = async (id: string): Promise<BoardFile> => {
     }
 
     return boardFile;
-};
-
-const getSizeByBoardSlugAndToken = async (
-    boardSlug: string,
-    token: string
-): Promise<GetBoardFileSizeResult> => {
-    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
-    return unsafe__getSizeByBoardId(board.id);
 };
 
 const listByBoardSlug = async (
@@ -148,14 +124,22 @@ const listByToken = async (
 const unsafe__listWithPresignedUrls = async (
     boardId: string
 ): Promise<PresignedBoardFile[]> => {
-    const boardFiles = await unsafe__listByBoardId(boardId);
-    const fileObjects =
-        await StorageStore.unsafe__listByBoardIdWithPresignedUrl(boardId);
-    const fileObjectsMap = keyBy(fileObjects, "id");
+    const boardFiles = await unsafe__listRecordsByBoardId(boardId);
+    const token = await PocketBaseClient.getFileToken();
 
     return boardFiles.map((boardFile) => {
-        const signedUrl = fileObjectsMap[boardFile.id].signedUrl;
-        return { ...boardFile, signedUrl };
+        if (isEmpty(boardFile.file)) {
+            throw new UnexpectedNullError("file");
+        }
+
+        const signedUrl = PocketBaseClient.getFileUrl(
+            BOARD_FILE_COLLECTION,
+            boardFile.id,
+            boardFile.file!,
+            token
+        );
+
+        return { ...toBoardFile(boardFile), signedUrl };
     });
 };
 
@@ -163,125 +147,113 @@ const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
     const { boardSlug, displayName, emoji, file, id, token } = options;
     const boardFile = await getByIdBoardSlugAndToken(id, boardSlug, token);
 
-    let updatedBoardFile = {};
+    let updatedBoardFile: Record<string, unknown> = {};
     if (!isEmpty(displayName)) {
-        updatedBoardFile = { ...updatedBoardFile, display_name: displayName! };
+        updatedBoardFile = { ...updatedBoardFile, displayName: displayName! };
     }
 
     if (!isEmpty(emoji)) {
         updatedBoardFile = {
             ...updatedBoardFile,
-            emoji: emoji === "null" ? null : emoji!,
+            emoji: emoji === "null" ? "" : emoji!,
         };
     }
 
     if (file !== undefined) {
         const additionalSizeInBytes = Math.max(file.size - boardFile.size, 0);
         await BoardFilesStore.unsafe__verifyRemainingSize(
-            boardFile.board_id,
+            boardFile.boardId,
             additionalSizeInBytes
         );
 
-        updatedBoardFile = { ...updatedBoardFile, size: file.size };
-        const [{ data }] = await Promise.all([
-            table()
-                .update(updatedBoardFile)
-                .eq("id", id)
-                .throwOnError()
-                .select("*")
-                .single(),
-            StorageStore.unsafe__replace({
-                boardId: boardFile.board_id,
-                file,
-                id,
-            }),
-        ]);
-        return data!;
+        const formData = toFormData({
+            ...updatedBoardFile,
+            file,
+            size: file.size,
+        });
+        const record = await PocketBaseClient.updateRecord<BoardFileRecord>(
+            BOARD_FILE_COLLECTION,
+            id,
+            formData
+        );
+        return toBoardFile(record);
     }
 
-    const { data } = await table()
-        .update(updatedBoardFile)
-        .eq("id", id)
-        .throwOnError()
-        .select("*")
-        .single();
+    const record = await PocketBaseClient.updateRecord<BoardFileRecord>(
+        BOARD_FILE_COLLECTION,
+        id,
+        updatedBoardFile
+    );
 
-    return data!;
+    return toBoardFile(record);
 };
 
 const unsafe__create = async (
     options: UnsafeCreateOptions
 ): Promise<BoardFile> => {
-    const { boardId, boardSlug, displayName, emoji, file, fileObject } =
-        options;
-    const { data } = await table()
-        .insert({
-            board_id: boardId,
-            board_slug: boardSlug,
-            display_name: displayName,
-            // The frontend should send through a literal "null" string if no emoji was selected
-            emoji: emoji != null && emoji !== "null" ? emoji : undefined,
-            id: fileObject.id,
+    const { boardId, displayName, emoji, file } = options;
+    const record = await PocketBaseClient.createRecord<BoardFileRecord>(
+        BOARD_FILE_COLLECTION,
+        toFormData({
+            boardId,
+            displayName,
+            emoji: emoji != null && emoji !== "null" ? emoji : "",
+            file,
             size: file.size,
         })
-        .throwOnError()
-        .select("*")
-        .single();
+    );
 
-    return data!;
+    return toBoardFile(record);
 };
 
-const unsafe__delete = async (id: string, boardId: string): Promise<true> => {
-    await StorageStore.unsafe__delete(id, boardId);
+const unsafe__delete = async (id: string, _boardId: string): Promise<true> => {
+    await PocketBaseClient.deleteRecord(BOARD_FILE_COLLECTION, id);
     return true;
 };
 
 const unsafe__deleteAllByBoardId = async (boardId: string): Promise<true> => {
-    await StorageStore.unsafe__deleteAllByBoardId(boardId);
+    const records = await unsafe__listRecordsByBoardId(boardId);
+    await Promise.all(
+        records.map((record) =>
+            PocketBaseClient.deleteRecord(BOARD_FILE_COLLECTION, record.id)
+        )
+    );
     return true;
 };
 
-const unsafe__getById = async (id: string): Promise<BoardFile> => {
-    const { data } = await table()
-        .select("*")
-        .eq("id", id)
-        .throwOnError()
-        .maybeSingle();
-    return data!;
-};
+const unsafe__getById = async (id: string): Promise<BoardFile | null> => {
+    const record =
+        await PocketBaseClient.getFirstRecordByFilter<BoardFileRecord>(
+            BOARD_FILE_COLLECTION,
+            `id = ${PocketBaseClient.escapeFilterValue(id)}`
+        );
 
-const unsafe__getSizeByBoardId = async (
-    boardId: string
-): Promise<GetBoardFileSizeResult> => {
-    const boardFiles = await unsafe__listByBoardId(boardId);
-    const { length: count } = boardFiles;
-    const sizeInBytes = sumBy(boardFiles, (boardFile) => boardFile.size);
-    return {
-        count,
-        remainingSizeInBytes: Math.max(
-            MAXIMUM_BOARD_SIZE_IN_BYTES - sizeInBytes,
-            0
-        ),
-        sizeInBytes,
-    };
+    return record == null ? null : toBoardFile(record);
 };
 
 const unsafe__listByBoardId = async (boardId: string): Promise<BoardFile[]> => {
-    const { data } = await table()
-        .select("*")
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true })
-        .throwOnError()
-        .eq("board_id", boardId);
-
-    return data ?? [];
+    const records = await unsafe__listRecordsByBoardId(boardId);
+    return records.map(toBoardFile);
 };
+
+const unsafe__listRecordsByBoardId = async (
+    boardId: string
+): Promise<BoardFileRecord[]> =>
+    PocketBaseClient.listRecords<BoardFileRecord>(BOARD_FILE_COLLECTION, {
+        filter: `boardId = ${PocketBaseClient.escapeFilterValue(boardId)}`,
+        sort: "position,createdAt",
+    });
 
 const unsafe__verifyRemainingSize = async (
     boardId: string,
     incomingSizeInBytes: number
 ): Promise<void> => {
-    const { remainingSizeInBytes } = await unsafe__getSizeByBoardId(boardId);
+    const boardFiles = await unsafe__listByBoardId(boardId);
+    const sizeInBytes = sumBy(boardFiles, (boardFile) => boardFile.size);
+    const remainingSizeInBytes = Math.max(
+        MAXIMUM_BOARD_SIZE_IN_BYTES - sizeInBytes,
+        0
+    );
     if (remainingSizeInBytes < incomingSizeInBytes) {
         throw new ValidationError(
             `The file(s) provided exceed the remaining size capacity for the board (${formatFileSize(
@@ -291,20 +263,54 @@ const unsafe__verifyRemainingSize = async (
     }
 };
 
-const table = () => SupabaseClient.from("board_file");
+const toFormData = (input: Record<string, unknown>): FormData => {
+    const formData = new FormData();
+    Object.entries(input).forEach(([key, value]) => {
+        if (value == null) {
+            return;
+        }
+
+        if (
+            key === "file" &&
+            typeof value === "object" &&
+            value != null &&
+            "buffer" in value
+        ) {
+            const uploadedFile = value as UnsafeCreateOptions["file"];
+            const blob = new Blob([new Uint8Array(uploadedFile.buffer)], {
+                type: uploadedFile.mimetype,
+            });
+            formData.append(key, blob, uploadedFile.originalname);
+            return;
+        }
+
+        formData.append(key, `${value}`);
+    });
+
+    return formData;
+};
+
+const toBoardFile = (record: BoardFileRecord): BoardFile => ({
+    boardId: record.boardId,
+    createdAt: record.createdAt,
+    displayName: record.displayName,
+    emoji: isEmpty(record.emoji) ? null : record.emoji,
+    id: record.id,
+    position: record.position || null,
+    size: record.size,
+    updatedAt: record.updatedAt,
+});
 
 const BoardFilesStore = {
     bulkInsert,
     delete: _delete,
     deleteAll,
     getById,
-    getSizeByBoardSlugAndToken,
     insert,
     listByBoardSlug,
     listByToken,
-    table,
+    unsafe__deleteAllByBoardId,
     unsafe__getById,
-    unsafe__getSizeByBoardId,
     unsafe__verifyRemainingSize,
     update,
 };

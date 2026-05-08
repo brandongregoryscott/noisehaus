@@ -50,7 +50,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
     const {
         name: initialName,
         slug: initialSlug,
-        view_permission: initialViewPermission,
+        viewPermission: initialViewPermission,
     } = board;
 
     const handleAddClick = () => {
@@ -186,6 +186,7 @@ const EditBoardForm: React.FC<EditBoardFormProps> = (props) => {
                 <Field fullWidth={true} label="Sounds">
                     <BoardFileTable
                         boardFiles={boardFiles}
+                        boardSlug={board.slug}
                         onDelete={handleDeleteBoardFile}
                         token={token}
                     />

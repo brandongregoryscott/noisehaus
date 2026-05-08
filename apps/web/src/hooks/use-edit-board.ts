@@ -117,7 +117,7 @@ const useEditBoard = (options: UseEditBoardOptions): UseEditBoardResult => {
             name: result.data.name,
             slug: result.data.slug,
             token,
-            view_permission: viewPermission,
+            viewPermission,
         });
     };
 

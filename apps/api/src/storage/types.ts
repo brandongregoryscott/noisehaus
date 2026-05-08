@@ -1,5 +1,9 @@
-import type { FileObject } from "@supabase/storage-js";
 import type { Readable } from "stream";
+
+type FileObject = {
+    id: string;
+    name: string;
+};
 
 type CreateObjectOptions = {
     boardId: string;
@@ -55,6 +59,7 @@ type GetPresignedUrlsResult = {
 
 export type {
     CreateObjectOptions,
+    FileObject,
     GetPresignedUrlsResult,
     MulterFile,
     PresignedFileObject,

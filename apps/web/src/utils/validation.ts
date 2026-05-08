@@ -1,8 +1,8 @@
 import type { z } from "zod";
 
-type ValidationResult<TValue> = z.SafeParseReturnType<unknown, TValue>;
+type ValidationResult<TValue> = z.ZodSafeParseResult<TValue>;
 
-type FieldErrors<TValue> = z.typeToFlattenedError<TValue>["fieldErrors"];
+type FieldErrors<TValue> = z.ZodFlattenedError<TValue>["fieldErrors"];
 
 const validate = <TSchema extends z.ZodTypeAny>(
     schema: TSchema,
@@ -13,7 +13,7 @@ const getFieldErrors = <TValue>(
     result: ValidationResult<TValue>
 ): FieldErrors<TValue> => {
     if (result.success) {
-        return {} as z.typeToFlattenedError<TValue>["fieldErrors"];
+        return {} as z.ZodFlattenedError<TValue>["fieldErrors"];
     }
 
     return result.error.flatten().fieldErrors;

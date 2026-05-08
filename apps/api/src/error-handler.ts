@@ -2,10 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 import { ErrorName, isNotFoundError } from "common";
 import { isDevelopment } from "@/utilities/environment";
 import {
+    ValidationError,
     UnhandledError,
-    isPostgrestError,
-    isUniqueConstraintError,
+    getPocketBaseValidationMessage,
+    getPocketBaseUniqueConstraintMessage,
+    isPocketBaseHttpError,
 } from "@/utilities/errors";
+import { logger } from "@/utilities/logger";
 import {
     badRequest,
     conflict,
@@ -13,19 +16,16 @@ import {
     notFound,
 } from "@/utilities/responses";
 
-/**
- * Global error handler for uncaught exceptions, which attempts to properly set the status code
- * and mask any sensitive error data before responding to the client. All four arguments need to be
- * specified, even if not used, for express to register the function as an error handler.
- * @see https://expressjs.com/en/guide/error-handling.html#writing-error-handlers
- */
 const errorHandler = async (
     error: unknown,
-    _request: Request,
+    request: Request,
     response: Response,
     _next: NextFunction
 ) => {
+    const log = request.logger ?? logger;
+
     if (isNotFoundError(error)) {
+        log.error({ err: error }, "not found");
         return notFound(response, error);
     }
 
@@ -34,23 +34,53 @@ const errorHandler = async (
         (error.name === ErrorName.ERROR_MULTER ||
             error.name === ErrorName.ERROR_VALIDATION)
     ) {
+        log.error({ err: error }, "bad request");
         return badRequest(response, error);
     }
 
-    if (isPostgrestError(error)) {
-        if (isUniqueConstraintError(error)) {
+    if (isPocketBaseHttpError(error)) {
+        const uniqueConstraintMessage =
+            getPocketBaseUniqueConstraintMessage(error);
+        if (uniqueConstraintMessage != null) {
+            log.error(
+                {
+                    err: error,
+                    pocketbase: { method: error.method, path: error.path },
+                },
+                "pocketbase unique constraint"
+            );
             return conflict(response, {
-                message: error.details,
+                message: uniqueConstraintMessage,
                 name: ErrorName.ERROR_UNIQUE_CONSTRAINT,
             });
         }
 
+        const validationMessage = getPocketBaseValidationMessage(error);
+        if (validationMessage != null) {
+            log.error(
+                {
+                    err: error,
+                    pocketbase: { method: error.method, path: error.path },
+                },
+                "pocketbase validation error"
+            );
+            return badRequest(response, new ValidationError(validationMessage));
+        }
+
+        log.error(
+            {
+                err: error,
+                pocketbase: { method: error.method, path: error.path },
+            },
+            "pocketbase error"
+        );
         return internalError(
             response,
             isDevelopment() ? error : new UnhandledError()
         );
     }
 
+    log.error({ err: error }, "unhandled error");
     return internalError(response, error);
 };
 

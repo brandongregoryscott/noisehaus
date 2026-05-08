@@ -1,5 +1,5 @@
-import type { FileObject } from "@supabase/storage-js";
 import { isString } from "lodash-es";
+import type { FileObject } from "@/storage/types";
 
 const formatFileSize = (sizeInBytes: number): string => {
     if (sizeInBytes < 1024) {

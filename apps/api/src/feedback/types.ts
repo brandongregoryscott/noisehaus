@@ -1,8 +1,8 @@
-import type { Database } from "common/generated/database";
+import type { Feedback } from "common";
 
-type CreateFeedbackOptions = Pick<
-    Database["public"]["Tables"]["feedback"]["Insert"],
-    "board_id" | "board_slug" | "comment" | "email"
->;
+type CreateFeedbackOptions = Partial<Pick<Feedback, "boardId" | "email">> &
+    Pick<Feedback, "comment"> & {
+        boardSlug?: string;
+    };
 
 export type { CreateFeedbackOptions };

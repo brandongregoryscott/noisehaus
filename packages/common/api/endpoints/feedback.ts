@@ -1,10 +1,10 @@
 import type { Feedback } from "../entities";
 import type { ApiSuccessResponse } from "../responses";
 
-type CreateFeedbackOptions = Partial<
-    Pick<Feedback, "board_id" | "board_slug" | "email">
-> &
-    Pick<Feedback, "comment">;
+type CreateFeedbackOptions = Partial<Pick<Feedback, "email">> &
+    Pick<Feedback, "comment"> & {
+        boardSlug?: string;
+    };
 
 type CreateFeedbackRequest = {
     body: CreateFeedbackOptions;

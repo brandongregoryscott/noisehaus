@@ -37,7 +37,7 @@ type UpdateBoardRequest = {
 };
 
 type UpdateBoardOptions = Partial<
-    Pick<Board, "name" | "slug" | "view_permission">
+    Pick<Board, "name" | "slug" | "viewPermission">
 > &
     Pick<BoardToken, "token">;
 

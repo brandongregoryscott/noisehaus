@@ -19,7 +19,6 @@ const Footer = () => {
                     return match.params.slug;
                 }
             }
-
             return undefined;
         },
     });

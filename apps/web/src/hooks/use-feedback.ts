@@ -49,7 +49,7 @@ const useFeedback = (options?: UseFeedbackOptions) => {
         }
 
         createFeedback({
-            board_slug: boardSlug,
+            boardSlug,
             comment: result.data.comment,
             email: result.data.email,
         });
