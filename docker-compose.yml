@@ -7,7 +7,6 @@ services:
         ports:
             - "3435:8090"
         volumes:
-            - ./pocketbase/migrations:/pb_migrations
             - ./pocketbase/data:/pb_data
 
     api:
