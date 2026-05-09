@@ -28,6 +28,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
+COPY --from=build /app/node_modules node_modules
+COPY --from=build /app/apps/api/node_modules apps/api/node_modules
 COPY --from=build /app/apps/api/dist/server.js dist/server.js
 
 EXPOSE 3434
