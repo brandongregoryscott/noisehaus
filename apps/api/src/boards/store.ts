@@ -148,17 +148,31 @@ const unsafe__getAllPublic = async (): Promise<Board[]> => {
     return records.map(toBoard);
 };
 
-const unsafe__getById = async (id: string): Promise<Board | null> =>
-    PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
+const unsafe__getById = async (id: string): Promise<Board | null> => {
+    const record = await PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
         BOARD_COLLECTION,
         `id = ${PocketBaseClient.escapeFilterValue(id)}`
-    ).then((record) => (record == null ? null : toBoard(record)));
+    );
 
-const unsafe__getBySlug = async (slug: string): Promise<Board | null> =>
-    PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
+    if (record == null) {
+        return null;
+    }
+
+    return toBoard(record);
+};
+
+const unsafe__getBySlug = async (slug: string): Promise<Board | null> => {
+    const record = await PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
         BOARD_COLLECTION,
         `slug = ${PocketBaseClient.escapeFilterValue(slug)}`
-    ).then((record) => (record == null ? null : toBoard(record)));
+    );
+
+    if (record == null) {
+        return null;
+    }
+
+    return toBoard(record);
+};
 
 const unsafe__insert = async (
     input: CreateBoardOptions

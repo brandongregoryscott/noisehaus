@@ -57,9 +57,9 @@ vi.mock("../utilities/string-utils", () => ({
     randomSuffix: vi.fn(),
 }));
 
+import { ViewPermission } from "common";
 import { BoardsStore } from "@/boards/store";
 import { randomSuffix } from "@/utilities/string-utils";
-import { ViewPermission } from "common";
 
 describe("BoardsStore", () => {
     describe("insert", () => {

@@ -6,7 +6,7 @@ const logger = pino({
     redact: ["req.headers.authorization", "req.headers.cookie"],
     timestamp: pino.stdTimeFunctions.isoTime,
     ...(isDevelopment()
-        ? { transport: { target: "pino-pretty", options: { colorize: true } } }
+        ? { transport: { options: { colorize: true }, target: "pino-pretty" } }
         : {}),
 });
 

@@ -296,7 +296,7 @@ const toBoardFile = (record: BoardFileRecord): BoardFile => ({
     displayName: record.displayName,
     emoji: isEmpty(record.emoji) ? null : record.emoji,
     id: record.id,
-    position: record.position || null,
+    position: record.position,
     size: record.size,
     updatedAt: record.updatedAt,
 });

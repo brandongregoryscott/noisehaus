@@ -137,7 +137,7 @@ const request = async <T>(
     }
 
     logger.warn(
-        { method, path, status: response.status, duration: Date.now() - start },
+        { duration: Date.now() - start, method, path, status: response.status },
         "pocketbase request failed"
     );
 

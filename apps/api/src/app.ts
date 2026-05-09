@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { Logger } from "pino";
 import bodyParser from "body-parser";
 import {
     MAX_FILE_COUNT_PER_UPLOAD,
@@ -17,7 +18,6 @@ import {
 import cors from "cors";
 import crypto from "crypto";
 import express from "express";
-import type { Logger } from "pino";
 import { BoardFilesController } from "@/board-files/controller";
 import { BoardsController } from "@/boards/controller";
 import { errorHandler } from "@/error-handler";
@@ -29,6 +29,7 @@ import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
 
 declare global {
     namespace Express {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
         interface Request {
             logger: Logger;
         }
@@ -49,8 +50,8 @@ app.use((request: Request, response: Response, next) => {
         request.logger.info({
             method: request.method,
             path: request.originalUrl,
-            statusCode: response.statusCode,
             responseTime: Date.now() - start,
+            statusCode: response.statusCode,
         });
     });
 
