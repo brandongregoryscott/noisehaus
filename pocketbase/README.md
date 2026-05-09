@@ -58,43 +58,6 @@ npm run db:migrations:collections
 
 After creating/updating migrations, commit the new files in `pocketbase/migrations/`.
 
-## Required collections (managed by native migrations)
-
-### `board`
-
-- `name` (`text`, required, min 1, max 256)
-- `slug` (`text`, required, min 6, max 64, unique)
-- `view_permission` (`select`, required, values: `by_token`, `by_slug`, `public`, default `by_slug`)
-- `deleted_at` (`date`, optional)
-- `updated_at` (`date`, optional)
-
-### `board_token`
-
-- `board_id` (`text`, required)
-- `board_slug` (`text`, required)
-- `token` (`text`, required, min 6, max 8, unique)
-- `deleted_at` (`date`, optional)
-- `updated_at` (`date`, optional)
-
-### `board_file`
-
-- `board_id` (`text`, required)
-- `board_slug` (`text`, required)
-- `display_name` (`text`, required, min 1)
-- `emoji` (`text`, optional)
-- `size` (`number`, required, min 0)
-- `position` (`number`, optional)
-- `sample` (`file`, required, max 1 file)
-- `deleted_at` (`date`, optional)
-- `updated_at` (`date`, optional)
-
-### `feedback`
-
-- `board_id` (`text`, optional)
-- `board_slug` (`text`, optional)
-- `email` (`email`, optional)
-- `comment` (`text`, required)
-
 ## API behavior assumptions
 
 - All collections are accessed only by `apps/api`.

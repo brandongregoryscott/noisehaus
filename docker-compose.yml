@@ -1,6 +1,6 @@
 services:
     pocketbase:
-        image: ghcr.io/muchobien/pocketbase:latest
+        image: ghcr.io/muchobien/pocketbase:0.38
         env_file: apps/api/.env
         command:
             [
@@ -25,7 +25,7 @@ services:
         depends_on:
             - pocketbase
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:3434/healthcheck" ]
+            test: ["CMD", "curl", "-f", "http://localhost:3434/healthcheck"]
             interval: 30s
             timeout: 5s
             retries: 3

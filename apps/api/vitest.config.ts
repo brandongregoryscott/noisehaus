@@ -9,9 +9,6 @@ const config = defineConfig({
             "@": srcPath,
         },
     },
-    test: {
-        setupFiles: ["./src/test/setup.ts"],
-    },
 });
 
 // eslint-disable-next-line collation/no-default-export -- This config needs to be default exported

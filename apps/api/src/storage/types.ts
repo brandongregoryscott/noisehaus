@@ -1,21 +1,5 @@
 import type { Readable } from "stream";
 
-type FileObject = {
-    id: string;
-    name: string;
-};
-
-type CreateObjectOptions = {
-    boardId: string;
-    file: MulterFile;
-};
-
-type ReplaceObjectOptions = {
-    boardId: string;
-    file: MulterFile;
-    id: string;
-};
-
 /**
  * Vendorized version of the File interface defined by Multer, which isn't exported
  */
@@ -49,19 +33,4 @@ type MulterFile = {
     stream: Readable;
 };
 
-type PresignedFileObject = {
-    signedUrl: string;
-} & FileObject;
-
-type GetPresignedUrlsResult = {
-    [path: string]: string;
-};
-
-export type {
-    CreateObjectOptions,
-    FileObject,
-    GetPresignedUrlsResult,
-    MulterFile,
-    PresignedFileObject,
-    ReplaceObjectOptions,
-};
+export type { MulterFile };
