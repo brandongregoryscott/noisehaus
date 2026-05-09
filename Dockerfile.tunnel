@@ -2,4 +2,11 @@ FROM alpine:3.21
 
 RUN apk add --no-cache autossh openssh-client
 
-ENTRYPOINT ["sh", "-c", "cp /root/.ssh/id_ed25519 /tmp/id_ed25519 && chmod 600 /tmp/id_ed25519 && exec autossh -M 0 -o StrictHostKeyChecking=accept-new -i /tmp/id_ed25519 -R noisehaus-api:80:api:3434 tuns.sh"]
+ARG SUBDOMAIN=noisehaus-api
+ARG REMOTE_PORT=80
+ARG LOCAL_HOST=api
+ARG LOCAL_PORT=3434
+
+ENV SUBDOMAIN=$SUBDOMAIN REMOTE_PORT=$REMOTE_PORT LOCAL_HOST=$LOCAL_HOST LOCAL_PORT=$LOCAL_PORT
+
+ENTRYPOINT cp /root/.ssh/id_ed25519 /tmp/id_ed25519 && chmod 600 /tmp/id_ed25519 && exec autossh -M 0 -o StrictHostKeyChecking=accept-new -i /tmp/id_ed25519 -R ${SUBDOMAIN}:${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} tuns.sh
