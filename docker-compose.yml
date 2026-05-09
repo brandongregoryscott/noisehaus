@@ -1,14 +1,9 @@
 services:
     pocketbase:
-        image: ghcr.io/muchobien/pocketbase:0.38
+        build:
+            context: .
+            dockerfile: Dockerfile.pocketbase
         env_file: apps/api/.env
-        command:
-            [
-                "serve",
-                "--http=0.0.0.0:8090",
-                "--dir=/pb_data",
-                "--migrationsDir=/pb_migrations",
-            ]
         ports:
             - "3435:8090"
         volumes:
