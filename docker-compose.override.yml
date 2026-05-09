@@ -1,0 +1,4 @@
+services:
+    pocketbase:
+        volumes:
+            - ./pocketbase/migrations:/pb_migrations
