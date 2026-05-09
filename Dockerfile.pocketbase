@@ -7,6 +7,7 @@ RUN apk add --no-cache curl unzip \
     && unzip /tmp/pb.zip -d /usr/local/bin/ \
     && rm /tmp/pb.zip
 
+COPY pocketbase/migrations /pb_migrations
 COPY pocketbase/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
