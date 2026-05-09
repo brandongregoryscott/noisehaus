@@ -6,7 +6,7 @@ type Board = {
     name: string;
     slug: string;
     updatedAt: string;
-    viewPermission: ViewPermission | string;
+    viewPermission: string | ViewPermission;
 };
 
 type BoardFile = {
