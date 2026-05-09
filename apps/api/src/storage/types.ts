@@ -1,16 +1,4 @@
-import type { FileObject } from "@supabase/storage-js";
 import type { Readable } from "stream";
-
-type CreateObjectOptions = {
-    boardId: string;
-    file: MulterFile;
-};
-
-type ReplaceObjectOptions = {
-    boardId: string;
-    file: MulterFile;
-    id: string;
-};
 
 /**
  * Vendorized version of the File interface defined by Multer, which isn't exported
@@ -45,18 +33,4 @@ type MulterFile = {
     stream: Readable;
 };
 
-type PresignedFileObject = {
-    signedUrl: string;
-} & FileObject;
-
-type GetPresignedUrlsResult = {
-    [path: string]: string;
-};
-
-export type {
-    CreateObjectOptions,
-    GetPresignedUrlsResult,
-    MulterFile,
-    PresignedFileObject,
-    ReplaceObjectOptions,
-};
+export type { MulterFile };

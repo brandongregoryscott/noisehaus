@@ -1,7 +1,7 @@
-import type { PostgrestError } from "@supabase/supabase-js";
 import { ErrorName } from "common";
+import { PocketBaseHttpError } from "@/pocketbase-client";
 
-const UNIQUE_CONSTRAINT_CODE = "23505";
+const UNIQUE_CONSTRAINT_CODE = "validation_not_unique";
 
 class NotFoundError extends Error {
     constructor(message: string) {
@@ -43,30 +43,59 @@ const BOARD_NOT_FOUND_ERROR = new NotFoundError(
     "No board with this slug was found, or you don't have permission to view it."
 );
 
-const isPostgrestError = (error: unknown): error is PostgrestError => {
-    const keys: Array<keyof PostgrestError> = [
-        "code",
-        "hint",
-        "message",
-        "details",
-    ];
+const isPocketBaseUniqueConstraintError = (
+    error: unknown,
+    field: string
+): boolean => {
+    if (!(error instanceof PocketBaseHttpError)) {
+        return false;
+    }
 
-    return (
-        error != null &&
-        typeof error === "object" &&
-        keys.every((key) => key in error)
+    if (error.status !== 400 || error.data == null || typeof error.data !== "object") {
+        return false;
+    }
+
+    const { data } = error.data as { data?: Record<string, { code?: string }> };
+    return data?.[field]?.code === UNIQUE_CONSTRAINT_CODE;
+};
+
+const isPocketBaseHttpError = (error: unknown): error is PocketBaseHttpError =>
+    error instanceof PocketBaseHttpError;
+
+const getPocketBaseUniqueConstraintMessage = (
+    error: PocketBaseHttpError
+): null | string => {
+    if (error.data == null || typeof error.data !== "object") {
+        return null;
+    }
+
+    const { data } = error.data as {
+        data?: Record<string, { code?: string; message?: string }>;
+    };
+    const entry = Object.values(data ?? {}).find(
+        (fieldError) => fieldError.code === UNIQUE_CONSTRAINT_CODE
     );
+
+    return entry?.message ?? null;
 };
 
-const isUniqueConstraintError = (error: PostgrestError): boolean =>
-    error.code === UNIQUE_CONSTRAINT_CODE;
+const getPocketBaseValidationMessage = (
+    error: PocketBaseHttpError
+): null | string => {
+    if (error.status !== 400 || error.data == null || typeof error.data !== "object") {
+        return null;
+    }
 
-export {
-    BOARD_NOT_FOUND_ERROR,
-    isPostgrestError,
-    isUniqueConstraintError,
-    NotFoundError,
-    UnexpectedNullError,
-    UnhandledError,
-    ValidationError,
+    const pbErrorData = error.data as {
+        data?: Record<string, { message?: string }>;
+        message?: string;
+    };
+
+    const fieldMessage = Object.values(pbErrorData.data ?? {}).find(
+        (fieldError) => fieldError.message != null
+    )?.message;
+
+    return fieldMessage ?? pbErrorData.message ?? null;
 };
+
+export { BOARD_NOT_FOUND_ERROR, getPocketBaseUniqueConstraintMessage, getPocketBaseValidationMessage, isPocketBaseHttpError, isPocketBaseUniqueConstraintError, NotFoundError, UnexpectedNullError, UnhandledError, ValidationError };

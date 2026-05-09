@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
+import type { Logger } from "pino";
 import bodyParser from "body-parser";
 import {
     MAX_FILE_COUNT_PER_UPLOAD,
     DELETE_BOARD_FILE_ROUTE,
     LIST_BOARD_FILE_ROUTE,
-    GET_BOARD_FILE_SIZE_ROUTE,
     UPDATE_BOARD_FILE_ROUTE,
     CREATE_BOARD_FILE_ROUTE,
     GET_BOARD_ROUTE,
@@ -16,25 +16,52 @@ import {
     CREATE_FEEDBACK_ROUTE,
 } from "common";
 import cors from "cors";
+import crypto from "crypto";
 import express from "express";
 import { BoardFilesController } from "@/board-files/controller";
 import { BoardsController } from "@/boards/controller";
-import { BoardsStore } from "@/boards/store";
 import { errorHandler } from "@/error-handler";
 import { FeedbackController } from "@/feedback/controller";
+import { PocketBaseClient } from "@/pocketbase-client";
+import { logger } from "@/utilities/logger";
 import { multer } from "@/utilities/multer";
 import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
+
+declare global {
+    namespace Express {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+        interface Request {
+            logger: Logger;
+        }
+    }
+}
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
 
+app.use((request: Request, response: Response, next) => {
+    const start = Date.now();
+    const requestId = crypto.randomUUID().slice(0, 8);
+    request.logger = logger.child({ requestId });
+
+    response.on("finish", () => {
+        request.logger.info({
+            method: request.method,
+            path: request.originalUrl,
+            responseTime: Date.now() - start,
+            statusCode: response.statusCode,
+        });
+    });
+
+    next();
+});
+
 app.get(
     "/healthcheck",
     async (_request: Request, response: Response): Promise<Response> => {
-        // We're pinging Supabase to keep the project online
-        await BoardsStore.table().select("*", { count: "estimated" });
+        await PocketBaseClient.healthcheck();
         return response.json("✅");
     }
 );
@@ -58,7 +85,6 @@ app.put(
 );
 app.get(LIST_BOARD_FILE_ROUTE, BoardFilesController.list);
 app.delete(DELETE_BOARD_FILE_ROUTE, BoardFilesController.delete);
-app.get(GET_BOARD_FILE_SIZE_ROUTE, BoardFilesController.size);
 app.post(CREATE_FEEDBACK_ROUTE, FeedbackController.create);
 
 app.use(errorHandler);

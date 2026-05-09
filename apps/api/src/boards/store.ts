@@ -9,25 +9,31 @@ import type {
 } from "@/boards/types";
 import { BoardFilesStore } from "@/board-files/store";
 import { BoardTokensStore } from "@/board-tokens/store";
-import { SupabaseClient } from "@/supabase-client";
+import { FeedbackStore } from "@/feedback/store";
+import { PocketBaseClient } from "@/pocketbase-client";
 import {
     BOARD_NOT_FOUND_ERROR,
-    isPostgrestError,
-    isUniqueConstraintError,
+    isPocketBaseUniqueConstraintError,
     UnexpectedNullError,
     ValidationError,
 } from "@/utilities/errors";
 import { randomSuffix } from "@/utilities/string-utils";
 
 type InsertOptions = {
-    /**
-     * Attempt to create the board. If a unique constraint error is raised, the creation will be attempted
-     * again with a randomized suffix appended to the original slug.
-     */
     attempt?: number;
 } & CreateBoardOptions;
 
+const BOARD_COLLECTION = "boards";
 const MAX_CREATE_ATTEMPTS = 5;
+
+type BoardRecord = {
+    createdAt: string;
+    id: string;
+    name: string;
+    slug: string;
+    updatedAt: string;
+    viewPermission: string;
+};
 
 const VALID_GET_BY_SLUG_PERMISSIONS = [
     ViewPermission.Public,
@@ -35,11 +41,14 @@ const VALID_GET_BY_SLUG_PERMISSIONS = [
 ];
 
 const _delete = async (slug: string, token: string): Promise<true> => {
-    await authorizeWritePermissionOrThrow({ slug, token });
+    const board = await authorizeWritePermissionOrThrow({ slug, token });
+
     await Promise.all([
-        await BoardFilesStore.deleteAll(slug, token),
-        await unsafe__delete(slug),
+        BoardFilesStore.unsafe__deleteAllByBoardId(board.id),
+        BoardTokensStore.unsafe__deleteAllByBoardId(board.id),
+        FeedbackStore.unsafe__deleteByBoardId(board.id),
     ]);
+    await unsafe__delete(slug);
 
     return true;
 };
@@ -52,7 +61,7 @@ const getBySlug = async (slug: string): Promise<Board> => {
     if (
         board === null ||
         !VALID_GET_BY_SLUG_PERMISSIONS.includes(
-            board.view_permission as ViewPermission
+            board.viewPermission as ViewPermission
         )
     ) {
         throw BOARD_NOT_FOUND_ERROR;
@@ -70,12 +79,16 @@ const getByToken = async (options: GetBoardByTokenOptions): Promise<Board> => {
         throw new ValidationError("An id or slug is required");
     }
 
-    const [board, boardToken] = await Promise.all([
-        hasId ? unsafe__getById(id) : unsafe__getBySlug(slug),
-        hasId
-            ? BoardTokensStore.unsafe__getByBoardIdAndToken(id, token)
-            : BoardTokensStore.unsafe__getByBoardSlugAndToken(slug, token),
-    ]);
+    const board = hasId
+        ? await unsafe__getById(id)
+        : await unsafe__getBySlug(slug);
+    const boardToken =
+        board == null
+            ? null
+            : await BoardTokensStore.unsafe__getByBoardIdAndToken(
+                  board.id,
+                  token
+              );
 
     if (board === null || boardToken === null) {
         throw BOARD_NOT_FOUND_ERROR;
@@ -95,8 +108,7 @@ const insert = async (options: InsertOptions): Promise<CreateBoardResult> => {
         return await unsafe__insert({ name, slug });
     } catch (error) {
         if (
-            isPostgrestError(error) &&
-            isUniqueConstraintError(error) &&
+            isPocketBaseUniqueConstraintError(error, "slug") &&
             attempt < MAX_CREATE_ATTEMPTS
         ) {
             return insert({ ...options, attempt: attempt + 1 });
@@ -114,46 +126,64 @@ const update = async (input: UpdateBoardOptions): Promise<Board> => {
 };
 
 const unsafe__delete = async (slug: string): Promise<void> => {
-    await table().delete().throwOnError().eq("slug", slug);
+    const board = await unsafe__getBySlug(slug);
+    if (board == null) {
+        return;
+    }
+
+    await PocketBaseClient.deleteRecord(BOARD_COLLECTION, board.id);
 };
 
 const unsafe__getAllPublic = async (): Promise<Board[]> => {
-    const { data } = await table()
-        .select("*")
-        .throwOnError()
-        .filter("view_permission", "eq", ViewPermission.Public);
+    const viewPermission = PocketBaseClient.escapeFilterValue(
+        ViewPermission.Public
+    );
+    const records = await PocketBaseClient.listRecords<BoardRecord>(
+        BOARD_COLLECTION,
+        {
+            filter: `viewPermission = ${viewPermission}`,
+        }
+    );
 
-    return data ?? [];
+    return records.map(toBoard);
 };
 
 const unsafe__getById = async (id: string): Promise<Board | null> => {
-    const { data } = await table()
-        .select("*")
-        .throwOnError()
-        .eq("id", id)
-        .maybeSingle();
+    const record = await PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
+        BOARD_COLLECTION,
+        `id = ${PocketBaseClient.escapeFilterValue(id)}`
+    );
 
-    return data;
+    if (record == null) {
+        return null;
+    }
+
+    return toBoard(record);
 };
 
 const unsafe__getBySlug = async (slug: string): Promise<Board | null> => {
-    const { data } = await table()
-        .select("*")
-        .throwOnError()
-        .eq("slug", slug)
-        .maybeSingle();
+    const record = await PocketBaseClient.getFirstRecordByFilter<BoardRecord>(
+        BOARD_COLLECTION,
+        `slug = ${PocketBaseClient.escapeFilterValue(slug)}`
+    );
 
-    return data;
+    if (record == null) {
+        return null;
+    }
+
+    return toBoard(record);
 };
 
 const unsafe__insert = async (
     input: CreateBoardOptions
 ): Promise<CreateBoardResult> => {
-    const { data: board } = await table()
-        .insert(input)
-        .throwOnError()
-        .select("*")
-        .single();
+    const board = await PocketBaseClient.createRecord<BoardRecord>(
+        BOARD_COLLECTION,
+        {
+            ...input,
+            viewPermission: ViewPermission.BySlug,
+        }
+    );
 
     if (board === null) {
         throw new UnexpectedNullError("board");
@@ -168,30 +198,36 @@ const unsafe__insert = async (
         throw new UnexpectedNullError("boardToken");
     }
 
-    return { ...board, token: boardToken.token };
+    return { ...toBoard(board), token: boardToken.token };
 };
 
 const unsafe__update = async (
     input: Omit<UpdateBoardOptions, "token">
 ): Promise<Board> => {
     const { originalSlug, ...updatedBoard } = input;
-    const { data } = await table()
-        .update(updatedBoard)
-        .eq("slug", originalSlug)
-        .throwOnError()
-        .select("*")
-        .single();
+    const existingBoard = await unsafe__getBySlug(originalSlug);
+    if (existingBoard == null) {
+        throw BOARD_NOT_FOUND_ERROR;
+    }
 
-    return data!;
+    const board = await PocketBaseClient.updateRecord<BoardRecord>(
+        BOARD_COLLECTION,
+        existingBoard.id,
+        updatedBoard
+    );
+    return toBoard(board);
 };
 
-/**
- * Alias for the `getByToken` function. This function throws if the provided slug/id does not
- * match the provided token.
- */
 const authorizeWritePermissionOrThrow = getByToken;
 
-const table = () => SupabaseClient.from("board");
+const toBoard = (record: BoardRecord): Board => ({
+    createdAt: record.createdAt,
+    id: record.id,
+    name: record.name,
+    slug: record.slug,
+    updatedAt: record.updatedAt,
+    viewPermission: record.viewPermission,
+});
 
 const BoardsStore = {
     authorizeWritePermissionOrThrow,
@@ -201,9 +237,9 @@ const BoardsStore = {
     getByToken,
     insert,
     MAX_CREATE_ATTEMPTS,
-    table,
     unsafe__delete,
     unsafe__getAllPublic,
+    unsafe__getById,
     unsafe__getBySlug,
     unsafe__insert,
     unsafe__update,

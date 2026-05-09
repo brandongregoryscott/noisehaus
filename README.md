@@ -18,13 +18,13 @@ A web application for storing, playing, and sharing sounds. Create your own boar
 
 This is a monorepo powered by [Turborepo](https://turborepo.dev/) which primarily contains an API and web project.
 
-- [apps/api](./apps/api/) - [ExpressJS](https://expressjs.com/) API server which powers the frontend. [Supabase](https://supabase.com/) is used for the database/ORM and audio file storage.
+- [apps/api](./apps/api/) - [ExpressJS](https://expressjs.com/) API server which powers the frontend. [PocketBase](https://pocketbase.io/) is used for the database and audio file storage.
 - [apps/web](./apps/web/) - React SPA powered by [Tanstack Start](https://tanstack.com/start)
 
 ```sh
-# Copy environment files and fill in their values as needed (see note below about Supabase)
-cp apps/api/.env.sample apps/api.env
-cp apps/web/.env.sample apps/web.env
+# Copy environment files and fill in their values as needed (see note below about PocketBase)
+cp apps/api/.env.sample apps/api/.env
+cp apps/web/.env.sample apps/web/.env
 
 # Ensure you're on the correct node version
 nvm use
@@ -32,8 +32,8 @@ nvm use
 # Install packages
 npm install
 
-# Apply migrations to the remote database
-npm run db:migrate:remote
+# Start PocketBase (apply migrations, seed admin)
+npm run db:start
 
 # Run the development servers for the web app and API
 npm run dev
@@ -41,7 +41,7 @@ npm run dev
 # Now, open http://localhost:3000 in your browser to view the app.
 ```
 
-To run the full stack locally, you'll need to create a free Supabase project and copy the URL and service role key to `apps/api/.env` ([example](./apps/api/.env.sample)). You'll also want to install the [Supabase CLI](https://www.npmjs.com/package/supabase) to easily connect to the project and run migrations. It's installed in the root `package.json`, so you should be able to run `npx supabase` to verify.
+To run the full stack locally, set `POCKETBASE_URL`, `POCKETBASE_SUPERUSER_EMAIL`, and `POCKETBASE_SUPERUSER_PASSWORD` in `apps/api/.env` ([example](./apps/api/.env.sample)). `db:start` uses those credentials to upsert the PocketBase admin account. For full setup details and collection definitions, see `pocketbase/README.md`.
 
 ## Issues
 

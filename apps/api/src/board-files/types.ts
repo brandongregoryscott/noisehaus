@@ -1,4 +1,3 @@
-import type { FileObject } from "@supabase/storage-js";
 import type { GetBoardByTokenOptions } from "@/boards/types";
 import type { MulterFile } from "@/storage/types";
 
@@ -16,23 +15,6 @@ type BulkCreateBoardFileOptions = {
     emojis: string[];
     files: MulterFile[];
     token: string;
-};
-
-type GetBoardFileSizeResult = {
-    /**
-     * Number of files stored in the board's directory
-     */
-    count: number;
-
-    /**
-     * Remaining file size capacity for the board
-     */
-    remainingSizeInBytes: number;
-
-    /**
-     * Total size of all files in the board's directory
-     */
-    sizeInBytes: number;
 };
 
 type ListBoardFilesByTokenOptions = GetBoardByTokenOptions;
@@ -75,13 +57,11 @@ type UnsafeCreateOptions = {
     displayName: string;
     emoji: string | undefined;
     file: MulterFile;
-    fileObject: FileObject;
 };
 
 export type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
-    GetBoardFileSizeResult,
     ListBoardFilesByTokenOptions,
     UnsafeCreateOptions,
     UpdateBoardFileOptions,

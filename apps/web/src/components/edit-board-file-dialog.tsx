@@ -19,14 +19,14 @@ import { useEditBoardFile } from "@/hooks/use-edit-board-file";
 
 type EditBoardFileDialogProps = {
     boardFile: BoardFile;
+    boardSlug: string;
     isOpen: boolean;
     onClose: () => void;
     token: string;
 };
 
 const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
-    const { boardFile, isOpen, onClose, token } = props;
-    const { board_slug: boardSlug } = boardFile;
+    const { boardFile, boardSlug, isOpen, onClose, token } = props;
     const client = useQueryClient();
     const handleSuccess = () => {
         client.invalidateQueries({
@@ -49,7 +49,12 @@ const EditBoardFileDialog: React.FC<EditBoardFileDialogProps> = (props) => {
         isPending,
         name,
         setFile,
-    } = useEditBoardFile({ boardFile, onSuccess: handleSuccess, token });
+    } = useEditBoardFile({
+        boardFile,
+        boardSlug,
+        onSuccess: handleSuccess,
+        token,
+    });
 
     return (
         <ResponsiveDialog isOpen={isOpen} onClose={onClose}>

@@ -32,7 +32,7 @@ const EditBoardDialog: React.FC<EditBoardDialogProps> = (props) => {
     const {
         name: initialName,
         slug: initialSlug,
-        view_permission: initialViewPermission,
+        viewPermission: initialViewPermission,
     } = board;
     const navigate = useNavigate();
     const { openDestructive } = useToast();

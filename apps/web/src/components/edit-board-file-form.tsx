@@ -24,24 +24,21 @@ import { useEditBoardFile } from "@/hooks/use-edit-board-file";
 
 type EditBoardFileFormProps = {
     boardFile: BoardFile;
+    boardSlug: string;
     token: string;
 };
 
 const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
-    const { boardFile, token } = props;
+    const { boardFile, boardSlug, token } = props;
     const breakpoint = useBreakpoint();
     const router = useRouter();
     const client = useQueryClient();
     const handleSuccess = () => {
         client.invalidateQueries({
-            queryKey: [LIST_BOARD_FILE_ROUTE, boardFile.board_slug, token],
+            queryKey: [LIST_BOARD_FILE_ROUTE, boardSlug, token],
         });
         client.invalidateQueries({
-            queryKey: [
-                GET_BOARD_FILE_ROUTE,
-                boardFile.board_slug,
-                boardFile.id,
-            ],
+            queryKey: [GET_BOARD_FILE_ROUTE, boardSlug, boardFile.id],
         });
         router.history.back();
     };
@@ -57,7 +54,7 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         isPending,
         name,
         setFile,
-    } = useEditBoardFile({ boardFile, onSuccess: handleSuccess, token });
+    } = useEditBoardFile({ boardFile, boardSlug, onSuccess: handleSuccess, token });
 
     const handleBack = () => {
         router.history.back();

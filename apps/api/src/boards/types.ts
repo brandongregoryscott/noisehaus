@@ -1,7 +1,6 @@
 import type { Board } from "common";
-import type { Database } from "common/generated/database";
 
-type CreateBoardOptions = Database["public"]["Tables"]["board"]["Insert"];
+type CreateBoardOptions = Pick<Board, "name" | "slug">;
 
 type CreateBoardResult = {
     token: string;
@@ -16,7 +15,7 @@ type UpdateBoardOptions = {
      * Token to authorize the board access with.
      */
     token: string;
-} & Database["public"]["Tables"]["board"]["Update"];
+} & Partial<Pick<Board, "name" | "slug" | "viewPermission">>;
 
 type GetBoardByTokenOptions = {
     /**

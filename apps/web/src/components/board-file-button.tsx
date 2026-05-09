@@ -18,7 +18,7 @@ type AudioElement = {
 
 const BoardFileButton: React.FC<BoardFileButtonProps> = (props) => {
     const { boardFile } = props;
-    const { display_name: displayName, emoji, signedUrl } = boardFile;
+    const { displayName, emoji, signedUrl } = boardFile;
     const unicodeEmoji = emoji == null ? undefined : colonCodeToUnicode(emoji);
     const audioRef = useRef<AudioElement | null>(null);
     const { device } = useAudioContext();

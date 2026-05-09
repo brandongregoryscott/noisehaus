@@ -50,7 +50,7 @@ const BoardsController = {
 
         // If the board is not protected by a token, just return it. This way, users can't brute force
         // their way into figuring out a token that could administrate the board
-        if (board.view_permission !== ViewPermission.ByToken) {
+        if (board.viewPermission !== ViewPermission.ByToken) {
             return ok(response, board);
         }
 

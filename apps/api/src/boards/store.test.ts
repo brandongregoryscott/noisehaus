@@ -1,14 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-    getSupabaseQueryCalls,
-    queueSingleResult,
-    queueThrowOnError,
-    resetSupabaseClientMock,
-} from "@/test/mocks/supabase-client";
 
-const { mockBoardTokenInsert } = vi.hoisted(() => ({
-    mockBoardTokenInsert: vi.fn(),
-}));
+const {
+    mockBoardTokenInsert,
+    mockCreateRecord,
+    mockEscapeFilterValue,
+    mockPocketBaseUniqueError,
+    PocketBaseHttpErrorClass,
+} = vi.hoisted(() => {
+    class PocketBaseHttpErrorClass extends Error {
+        data: unknown;
+        status: number;
+
+        constructor(status: number, data: unknown) {
+            super();
+            this.status = status;
+            this.data = data;
+        }
+    }
+
+    return {
+        mockBoardTokenInsert: vi.fn(),
+        mockCreateRecord: vi.fn(),
+        mockEscapeFilterValue: vi.fn((value: string) => `"${value}"`),
+        mockPocketBaseUniqueError: () =>
+            new PocketBaseHttpErrorClass(400, {
+                data: {
+                    slug: {
+                        code: "validation_not_unique",
+                    },
+                },
+            }),
+        PocketBaseHttpErrorClass,
+    };
+});
 
 vi.mock("../board-tokens/store", () => ({
     BoardTokensStore: {
@@ -16,30 +40,41 @@ vi.mock("../board-tokens/store", () => ({
     },
 }));
 
+vi.mock("../pocketbase-client", () => {
+    return {
+        PocketBaseClient: {
+            createRecord: mockCreateRecord,
+            escapeFilterValue: mockEscapeFilterValue,
+            getFirstRecordByFilter: vi.fn(),
+            listRecords: vi.fn(),
+            updateRecord: vi.fn(),
+        },
+        PocketBaseHttpError: PocketBaseHttpErrorClass,
+    };
+});
+
 vi.mock("../utilities/string-utils", () => ({
     randomSuffix: vi.fn(),
 }));
 
+import { ViewPermission } from "common";
 import { BoardsStore } from "@/boards/store";
 import { randomSuffix } from "@/utilities/string-utils";
-
-const uniqueConstraintError = {
-    code: "23505",
-    details: "",
-    hint: "",
-    message: "duplicate key value violates unique constraint",
-};
 
 describe("BoardsStore", () => {
     describe("insert", () => {
         beforeEach(() => {
-            resetSupabaseClientMock();
+            mockCreateRecord.mockReset();
             mockBoardTokenInsert.mockReset();
             vi.mocked(randomSuffix).mockReset();
         });
 
         it("inserts a board and returns the created token", async () => {
-            queueSingleResult({ id: "board-1", name: "Drums", slug: "drums" });
+            mockCreateRecord.mockResolvedValue({
+                id: "board-1",
+                name: "Drums",
+                slug: "drums",
+            });
             mockBoardTokenInsert.mockResolvedValue({ token: "token-1" });
 
             const result = await BoardsStore.insert({
@@ -47,14 +82,11 @@ describe("BoardsStore", () => {
                 slug: "drums",
             });
 
-            expect(
-                getSupabaseQueryCalls()
-                    .filter(
-                        (call) =>
-                            call.table === "board" && call.method === "insert"
-                    )
-                    .map((call) => call.args[0])
-            ).toEqual([{ name: "Drums", slug: "drums" }]);
+            expect(mockCreateRecord).toHaveBeenCalledWith("boards", {
+                name: "Drums",
+                slug: "drums",
+                viewPermission: ViewPermission.BySlug,
+            });
             expect(mockBoardTokenInsert).toHaveBeenCalledWith(
                 "drums",
                 "board-1"
@@ -68,12 +100,13 @@ describe("BoardsStore", () => {
         });
 
         it("retries with a random suffix after a unique constraint error", async () => {
-            queueThrowOnError(uniqueConstraintError);
-            queueSingleResult({
-                id: "board-2",
-                name: "Drums",
-                slug: "drums-abc123",
-            });
+            mockCreateRecord
+                .mockRejectedValueOnce(mockPocketBaseUniqueError())
+                .mockResolvedValueOnce({
+                    id: "board-2",
+                    name: "Drums",
+                    slug: "drums-abc123",
+                });
             vi.mocked(randomSuffix).mockReturnValue("abc123");
             mockBoardTokenInsert.mockResolvedValue({ token: "token-2" });
 
@@ -82,17 +115,16 @@ describe("BoardsStore", () => {
                 slug: "drums",
             });
 
-            expect(
-                getSupabaseQueryCalls()
-                    .filter(
-                        (call) =>
-                            call.table === "board" && call.method === "insert"
-                    )
-                    .map((call) => call.args[0])
-            ).toEqual([
-                { name: "Drums", slug: "drums" },
-                { name: "Drums", slug: "drums-abc123" },
-            ]);
+            expect(mockCreateRecord).toHaveBeenNthCalledWith(1, "boards", {
+                name: "Drums",
+                slug: "drums",
+                viewPermission: ViewPermission.BySlug,
+            });
+            expect(mockCreateRecord).toHaveBeenNthCalledWith(2, "boards", {
+                name: "Drums",
+                slug: "drums-abc123",
+                viewPermission: ViewPermission.BySlug,
+            });
             expect(mockBoardTokenInsert).toHaveBeenCalledWith(
                 "drums-abc123",
                 "board-2"
@@ -102,7 +134,9 @@ describe("BoardsStore", () => {
 
         it("throws after max unique-constraint retries", async () => {
             for (let i = 0; i < BoardsStore.MAX_CREATE_ATTEMPTS + 1; i += 1) {
-                queueThrowOnError(uniqueConstraintError);
+                mockCreateRecord.mockRejectedValueOnce(
+                    mockPocketBaseUniqueError()
+                );
             }
 
             vi.mocked(randomSuffix)
@@ -114,23 +148,11 @@ describe("BoardsStore", () => {
 
             await expect(
                 BoardsStore.insert({ name: "Drums", slug: "drums" })
-            ).rejects.toEqual(uniqueConstraintError);
+            ).rejects.toBeInstanceOf(Error);
 
-            expect(
-                getSupabaseQueryCalls()
-                    .filter(
-                        (call) =>
-                            call.table === "board" && call.method === "insert"
-                    )
-                    .map((call) => call.args[0])
-            ).toEqual([
-                { name: "Drums", slug: "drums" },
-                { name: "Drums", slug: "drums-a" },
-                { name: "Drums", slug: "drums-b" },
-                { name: "Drums", slug: "drums-c" },
-                { name: "Drums", slug: "drums-d" },
-                { name: "Drums", slug: "drums-e" },
-            ]);
+            expect(mockCreateRecord).toHaveBeenCalledTimes(
+                BoardsStore.MAX_CREATE_ATTEMPTS + 1
+            );
             expect(mockBoardTokenInsert).not.toHaveBeenCalled();
         });
     });

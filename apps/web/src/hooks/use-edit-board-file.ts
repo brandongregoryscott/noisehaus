@@ -7,16 +7,16 @@ import { boardFileValidator } from "@/utils/validators/board-file-validators";
 
 type UseEditBoardFileOptions = {
     boardFile: BoardFile;
+    boardSlug: string;
     onError?: (error: ApiError) => void;
     onSuccess?: (updatedBoardFile: BoardFile) => void;
     token: string;
 };
 
 const useEditBoardFile = (options: UseEditBoardFileOptions) => {
-    const { boardFile, onError, onSuccess, token } = options;
+    const { boardFile, boardSlug, onError, onSuccess, token } = options;
     const {
-        board_slug: boardSlug,
-        display_name: initialName,
+        displayName: initialName,
         emoji: initialEmoji,
         id,
     } = boardFile;
@@ -106,6 +106,6 @@ const useEditBoardFile = (options: UseEditBoardFileOptions) => {
 };
 
 const getFile = (boardFile: BoardFile): File =>
-    new File([], boardFile.display_name);
+    new File([], boardFile.displayName);
 
 export { useEditBoardFile };

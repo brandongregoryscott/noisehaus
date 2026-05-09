@@ -27,15 +27,14 @@ describe("FeedbackController", () => {
     it("creates feedback and returns the created response", async () => {
         const response = createMockResponse();
         mockCreateFeedback.mockResolvedValue({
-            board_id: "board-1",
-            board_slug: "drums",
+            boardId: "board-1",
             comment: "Nice work",
             email: "a@example.com",
             id: "feedback-1",
         });
 
         const body = {
-            board_slug: "drums",
+            boardId: "board-1",
             comment: "Nice work",
             email: "a@example.com",
         };
@@ -48,8 +47,7 @@ describe("FeedbackController", () => {
         expect(response.status).toHaveBeenCalledWith(201);
         expect(response.json).toHaveBeenCalledWith({
             data: {
-                board_id: "board-1",
-                board_slug: "drums",
+                boardId: "board-1",
                 comment: "Nice work",
                 email: "a@example.com",
                 id: "feedback-1",

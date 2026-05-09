@@ -13,6 +13,7 @@ import { Routes } from "@/routes";
 
 type BoardFileTableProps = {
     boardFiles: BoardFile[];
+    boardSlug: string;
     onDelete: (boardFileId: string) => void;
     token: string | undefined;
 };
@@ -22,7 +23,7 @@ const NAME_COLUMN_WIDTH = "55%";
 const ACTIONS_COLUMN_WIDTH = "25%";
 
 const BoardFileTable: React.FC<BoardFileTableProps> = (props) => {
-    const { boardFiles, onDelete, token } = props;
+    const { boardFiles, boardSlug, onDelete, token } = props;
     const navigate = useNavigate();
 
     const [selectedBoardFileId, setSelectedBoardFileId] = useState<
@@ -41,7 +42,7 @@ const BoardFileTable: React.FC<BoardFileTableProps> = (props) => {
         navigate({
             params: {
                 id: boardFile.id,
-                slug: boardFile.board_slug,
+                slug: boardSlug,
                 token: token ?? "",
             },
             to: Routes.EditSound,
@@ -91,7 +92,7 @@ const BoardFileTable: React.FC<BoardFileTableProps> = (props) => {
                         {colonCodeToUnicode(boardFile.emoji ?? "") ?? "--"}
                     </Row>
                     <Row css={{ width: NAME_COLUMN_WIDTH }}>
-                        <Text>{boardFile.display_name}</Text>
+                        <Text>{boardFile.displayName}</Text>
                     </Row>
                     {token !== undefined && (
                         <Row

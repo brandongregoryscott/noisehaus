@@ -75,7 +75,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = (props) => {
                     using it, we'll read everything that comes through and get
                     back to you if you leave your email address.
                 </span>
-                <Field fullWidth={true} label="Board Name">
+                <Field fullWidth={true} label="Email address">
                     <Input
                         errorMessage={first(errors.email)}
                         onChange={handleEmailChange}

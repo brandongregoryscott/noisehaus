@@ -52,7 +52,7 @@ const BoardFilesController = {
             BoardsStore.unsafe__getBySlug(slug),
             BoardFilesStore.getById(id),
         ]);
-        if (board === null || boardFile.board_id !== board.id) {
+        if (board === null || boardFile.boardId !== board.id) {
             throw BOARD_NOT_FOUND_ERROR;
         }
 
@@ -69,16 +69,6 @@ const BoardFilesController = {
               }));
 
         return ok(response, boardFiles);
-    },
-    size: async (request: Request, response: Response): Promise<Response> => {
-        const { slug: boardSlug } = request.params;
-        const token = request.query.token as string;
-        const size = await BoardFilesStore.getSizeByBoardSlugAndToken(
-            boardSlug,
-            token
-        );
-
-        return ok(response, size);
     },
     update: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;

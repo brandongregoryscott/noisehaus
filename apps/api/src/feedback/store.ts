@@ -1,28 +1,33 @@
 import type { Feedback } from "common";
+import { isEmpty } from "lodash-es";
 import type { CreateFeedbackOptions } from "@/feedback/types";
 import { BoardsStore } from "@/boards/store";
-import { SupabaseClient } from "@/supabase-client";
+import { PocketBaseClient } from "@/pocketbase-client";
 import { UnexpectedNullError } from "@/utilities/errors";
+
+const FEEDBACK_COLLECTION = "feedback";
+type FeedbackRecord = {
+    createdAt: string;
+} & Omit<Feedback, "createdAt">;
 
 const create = async (input: CreateFeedbackOptions): Promise<Feedback> => {
     const createInput = await normalizeCreateInput(input);
-    const { data } = await table()
-        .insert(createInput)
-        .throwOnError()
-        .select("*")
-        .single();
+    const data = await PocketBaseClient.createRecord<FeedbackRecord>(
+        FEEDBACK_COLLECTION,
+        createInput
+    );
 
     if (data == null) {
         throw new UnexpectedNullError("Feedback");
     }
 
-    return data;
+    return toFeedback(data);
 };
 
 const normalizeCreateInput = async (
     input: CreateFeedbackOptions
 ): Promise<CreateFeedbackOptions> => {
-    const { board_slug: boardSlug } = input;
+    const { boardSlug } = input;
     if (boardSlug == null) {
         return omitBoardFields(input);
     }
@@ -32,25 +37,40 @@ const normalizeCreateInput = async (
         return omitBoardFields(input);
     }
 
-    return {
-        ...input,
-        board_id: board.id,
-        board_slug: board.slug,
-    };
+    return { ...omitBoardFields(input), boardId: board.id };
 };
 
 const omitBoardFields = (
     input: CreateFeedbackOptions
 ): CreateFeedbackOptions => {
-    const { board_id: _boardId, board_slug: _boardSlug, ...rest } = input;
+    const { boardSlug: _boardSlug, ...rest } = input;
     return rest;
 };
 
-const table = () => SupabaseClient.from("feedback");
+const unsafe__deleteByBoardId = async (boardId: string): Promise<void> => {
+    const records = await PocketBaseClient.listRecords<FeedbackRecord>(
+        FEEDBACK_COLLECTION,
+        { filter: `boardId = ${PocketBaseClient.escapeFilterValue(boardId)}` }
+    );
+    await Promise.all(
+        records.map((record) =>
+            PocketBaseClient.deleteRecord(FEEDBACK_COLLECTION, record.id)
+        )
+    );
+};
 
 const FeedbackStore = {
     create,
-    table,
+    unsafe__deleteByBoardId,
 };
+
+const toFeedback = (record: FeedbackRecord): Feedback => ({
+    boardId: isEmpty(record.boardId) ? null : record.boardId,
+    comment: record.comment,
+    createdAt: record.createdAt,
+    email: isEmpty(record.email) ? null : record.email,
+    id: record.id,
+    respondedAt: isEmpty(record.respondedAt) ? null : record.respondedAt,
+});
 
 export { FeedbackStore };
