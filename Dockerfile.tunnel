@@ -9,4 +9,9 @@ ARG LOCAL_PORT=3434
 
 ENV SUBDOMAIN=$SUBDOMAIN REMOTE_PORT=$REMOTE_PORT LOCAL_HOST=$LOCAL_HOST LOCAL_PORT=$LOCAL_PORT
 
-ENTRYPOINT cp /root/.ssh/id_ed25519 /tmp/id_ed25519 && chmod 600 /tmp/id_ed25519 && exec autossh -M 0 -o StrictHostKeyChecking=accept-new -i /tmp/id_ed25519 -R ${SUBDOMAIN}:${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} nue.tuns.sh
+# Keep retrying even if the first connection dies quickly (e.g. tunnel starts
+# before the network is ready on boot). Without this autossh gives up entirely.
+ENV AUTOSSH_GATETIME=0
+
+# Shell form is required so ${SUBDOMAIN} and friends expand at runtime.
+ENTRYPOINT cp /root/.ssh/id_ed25519 /tmp/id_ed25519 && chmod 600 /tmp/id_ed25519 && exec autossh -M 0 -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -i /tmp/id_ed25519 -R ${SUBDOMAIN}:${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} nue.tuns.sh
