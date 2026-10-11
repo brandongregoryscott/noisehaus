@@ -7,7 +7,7 @@ services:
       buildCommand: npm ci && npm run build --workspace=apps/web
       pullRequestPreviewsEnabled: true
       runtime: static
-      staticPublishPath: apps/web/dist
+      staticPublishPath: apps/web/dist/client
       envVars:
           - key: VITE_API_URL
             value: https://bscott-noisehaus-api.tuns.sh
