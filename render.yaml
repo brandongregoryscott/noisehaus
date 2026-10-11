@@ -4,11 +4,10 @@ services:
 
       autoDeploy: true
       branch: main
-      buildCommand: npm install && npm run build
+      buildCommand: npm ci && npm run build --workspace=apps/web
       pullRequestPreviewsEnabled: true
-      rootDir: apps/web
       runtime: static
-      staticPublishPath: out
+      staticPublishPath: apps/web/dist
       envVars:
           - key: VITE_API_URL
             value: https://bscott-noisehaus-api.tuns.sh
