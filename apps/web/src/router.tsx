@@ -9,10 +9,10 @@ function getRouter() {
 }
 
 declare module "@tanstack/react-router" {
-    /* @ts-ignore */
-    type Register = {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- Declaration merging requires an interface
+    interface Register {
         router: ReturnType<typeof getRouter>;
-    };
+    }
 }
 
 export { getRouter };

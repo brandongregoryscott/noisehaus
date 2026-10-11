@@ -1,21 +1,14 @@
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
     plugins: [
-        tanstackStart({
-            router: {
-                generatedRouteTree: "./generated/route-tree.ts",
-                routesDirectory: "routes",
-            },
-            spa: {
-                enabled: true,
-                prerender: {
-                    outputPath: "/index.html",
-                },
-            },
+        tanstackRouter({
+            generatedRouteTree: "./src/generated/route-tree.ts",
+            routesDirectory: "./src/routes",
+            target: "react",
         }),
         react(),
     ],
