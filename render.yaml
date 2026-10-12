@@ -8,6 +8,8 @@ services:
       pullRequestPreviewsEnabled: true
       runtime: static
       staticPublishPath: apps/web/dist
+      domains:
+          - noise.haus
       envVars:
           - key: VITE_API_URL
             value: https://bscott-noisehaus-api.tuns.sh
