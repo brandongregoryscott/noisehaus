@@ -8,11 +8,11 @@ This project uses PocketBase for database and file storage.
 npm run db:start
 ```
 
-PocketBase will be available at `http://localhost:8090`.
+PocketBase will be available at `http://localhost:3435`.
 This command runs native PocketBase migrations (`pocketbase migrate up`) and seeds the admin account (`pocketbase superuser upsert`).
 
-Set `POCKETBASE_URL`, `POCKETBASE_SUPERUSER_EMAIL`, and `POCKETBASE_SUPERUSER_PASSWORD` in `apps/api/.env` before running `db:start`.
-Then log into `http://localhost:8090/_/` with the seeded superuser credentials.
+Set `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` in `apps/api/.env` before running `db:start`. `POCKETBASE_URL` is optional: native API defaults to `http://127.0.0.1:3435`; its Docker image defaults to `http://pocketbase:8090`. An explicit environment value overrides the default.
+Then log into `http://localhost:3435/_/` with the seeded superuser credentials.
 
 Stop the local instance:
 
