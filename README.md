@@ -48,3 +48,9 @@ To run the full stack locally, set `POCKETBASE_URL`, `POCKETBASE_SUPERUSER_EMAIL
 If you find a bug, feel free to [open up an issue](https://github.com/brandongregoryscott/noisehaus/issues/new) and try to describe it in detail with reproduction steps if possible.
 
 If you would like to see a feature, and it isn't [already documented](https://github.com/brandongregoryscott/noisehaus/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement), feel free to open up a new issue and describe the desired behavior.
+
+## API route convention
+
+Application routes are unversioned and start at the API origin, without an `/api` prefix. `GET /health` returns HTTP 200 with `{ "ok": true }`. Previous application paths have been removed; deploy the matching API and frontend builds together.
+
+The health check includes authenticated PocketBase connectivity with a three-second timeout; failure returns HTTP 503 with `{ "ok": false }`. PocketBase retains its native `/api` routes for storage, authentication, and files.

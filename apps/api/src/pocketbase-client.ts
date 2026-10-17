@@ -65,7 +65,7 @@ const parseResponseBody = async (response: Response): Promise<unknown> => {
     return response.text();
 };
 
-const authenticate = async (): Promise<void> => {
+const authenticate = async (signal?: AbortSignal): Promise<void> => {
     if (authToken !== "") {
         return;
     }
@@ -93,6 +93,7 @@ const authenticate = async (): Promise<void> => {
                 "Content-Type": "application/json",
             },
             method: "POST",
+            signal,
         }
     );
     const body = (await parseResponseBody(response)) as { token?: string };
@@ -113,7 +114,7 @@ const request = async <T>(
     options: RequestInit = {},
     allowRetry = true
 ): Promise<T> => {
-    await authenticate();
+    await authenticate(options.signal ?? undefined);
 
     const method = options.method ?? "GET";
     const headers = new Headers(options.headers);
@@ -244,7 +245,10 @@ const escapeFilterValue = (value: string): string =>
     `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 
 const healthcheck = async (): Promise<void> => {
-    await request("/api/health", { method: "GET" });
+    await request("/api/health", {
+        method: "GET",
+        signal: AbortSignal.timeout(3000),
+    });
 };
 
 const PocketBaseClient = {
