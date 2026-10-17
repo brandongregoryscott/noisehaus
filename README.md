@@ -41,7 +41,7 @@ npm run dev
 # Now, open http://localhost:3000 in your browser to view the app.
 ```
 
-To run the full stack locally, set `POCKETBASE_URL`, `POCKETBASE_SUPERUSER_EMAIL`, and `POCKETBASE_SUPERUSER_PASSWORD` in `apps/api/.env` ([example](./apps/api/.env.sample)). `db:start` uses those credentials to upsert the PocketBase admin account. For full setup details and collection definitions, see `pocketbase/README.md`.
+To run the full stack locally, set `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` in `apps/api/.env` ([example](./apps/api/.env.sample)). `POCKETBASE_URL` is optional: the native API defaults to `http://127.0.0.1:3435` (the published PocketBase port), and the API Docker image defaults to `http://pocketbase:8090` on the Compose network. Set `POCKETBASE_URL` in the environment or `apps/api/.env` to override either default; omit it to use the default. `db:start` uses those credentials to upsert the PocketBase admin account. For full setup details and collection definitions, see `pocketbase/README.md`.
 
 ## Issues
 
