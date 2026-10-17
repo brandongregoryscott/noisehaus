@@ -59,10 +59,15 @@ app.use((request: Request, response: Response, next) => {
 });
 
 app.get(
-    "/healthcheck",
-    async (_request: Request, response: Response): Promise<Response> => {
-        await PocketBaseClient.healthcheck();
-        return response.json("✅");
+    "/health",
+    async (request: Request, response: Response): Promise<Response> => {
+        try {
+            await PocketBaseClient.healthcheck();
+            return response.json({ ok: true });
+        } catch (error) {
+            request.logger.error({ err: error }, "health check failed");
+            return response.status(503).json({ ok: false });
+        }
     }
 );
 

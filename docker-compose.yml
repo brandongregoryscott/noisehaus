@@ -19,7 +19,7 @@ services:
         depends_on:
             - pocketbase
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:3434/healthcheck"]
+            test: ["CMD", "curl", "-f", "http://localhost:3434/health"]
             interval: 30s
             timeout: 5s
             retries: 3
