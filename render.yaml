@@ -5,7 +5,6 @@ services:
       autoDeploy: true
       branch: main
       buildCommand: npm ci && npm run build --workspace=apps/web
-      pullRequestPreviewsEnabled: true
       runtime: static
       staticPublishPath: apps/web/dist
       domains:
