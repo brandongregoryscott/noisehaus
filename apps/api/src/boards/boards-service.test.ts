@@ -1,6 +1,13 @@
 import { ViewPermission } from "common";
-import { ok, err } from "true-myth/result";
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterEach,
+    assert,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsService } from "@/boards/boards-service";
 import { BoardsStore } from "@/boards/boards-store";
@@ -10,6 +17,7 @@ import {
     PersistenceError,
     ValidationError,
 } from "@/utilities/errors";
+import { ok, err } from "@/utilities/result";
 import { randomSuffix } from "@/utilities/string-utils";
 
 vi.mock("../utilities/string-utils", () => ({ randomSuffix: vi.fn() }));
@@ -80,8 +88,8 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.insert(input);
 
-            assert(result.isErr);
-            expect(result.error.kind).toBe("unique-constraint");
+            assert(result.isUniqueConstraintError("slug"));
+            expect(result.error.field).toBe("slug");
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(
                 BoardsService.MAX_CREATE_ATTEMPTS + 1
             );
@@ -99,7 +107,8 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.insert(input);
 
-            expect(result).toEqual(err(error));
+            assert(result.isErr);
+            expect(result.error).toBe(error);
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(1);
         });
 
@@ -116,7 +125,8 @@ describe("BoardsService", () => {
                 slug: board.slug,
             });
 
-            expect(result).toEqual(err(error));
+            assert(result.isErr);
+            expect(result.error).toBe(error);
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(1);
         });
 

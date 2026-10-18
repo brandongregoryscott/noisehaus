@@ -1,9 +1,9 @@
 import type { Board } from "common";
-import type Result from "true-myth/result";
 import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardResult } from "@/boards/boards-store";
-import type { StoreError } from "@/storage/pocketbase-errors";
+import type { StoreError } from "@/utilities/errors";
+import type { Result } from "@/utilities/result";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsStore } from "@/boards/boards-store";
 import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
@@ -111,9 +111,7 @@ const insert = async (
         viewPermission: ViewPermission.BySlug,
     });
     if (
-        result.isErr &&
-        result.error.kind === "unique-constraint" &&
-        result.error.field === "slug" &&
+        result.isUniqueConstraintError("slug") &&
         attempt < MAX_CREATE_ATTEMPTS
     ) {
         return insert({ ...options, attempt: attempt + 1 });

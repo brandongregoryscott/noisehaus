@@ -1,19 +1,18 @@
-import type Result from "true-myth/result";
 import { isObjectLike } from "lodash-es";
-import { err, ok } from "true-myth/result";
+import type { StoreError } from "@/utilities/errors";
+import type { Result } from "@/utilities/result";
 import { PocketBaseHttpError } from "@/pocketbase-client";
 import {
     PersistenceError,
     UniqueConstraintError,
     ValidationError,
 } from "@/utilities/errors";
+import { err, ok } from "@/utilities/result";
 
 type ErrorBody = {
     data?: Record<string, { code?: string; message?: string }>;
     message?: string;
 };
-
-type StoreError = PersistenceError | UniqueConstraintError | ValidationError;
 
 const toStoreError = (error: PocketBaseHttpError): StoreError => {
     if (error.status !== 400 || !isObjectLike(error.data)) {
@@ -76,5 +75,4 @@ const withPocketBaseErrors =
         }
     };
 
-export type { StoreError };
 export { withPocketBaseErrors, withPocketBaseResult };

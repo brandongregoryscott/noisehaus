@@ -33,7 +33,7 @@ class ValidationError extends Error {
 
     constructor(message: string, cause?: unknown) {
         super();
-        Object.defineProperty(this, "cause", { value: cause });
+        Object.defineProperty(this, "cause", { enumerable: false, value: cause });
         this.name = ErrorName.ERROR_VALIDATION;
         this.message = message;
     }
@@ -76,6 +76,9 @@ class PersistenceError extends Error {
     }
 }
 
+type StoreError = PersistenceError | UniqueConstraintError | ValidationError;
+
+export type { StoreError };
 export {
     BOARD_NOT_FOUND_ERROR,
     NotFoundError,

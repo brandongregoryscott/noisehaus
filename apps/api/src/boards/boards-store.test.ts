@@ -1,5 +1,13 @@
 import { ViewPermission } from "common";
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterEach,
+    assert,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
 
@@ -71,37 +79,49 @@ describe("BoardsStore", () => {
             expect(PocketBaseClient.createRecord).not.toHaveBeenCalled();
         });
 
-        it.each([
-            [
-                400,
-                { data: { slug: { code: "validation_not_unique" } } },
-                "unique-constraint",
-            ],
-            [400, { message: "Invalid board" }, "validation"],
-            [503, "Unavailable", "persistence"],
-        ])(
-            "returns a typed result for provider failure %s %j",
-            async (status, data, kind) => {
+        it("returns typed results for provider failures", async () => {
+            const testCases = [
+                {
+                    data: { data: { slug: { code: "validation_not_unique" } } },
+                    kind: "unique-constraint",
+                    status: 400,
+                },
+                {
+                    data: { message: "Invalid board" },
+                    kind: "validation",
+                    status: 400,
+                },
+                {
+                    data: "Unavailable",
+                    kind: "persistence",
+                    status: 503,
+                },
+            ];
+
+            for (const { data, kind, status } of testCases) {
                 const cause = new PocketBaseHttpError(
-                    status as number,
+                    status,
                     data,
                     "POST",
                     "/api/batch"
                 );
-                vi.mocked(PocketBaseClient.createRecords).mockRejectedValue(
-                    cause
-                );
+                vi.mocked(PocketBaseClient.createRecords)
+                    .mockReset()
+                    .mockRejectedValue(cause);
 
                 const result = await BoardsStore.createWithInitialToken({
                     ...board,
                 });
 
-                assert(result.isErr);
-                expect(result.error.kind).toBe(kind);
-                expect(result.error.cause).toBe(cause);
-                expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
+                assert(result.isErr, kind);
+                expect(result.error.kind, kind).toBe(kind);
+                expect(result.error.cause, kind).toBe(cause);
+                expect(
+                    PocketBaseClient.createRecords,
+                    kind
+                ).toHaveBeenCalledTimes(1);
             }
-        );
+        });
 
         it("rejects malformed successful batches as unexpected failures", async () => {
             vi.mocked(PocketBaseClient.createRecords).mockResolvedValue([]);
