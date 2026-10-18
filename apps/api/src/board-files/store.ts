@@ -1,6 +1,6 @@
 import type { BoardFile, PresignedBoardFile } from "common";
 import { MAXIMUM_BOARD_SIZE_IN_BYTES, MAX_FILE_COUNT_PER_UPLOAD } from "common";
-import { isEmpty, sumBy } from "lodash-es";
+import { isEmpty, isNil, sumBy } from "lodash-es";
 import type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
@@ -32,14 +32,14 @@ type BoardFileRecord = {
 const BOARD_FILE_COLLECTION = "boardFiles";
 
 const normalizeEmoji = (emoji: null | string | undefined): string =>
-    emoji == null || emoji === "null" ? "" : emoji;
+    isNil(emoji) || emoji === "null" ? "" : emoji;
 
 const bulkInsert = async (
     options: BulkCreateBoardFileOptions
 ): Promise<BoardFile[]> => {
     const { boardSlug, displayNames, emojis, files, token } = options;
     if (
-        files.length === 0 ||
+        isEmpty(files) ||
         files.length > MAX_FILE_COUNT_PER_UPLOAD ||
         displayNames.length !== files.length ||
         emojis.length !== files.length

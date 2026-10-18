@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash-es";
+import { find, isEmpty, isNil, isObjectLike, isString } from "lodash-es";
 import {
     POCKETBASE_SUPERUSER_EMAIL,
     POCKETBASE_SUPERUSER_PASSWORD,
@@ -211,7 +211,7 @@ const listRecords = async <T>(
     while (true) {
         const result = await listPage<T>(collection, options, page);
         records.push(...result.items);
-        if (page >= result.totalPages || result.items.length === 0) {
+        if (page >= result.totalPages || isEmpty(result.items)) {
             return records;
         }
         page += 1;
@@ -239,22 +239,26 @@ const createRecords = async <T extends unknown[]>(
     const formData = new FormData();
     const requests = records.map(({ collection, data }, index) => {
         const body: Record<string, unknown> = {};
-        if (data instanceof FormData) {
-            data.forEach((value, key) => {
-                if (typeof value === "string") {
-                    body[key] = value;
-                } else {
-                    formData.append(`requests.${index}.${key}`, value);
-                }
-            });
-        } else {
-            Object.assign(body, data);
-        }
-        return {
+        const batchRequest = {
             body,
             method: "POST",
             url: `/api/collections/${collection}/records`,
         };
+
+        if (!(data instanceof FormData)) {
+            Object.assign(body, data);
+            return batchRequest;
+        }
+
+        data.forEach((value, key) => {
+            if (isString(value)) {
+                body[key] = value;
+                return;
+            }
+
+            formData.append(`requests.${index}.${key}`, value);
+        });
+        return batchRequest;
     });
     formData.set("@jsonPayload", JSON.stringify({ requests }));
 
@@ -267,24 +271,27 @@ const createRecords = async <T extends unknown[]>(
     } catch (error) {
         // Preserve normal field-validation/conflict handling for batch failures.
         if (
-            error instanceof PocketBaseHttpError &&
-            error.data != null &&
-            typeof error.data === "object"
+            !(error instanceof PocketBaseHttpError) ||
+            !isObjectLike(error.data)
         ) {
-            const { data } = error.data as BatchErrorBody;
-            const failure = Object.values(data?.requests ?? {}).find(
-                (entry) => entry.response != null
-            )?.response;
-            if (failure != null) {
-                throw new PocketBaseHttpError(
-                    failure.status,
-                    failure,
-                    "POST",
-                    "/api/batch"
-                );
-            }
+            throw error;
         }
-        throw error;
+
+        const { data } = error.data as BatchErrorBody;
+        const failure = find(
+            data?.requests,
+            (entry) => !isNil(entry.response)
+        )?.response;
+        if (isNil(failure)) {
+            throw error;
+        }
+
+        throw new PocketBaseHttpError(
+            failure.status,
+            failure,
+            "POST",
+            "/api/batch"
+        );
     }
 };
 

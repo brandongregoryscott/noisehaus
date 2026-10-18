@@ -7,6 +7,7 @@ import type {
     CreateBoardResult,
 } from "common";
 import { CREATE_BOARD_FILE_ROUTE, CREATE_BOARD_ROUTE, ErrorName } from "common";
+import { isEmpty } from "lodash-es";
 import type { CreateBoardFileOptions } from "@/hooks/use-create-board-file";
 import { post, postMultipartForm } from "@/utils/fetch";
 import { generateRoute } from "@/utils/route-utils";
@@ -32,7 +33,7 @@ const createBoard = async (
         throw error;
     }
 
-    if (files === undefined || files.length === 0) {
+    if (files === undefined || isEmpty(files)) {
         return { data: createdBoard, error: null };
     }
 
