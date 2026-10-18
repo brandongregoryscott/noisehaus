@@ -35,6 +35,27 @@ type ListOptions = {
     sort?: string;
 };
 
+type CreateRecordBatchInput = {
+    collection: string;
+    data: FormData | Record<string, unknown>;
+};
+
+type BatchResult = {
+    body: unknown;
+    status: number;
+};
+
+type BatchErrorBody = {
+    data?: {
+        requests?: Record<
+            string,
+            {
+                response?: { data: unknown; status: number };
+            }
+        >;
+    };
+};
+
 const DEFAULT_PER_PAGE = 500;
 
 let authToken = "";
@@ -155,9 +176,9 @@ const request = async <T>(
     );
 };
 
-const toQueryString = (options: ListOptions): string => {
+const toQueryString = (options: ListOptions, page: number): string => {
     const query = new URLSearchParams();
-    query.set("page", "1");
+    query.set("page", `${page}`);
     query.set("perPage", `${options.perPage ?? DEFAULT_PER_PAGE}`);
 
     if (options.filter != null && options.filter !== "") {
@@ -171,28 +192,100 @@ const toQueryString = (options: ListOptions): string => {
     return query.toString();
 };
 
+const listPage = async <T>(
+    collection: string,
+    options: ListOptions,
+    page = 1
+): Promise<ListResult<T>> =>
+    request<ListResult<T>>(
+        `/api/collections/${collection}/records?${toQueryString(options, page)}`,
+        { method: "GET" }
+    );
+
 const listRecords = async <T>(
     collection: string,
     options: ListOptions = {}
 ): Promise<T[]> => {
-    const result = await request<ListResult<T>>(
-        `/api/collections/${collection}/records?${toQueryString(options)}`,
-        { method: "GET" }
-    );
-
-    return result.items;
+    const records: T[] = [];
+    let page = 1;
+    while (true) {
+        const result = await listPage<T>(collection, options, page);
+        records.push(...result.items);
+        if (page >= result.totalPages || result.items.length === 0) {
+            return records;
+        }
+        page += 1;
+    }
 };
 
 const getFirstRecordByFilter = async <T>(
     collection: string,
     filter: string
 ): Promise<null | T> => {
-    const items = await listRecords<T>(collection, {
+    const { items } = await listPage<T>(collection, {
         filter,
         perPage: 1,
     });
 
     return items[0] ?? null;
+};
+
+// PocketBase executes all record writes in the batch in one transaction.
+// Callers provide the expected response tuple, just as single-record callers
+// provide their record type to createRecord.
+const createRecords = async <T extends unknown[]>(
+    records: CreateRecordBatchInput[]
+): Promise<T> => {
+    const formData = new FormData();
+    const requests = records.map(({ collection, data }, index) => {
+        const body: Record<string, unknown> = {};
+        if (data instanceof FormData) {
+            data.forEach((value, key) => {
+                if (typeof value === "string") {
+                    body[key] = value;
+                } else {
+                    formData.append(`requests.${index}.${key}`, value);
+                }
+            });
+        } else {
+            Object.assign(body, data);
+        }
+        return {
+            body,
+            method: "POST",
+            url: `/api/collections/${collection}/records`,
+        };
+    });
+    formData.set("@jsonPayload", JSON.stringify({ requests }));
+
+    try {
+        const results = await request<BatchResult[]>("/api/batch", {
+            body: formData,
+            method: "POST",
+        });
+        return results.map((result) => result.body) as T;
+    } catch (error) {
+        // Preserve normal field-validation/conflict handling for batch failures.
+        if (
+            error instanceof PocketBaseHttpError &&
+            error.data != null &&
+            typeof error.data === "object"
+        ) {
+            const { data } = error.data as BatchErrorBody;
+            const failure = Object.values(data?.requests ?? {}).find(
+                (entry) => entry.response != null
+            )?.response;
+            if (failure != null) {
+                throw new PocketBaseHttpError(
+                    failure.status,
+                    failure,
+                    "POST",
+                    "/api/batch"
+                );
+            }
+        }
+        throw error;
+    }
 };
 
 const createRecord = async <T>(
@@ -253,6 +346,7 @@ const healthcheck = async (): Promise<void> => {
 
 const PocketBaseClient = {
     createRecord,
+    createRecords,
     deleteRecord,
     escapeFilterValue,
     getFileToken,

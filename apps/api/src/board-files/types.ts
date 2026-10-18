@@ -57,19 +57,10 @@ type UpdateBoardFileOptions = {
     token: string;
 };
 
-type UnsafeCreateOptions = {
-    boardId: string;
-    boardSlug: string;
-    displayName: string;
-    emoji: string | undefined;
-    file: MulterFile;
-};
-
 export type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
     GetBoardFileOptions,
     ListBoardFilesByTokenOptions,
-    UnsafeCreateOptions,
     UpdateBoardFileOptions,
 };

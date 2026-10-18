@@ -47,21 +47,8 @@ const omitBoardFields = (
     return rest;
 };
 
-const unsafe__deleteByBoardId = async (boardId: string): Promise<void> => {
-    const records = await PocketBaseClient.listRecords<FeedbackRecord>(
-        FEEDBACK_COLLECTION,
-        { filter: `boardId = ${PocketBaseClient.escapeFilterValue(boardId)}` }
-    );
-    await Promise.all(
-        records.map((record) =>
-            PocketBaseClient.deleteRecord(FEEDBACK_COLLECTION, record.id)
-        )
-    );
-};
-
 const FeedbackStore = {
     create,
-    unsafe__deleteByBoardId,
 };
 
 const toFeedback = (record: FeedbackRecord): Feedback => ({
