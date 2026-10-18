@@ -18,7 +18,7 @@ const createResponse = () =>
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 
-describe("board creation HTTP boundary", () => {
+describe("BoardsController", () => {
     afterEach(() => vi.restoreAllMocks());
 
     it("responds with the board and token rather than the Result wrapper", async () => {

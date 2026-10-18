@@ -8,7 +8,7 @@ import {
 } from "@/utilities/errors";
 import { err, ok } from "@/utilities/result";
 
-describe("application Result", () => {
+describe("Result", () => {
     it("narrows successful results and preserves their value", () => {
         const value = { token: "token-a" };
         const result = ok(value);

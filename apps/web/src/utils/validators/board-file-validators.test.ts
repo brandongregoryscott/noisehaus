@@ -2,7 +2,7 @@ import { describe, expect, it, assert } from "vitest";
 import { validate } from "../validation";
 import { nameValidator } from "./board-file-validators";
 
-describe("board file validators", () => {
+describe("nameValidator", () => {
     it("accepts valid board file names", () => {
         const input = "Readme";
 

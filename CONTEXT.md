@@ -52,6 +52,12 @@ in their store without a pass-through service.
 
 ## Testing patterns
 
+Name the outer `describe` after the class, exported object, or function under test
+(for example, `Result`, `BoardsController`, or `errorHandler`). Describe behavior
+in nested suites and test names. Descriptive outer names are appropriate for
+cross-cutting contracts, migrations, or modules testing several related exports
+without one primary subject.
+
 When test data has several properties, use a named `testCases` array of objects
 inside one test and iterate with `for...of`. Named properties make inputs and
 expected outcomes readable without tracking tuple positions in `it.each`.
