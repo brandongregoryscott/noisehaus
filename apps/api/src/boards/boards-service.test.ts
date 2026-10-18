@@ -1,6 +1,6 @@
 import { ViewPermission } from "common";
 import { ok, err } from "true-myth/result";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsService } from "@/boards/boards-service";
 import { BoardsStore } from "@/boards/boards-store";
@@ -68,10 +68,8 @@ describe("BoardsService", () => {
                     viewPermission: ViewPermission.BySlug,
                 }
             );
-            expect(result.isOk).toBe(true);
-            if (result.isOk) {
-                expect(result.value.token).toBe("token-a");
-            }
+            assert(result.isOk);
+            expect(result.value.token).toBe("token-a");
         });
 
         it("stops after the maximum number of slug collision retries", async () => {
@@ -82,10 +80,8 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.insert(input);
 
-            expect(result.isErr).toBe(true);
-            if (result.isErr) {
-                expect(result.error.kind).toBe("unique-constraint");
-            }
+            assert(result.isErr);
+            expect(result.error.kind).toBe("unique-constraint");
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(
                 BoardsService.MAX_CREATE_ATTEMPTS + 1
             );

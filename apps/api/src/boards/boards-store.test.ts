@@ -1,5 +1,5 @@
 import { ViewPermission } from "common";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
 
@@ -40,13 +40,11 @@ describe("BoardsStore", () => {
 
             const result = await BoardsStore.createWithInitialToken(input);
 
-            expect(result.isOk).toBe(true);
-            if (result.isOk) {
-                expect(result.value).toMatchObject({
-                    ...board,
-                    token: "token-a",
-                });
-            }
+            assert(result.isOk);
+            expect(result.value).toMatchObject({
+                ...board,
+                token: "token-a",
+            });
             expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
             const [requests] = vi.mocked(PocketBaseClient.createRecords).mock
                 .calls[0];
@@ -98,11 +96,9 @@ describe("BoardsStore", () => {
                     ...board,
                 });
 
-                expect(result.isErr).toBe(true);
-                if (result.isErr) {
-                    expect(result.error.kind).toBe(kind);
-                    expect(result.error.cause).toBe(cause);
-                }
+                assert(result.isErr);
+                expect(result.error.kind).toBe(kind);
+                expect(result.error.cause).toBe(cause);
                 expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
             }
         );
