@@ -60,65 +60,78 @@ describe("BoardFilesStore access", () => {
         expect(PocketBaseClient.listRecords).not.toHaveBeenCalled();
     };
 
-    describe.each(["update", "delete"] as const)("%s", (operation) => {
-        const mutate = (token: unknown) =>
-            operation === "update"
-                ? BoardFilesStore.update({
-                      boardSlug: board.slug,
-                      displayName: "Updated",
-                      id: boardFile.id,
-                      token: token as string,
-                  })
-                : BoardFilesStore.delete(
-                      boardFile.id,
-                      board.slug,
-                      token as string
-                  );
-
+    describe("update", () => {
         it("allows a file belonging to the authorized board", async () => {
-            const result = await mutate("token-a");
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Updated",
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesStore.update(options);
+
+            expect(result).toMatchObject({
+                displayName: "Updated",
+                id: boardFile.id,
+            });
             expect(BoardsStore.getByToken).toHaveBeenCalledWith({
                 slug: board.slug,
                 token: "token-a",
             });
-            if (operation === "update") {
-                expect(result).toMatchObject({
-                    displayName: "Updated",
-                    id: boardFile.id,
-                });
-                expect(PocketBaseClient.updateRecord).toHaveBeenCalledWith(
-                    "boardFiles",
-                    boardFile.id,
-                    { displayName: "Updated" }
-                );
-            } else {
-                expect(result).toBe(true);
-                expect(PocketBaseClient.deleteRecord).toHaveBeenCalledWith(
-                    "boardFiles",
-                    boardFile.id
-                );
-            }
+            expect(PocketBaseClient.updateRecord).toHaveBeenCalledWith(
+                "boardFiles",
+                boardFile.id,
+                { displayName: "Updated" }
+            );
         });
 
         it("rejects a file belonging to another board", async () => {
             vi.mocked(
                 PocketBaseClient.getFirstRecordByFilter
             ).mockResolvedValue({ ...boardFile, boardId: "board-b" });
-            await expectNotFound(mutate("token-a"));
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Updated",
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.update(options);
+
+            await expectNotFound(result);
         });
 
         it("conceals missing files with the same access error", async () => {
             vi.mocked(
                 PocketBaseClient.getFirstRecordByFilter
             ).mockResolvedValue(null);
-            await expectNotFound(mutate("token-a"));
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Updated",
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.update(options);
+
+            await expectNotFound(result);
         });
 
         it("stops before file lookup when board authorization fails", async () => {
             vi.mocked(BoardsStore.getByToken).mockRejectedValue(
                 BOARD_NOT_FOUND_ERROR
             );
-            await expectNotFound(mutate("invalid"));
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Updated",
+                id: boardFile.id,
+                token: "invalid",
+            };
+
+            const result = BoardFilesStore.update(options);
+
+            await expectNotFound(result);
             expect(BoardsStore.getByToken).toHaveBeenCalledWith({
                 slug: board.slug,
                 token: "invalid",
@@ -131,7 +144,118 @@ describe("BoardFilesStore access", () => {
         it.each([undefined, null, "", 123, [], {}].map((token) => ({ token })))(
             "rejects a missing or malformed token ($token)",
             async ({ token }) => {
-                await expectNotFound(mutate(token));
+                const options = {
+                    boardSlug: board.slug,
+                    displayName: "Updated",
+                    id: boardFile.id,
+                    token: token as string,
+                };
+
+                const result = BoardFilesStore.update(options);
+
+                await expectNotFound(result);
+                expect(BoardsStore.getByToken).not.toHaveBeenCalled();
+                expect(
+                    PocketBaseClient.getFirstRecordByFilter
+                ).not.toHaveBeenCalled();
+            }
+        );
+
+        it("rejects cross-board replacement before quota checks or writes", async () => {
+            vi.mocked(
+                PocketBaseClient.getFirstRecordByFilter
+            ).mockResolvedValue({ ...boardFile, boardId: "board-b" });
+            const options = {
+                boardSlug: board.slug,
+                file: { size: 20 } as MulterFile,
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.update(options);
+
+            await expectNotFound(result);
+        });
+    });
+
+    describe("delete", () => {
+        it("allows a file belonging to the authorized board", async () => {
+            const { id } = boardFile;
+            const { slug } = board;
+            const token = "token-a";
+
+            const result = await BoardFilesStore.delete(id, slug, token);
+
+            expect(result).toBe(true);
+            expect(BoardsStore.getByToken).toHaveBeenCalledWith({
+                slug,
+                token,
+            });
+            expect(PocketBaseClient.deleteRecord).toHaveBeenCalledWith(
+                "boardFiles",
+                id
+            );
+        });
+
+        it("rejects a file belonging to another board", async () => {
+            vi.mocked(
+                PocketBaseClient.getFirstRecordByFilter
+            ).mockResolvedValue({ ...boardFile, boardId: "board-b" });
+            const { id } = boardFile;
+            const { slug } = board;
+            const token = "token-a";
+
+            const result = BoardFilesStore.delete(id, slug, token);
+
+            await expectNotFound(result);
+        });
+
+        it("conceals missing files with the same access error", async () => {
+            vi.mocked(
+                PocketBaseClient.getFirstRecordByFilter
+            ).mockResolvedValue(null);
+            const { id } = boardFile;
+            const { slug } = board;
+            const token = "token-a";
+
+            const result = BoardFilesStore.delete(id, slug, token);
+
+            await expectNotFound(result);
+        });
+
+        it("stops before file lookup when board authorization fails", async () => {
+            vi.mocked(BoardsStore.getByToken).mockRejectedValue(
+                BOARD_NOT_FOUND_ERROR
+            );
+            const { id } = boardFile;
+            const { slug } = board;
+            const token = "invalid";
+
+            const result = BoardFilesStore.delete(id, slug, token);
+
+            await expectNotFound(result);
+            expect(BoardsStore.getByToken).toHaveBeenCalledWith({
+                slug,
+                token,
+            });
+            expect(
+                PocketBaseClient.getFirstRecordByFilter
+            ).not.toHaveBeenCalled();
+        });
+
+        it.each([undefined, null, "", 123, [], {}].map((token) => ({ token })))(
+            "rejects a missing or malformed token ($token)",
+            async ({ token }) => {
+                const { id } = boardFile;
+                const { slug } = board;
+
+                const result = BoardFilesStore.delete(
+                    id,
+                    slug,
+                    token as string
+                );
+
+                await expectNotFound(result);
                 expect(BoardsStore.getByToken).not.toHaveBeenCalled();
                 expect(
                     PocketBaseClient.getFirstRecordByFilter
@@ -140,30 +264,18 @@ describe("BoardFilesStore access", () => {
         );
     });
 
-    it("rejects cross-board replacement before quota checks or writes", async () => {
-        vi.mocked(PocketBaseClient.getFirstRecordByFilter).mockResolvedValue({
-            ...boardFile,
-            boardId: "board-b",
-        });
-        await expectNotFound(
-            BoardFilesStore.update({
-                boardSlug: board.slug,
-                file: { size: 20 } as MulterFile,
-                id: boardFile.id,
-                token: "token-a",
-            })
-        );
-    });
-
     describe("get", () => {
         it.each([undefined, ""])(
             "uses slug read permission without a token (%s)",
             async (token) => {
-                const result = await BoardFilesStore.get({
+                const options = {
                     boardSlug: board.slug,
                     id: boardFile.id,
                     token,
-                });
+                };
+
+                const result = await BoardFilesStore.get(options);
+
                 expect(result).toMatchObject({
                     boardId: board.id,
                     id: boardFile.id,
@@ -174,11 +286,14 @@ describe("BoardFilesStore access", () => {
         );
 
         it("uses token authorization when a token is supplied", async () => {
-            const result = await BoardFilesStore.get({
+            const options = {
                 boardSlug: board.slug,
                 id: boardFile.id,
                 token: "token-a",
-            });
+            };
+
+            const result = await BoardFilesStore.get(options);
+
             expect(result).toMatchObject({
                 boardId: board.id,
                 id: boardFile.id,
@@ -199,13 +314,15 @@ describe("BoardFilesStore access", () => {
                 vi.mocked(BoardsStore.getByToken).mockRejectedValue(
                     BOARD_NOT_FOUND_ERROR
                 );
-                await expectNotFound(
-                    BoardFilesStore.get({
-                        boardSlug: board.slug,
-                        id: boardFile.id,
-                        token,
-                    })
-                );
+                const options = {
+                    boardSlug: board.slug,
+                    id: boardFile.id,
+                    token,
+                };
+
+                const result = BoardFilesStore.get(options);
+
+                await expectNotFound(result);
                 expect(
                     PocketBaseClient.getFirstRecordByFilter
                 ).not.toHaveBeenCalled();
@@ -218,13 +335,15 @@ describe("BoardFilesStore access", () => {
                 vi.mocked(
                     PocketBaseClient.getFirstRecordByFilter
                 ).mockResolvedValue({ ...boardFile, boardId: "board-b" });
-                await expectNotFound(
-                    BoardFilesStore.get({
-                        boardSlug: board.slug,
-                        id: boardFile.id,
-                        token,
-                    })
-                );
+                const options = {
+                    boardSlug: board.slug,
+                    id: boardFile.id,
+                    token,
+                };
+
+                const result = BoardFilesStore.get(options);
+
+                await expectNotFound(result);
             }
         );
 
@@ -232,19 +351,23 @@ describe("BoardFilesStore access", () => {
             vi.mocked(
                 PocketBaseClient.getFirstRecordByFilter
             ).mockResolvedValue(null);
-            await expectNotFound(
-                BoardFilesStore.get({ boardSlug: board.slug, id: boardFile.id })
-            );
+            const options = { boardSlug: board.slug, id: boardFile.id };
+
+            const result = BoardFilesStore.get(options);
+
+            await expectNotFound(result);
         });
 
         it("rejects malformed tokens before authorization or file lookup", async () => {
-            await expectNotFound(
-                BoardFilesStore.get({
-                    boardSlug: board.slug,
-                    id: boardFile.id,
-                    token: ["token-a", "token-b"] as unknown as string,
-                })
-            );
+            const options = {
+                boardSlug: board.slug,
+                id: boardFile.id,
+                token: ["token-a", "token-b"] as unknown as string,
+            };
+
+            const result = BoardFilesStore.get(options);
+
+            await expectNotFound(result);
             expect(BoardsStore.getBySlug).not.toHaveBeenCalled();
             expect(BoardsStore.getByToken).not.toHaveBeenCalled();
             expect(
