@@ -19,7 +19,7 @@ const createResponse = () =>
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 
-describe("persistence error responses", () => {
+describe("errorHandler", () => {
     beforeEach(() => vi.mocked(isDevelopment).mockReturnValue(false));
 
     it("returns a conflict without exposing persistence diagnostics", async () => {

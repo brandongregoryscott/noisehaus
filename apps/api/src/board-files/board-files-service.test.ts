@@ -33,7 +33,7 @@ const boardFile = {
     updatedAt: board.updatedAt,
 };
 
-describe("BoardFilesService access", () => {
+describe("BoardFilesService", () => {
     beforeEach(() => {
         vi.mocked(BoardsService.getBySlug).mockReset().mockResolvedValue(board);
         vi.mocked(BoardsService.getByToken)

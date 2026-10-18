@@ -1,4 +1,5 @@
 import type {
+    ApiErrorResponse,
     CreateBoardRequest,
     CreateBoardResponse,
     DeleteBoardRequest,
@@ -9,19 +10,23 @@ import type {
     UpdateBoardRequest,
     UpdateBoardResponse,
 } from "common";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { BoardsService } from "@/boards/boards-service";
+import { sendErrorResponse } from "@/error-handler";
 import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (
-        request: CreateBoardRequest,
+        request: CreateBoardRequest & Request,
         response: Response
-    ): Promise<Response<CreateBoardResponse>> => {
+    ): Promise<Response<ApiErrorResponse> | Response<CreateBoardResponse>> => {
         const { body } = request;
-        const data = await BoardsService.insert(body);
+        const result = await BoardsService.insert(body);
+        if (result.isErr) {
+            return sendErrorResponse(result.error, request, response);
+        }
 
-        return created(response, data);
+        return created(response, result.value);
     },
     delete: async (
         request: DeleteBoardRequest,

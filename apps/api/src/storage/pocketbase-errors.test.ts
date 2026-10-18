@@ -7,7 +7,7 @@ import {
     ValidationError,
 } from "@/utilities/errors";
 
-describe("PocketBase error translation", () => {
+describe("withPocketBaseErrors", () => {
     it("exposes the conflicting field without requiring PocketBase knowledge", async () => {
         const cause = new PocketBaseHttpError(
             400,

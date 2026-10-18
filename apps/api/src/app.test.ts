@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "@/app";
 import { PocketBaseClient } from "@/pocketbase-client";
 
-describe("health HTTP contract", () => {
+describe("app", () => {
     let server: Server;
     let origin: string;
 
