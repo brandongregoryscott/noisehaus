@@ -1,6 +1,6 @@
 import { ViewPermission } from "common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BoardsStore } from "@/boards/store";
+import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseClient } from "@/pocketbase-client";
 
 const board = {

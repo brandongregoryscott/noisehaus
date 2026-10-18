@@ -1,8 +1,8 @@
 import { ViewPermission } from "common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BoardTokensStore } from "@/board-tokens/store";
-import { BoardsService } from "@/boards/service";
-import { BoardsStore } from "@/boards/store";
+import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
+import { BoardsService } from "@/boards/boards-service";
+import { BoardsStore } from "@/boards/boards-store";
 import {
     BOARD_NOT_FOUND_ERROR,
     UniqueConstraintError,

@@ -1,6 +1,6 @@
 import type { Response, Request } from "express";
 import { isEmpty } from "lodash-es";
-import { BoardFilesService } from "@/board-files/service";
+import { BoardFilesService } from "@/board-files/board-files-service";
 import { arrify } from "@/utilities/collection-utils";
 import { ValidationError } from "@/utilities/errors";
 import { ok } from "@/utilities/responses";

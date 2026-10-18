@@ -2,17 +2,70 @@ import type { BoardFile, PresignedBoardFile } from "common";
 import { MAXIMUM_BOARD_SIZE_IN_BYTES, MAX_FILE_COUNT_PER_UPLOAD } from "common";
 import { isEmpty, isString, sumBy } from "lodash-es";
 import type {
-    BulkCreateBoardFileOptions,
-    CreateBoardFileOptions,
-    GetBoardFileOptions,
-    ListBoardFilesByTokenOptions,
-    UpdateBoardFileOptions,
+    UploadedBoardFile,
     UpdateStoredBoardFileOptions,
-} from "@/board-files/types";
-import { BoardFilesStore } from "@/board-files/store";
-import { BoardsService } from "@/boards/service";
+} from "@/board-files/board-files-store";
+import type { GetBoardByTokenOptions } from "@/boards/boards-service";
+import { BoardFilesStore } from "@/board-files/board-files-store";
+import { BoardsService } from "@/boards/boards-service";
 import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
 import { formatFileSize } from "@/utilities/file-utilities";
+
+type CreateBoardFileOptions = {
+    boardSlug: string;
+    displayName: string;
+    emoji: string | undefined;
+    file: UploadedBoardFile;
+    token: string;
+};
+
+type BulkCreateBoardFileOptions = {
+    boardSlug: string;
+    displayNames: string[];
+    emojis: string[];
+    files: UploadedBoardFile[];
+    token: string;
+};
+
+type ListBoardFilesByTokenOptions = GetBoardByTokenOptions;
+
+type GetBoardFileOptions = {
+    boardSlug: string;
+    id: string;
+    token?: string;
+};
+
+type UpdateBoardFileOptions = {
+    /**
+     * Slug of the related board
+     */
+    boardSlug: string;
+
+    /**
+     * Updated display name field
+     */
+    displayName?: string;
+
+    /**
+     * Updated emoji field
+     */
+    emoji?: null | string;
+
+    /**
+     * Replacement file
+     */
+    file?: UploadedBoardFile;
+
+    /**
+     * Id of the record to update
+     */
+    id: string;
+
+    /**
+     * Token to authorize the board access with.
+     */
+    token: string;
+};
 
 const normalizeEmoji = (emoji: null | string | undefined): string =>
     emoji == null || emoji === "null" ? "" : emoji;
@@ -182,4 +235,11 @@ const BoardFilesService = {
     update,
 };
 
+export type {
+    BulkCreateBoardFileOptions,
+    CreateBoardFileOptions,
+    GetBoardFileOptions,
+    ListBoardFilesByTokenOptions,
+    UpdateBoardFileOptions,
+};
 export { BoardFilesService };

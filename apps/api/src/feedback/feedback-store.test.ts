@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FeedbackStore } from "@/feedback/store";
+import { FeedbackStore } from "@/feedback/feedback-store";
 import { PocketBaseClient } from "@/pocketbase-client";
 
 describe("FeedbackStore", () => {

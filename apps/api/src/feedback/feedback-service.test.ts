@@ -5,19 +5,19 @@ const { mockCreateFeedback, mockGetBoardBySlug } = vi.hoisted(() => ({
     mockGetBoardBySlug: vi.fn(),
 }));
 
-vi.mock("../boards/store", () => ({
+vi.mock("../boards/boards-store", () => ({
     BoardsStore: {
         findBySlug: mockGetBoardBySlug,
     },
 }));
 
-vi.mock("../feedback/store", () => ({
+vi.mock("../feedback/feedback-store", () => ({
     FeedbackStore: {
         create: mockCreateFeedback,
     },
 }));
 
-import { FeedbackService } from "@/feedback/service";
+import { FeedbackService } from "@/feedback/feedback-service";
 
 describe("FeedbackService", () => {
     beforeEach(() => {

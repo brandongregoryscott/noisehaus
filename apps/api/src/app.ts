@@ -18,10 +18,10 @@ import {
 import cors from "cors";
 import crypto from "crypto";
 import express from "express";
-import { BoardFilesController } from "@/board-files/controller";
-import { BoardsController } from "@/boards/controller";
+import { BoardFilesController } from "@/board-files/board-files-controller";
+import { BoardsController } from "@/boards/boards-controller";
 import { errorHandler } from "@/error-handler";
-import { FeedbackController } from "@/feedback/controller";
+import { FeedbackController } from "@/feedback/feedback-controller";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { logger } from "@/utilities/logger";
 import { multer } from "@/utilities/multer";

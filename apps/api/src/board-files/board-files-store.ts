@@ -1,12 +1,27 @@
 import type { BoardFile, PresignedBoardFile } from "common";
 import { isEmpty } from "lodash-es";
-import type {
-    InsertBoardFileOptions,
-    UpdateStoredBoardFileOptions,
-} from "@/board-files/types";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
 import { UnexpectedNullError } from "@/utilities/errors";
+
+type UploadedBoardFile = {
+    buffer: Buffer;
+    mimetype: string;
+    originalname: string;
+    size: number;
+};
+
+type InsertBoardFileOptions = {
+    boardId: string;
+    displayName: string;
+    emoji: string;
+    file: UploadedBoardFile;
+    size: number;
+};
+
+type UpdateStoredBoardFileOptions = Partial<
+    Omit<InsertBoardFileOptions, "boardId">
+>;
 
 type BoardFileRecord = {
     boardId: string;
@@ -137,4 +152,9 @@ const BoardFilesStore = {
     update: withPocketBaseErrors(update),
 };
 
+export type {
+    InsertBoardFileOptions,
+    UpdateStoredBoardFileOptions,
+    UploadedBoardFile,
+};
 export { BoardFilesStore };

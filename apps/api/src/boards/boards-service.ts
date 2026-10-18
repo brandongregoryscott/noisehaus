@@ -1,20 +1,45 @@
 import type { Board } from "common";
 import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
-import type {
-    CreateBoardOptions,
-    CreateBoardResult,
-    GetBoardByTokenOptions,
-    UpdateBoardOptions,
-} from "@/boards/types";
-import { BoardTokensStore } from "@/board-tokens/store";
-import { BoardsStore } from "@/boards/store";
+import type { CreateBoardResult } from "@/boards/boards-store";
+import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
+import { BoardsStore } from "@/boards/boards-store";
 import {
     BOARD_NOT_FOUND_ERROR,
     UniqueConstraintError,
     ValidationError,
 } from "@/utilities/errors";
 import { randomSuffix } from "@/utilities/string-utils";
+
+type CreateBoardOptions = Pick<Board, "name" | "slug">;
+
+type UpdateBoardOptions = {
+    /**
+     * Original slug of the board to update.
+     */
+    originalSlug: string;
+    /**
+     * Token to authorize the board access with.
+     */
+    token: string;
+} & Partial<Pick<Board, "name" | "slug" | "viewPermission">>;
+
+type GetBoardByTokenOptions = {
+    /**
+     * Id of the board to retrieve by token. Required if slug is not provided.
+     */
+    id?: string;
+
+    /**
+     * Id of the board to retrieve by token. Required if id is not provided.
+     */
+    slug?: string;
+
+    /**
+     * Token to authorize the board access with.
+     */
+    token: string;
+};
 
 type InsertOptions = { attempt?: number } & CreateBoardOptions;
 const MAX_CREATE_ATTEMPTS = 5;
@@ -140,4 +165,5 @@ const BoardsService = {
     update,
 };
 
+export type { CreateBoardOptions, GetBoardByTokenOptions, UpdateBoardOptions };
 export { BoardsService };

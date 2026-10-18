@@ -1,12 +1,12 @@
 import { MAXIMUM_BOARD_SIZE_IN_BYTES, ViewPermission } from "common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { UploadedBoardFile } from "@/board-files/types";
-import { BoardFilesService } from "@/board-files/service";
-import { BoardFilesStore } from "@/board-files/store";
-import { BoardsService } from "@/boards/service";
+import type { UploadedBoardFile } from "@/board-files/board-files-store";
+import { BoardFilesService } from "@/board-files/board-files-service";
+import { BoardFilesStore } from "@/board-files/board-files-store";
+import { BoardsService } from "@/boards/boards-service";
 import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
 
-vi.mock("../boards/service", () => ({
+vi.mock("../boards/boards-service", () => ({
     BoardsService: {
         getBySlug: vi.fn(),
         getByToken: vi.fn(),

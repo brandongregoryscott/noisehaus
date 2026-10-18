@@ -10,7 +10,7 @@ import type {
     UpdateBoardResponse,
 } from "common";
 import type { Response } from "express";
-import { BoardsService } from "@/boards/service";
+import { BoardsService } from "@/boards/boards-service";
 import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {

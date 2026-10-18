@@ -5,13 +5,13 @@ const { mockCreateFeedback } = vi.hoisted(() => ({
     mockCreateFeedback: vi.fn(),
 }));
 
-vi.mock("../feedback/service", () => ({
+vi.mock("../feedback/feedback-service", () => ({
     FeedbackService: {
         create: mockCreateFeedback,
     },
 }));
 
-import { FeedbackController } from "@/feedback/controller";
+import { FeedbackController } from "@/feedback/feedback-controller";
 
 const createMockResponse = (): Response =>
     ({
