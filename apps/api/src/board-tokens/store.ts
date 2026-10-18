@@ -2,7 +2,6 @@ import type { BoardToken } from "common";
 import { isEmpty } from "lodash-es";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
-import { randomSuffix } from "@/utilities/string-utils";
 
 const BOARD_TOKEN_COLLECTION = "boardTokens";
 
@@ -25,21 +24,6 @@ const getByBoardSlugAndToken = async (
     }
 
     return boardToken;
-};
-
-const unsafe__insert = async (
-    _boardSlug: string,
-    boardId: string
-): Promise<BoardToken> => {
-    const record = await PocketBaseClient.createRecord<BoardTokenRecord>(
-        BOARD_TOKEN_COLLECTION,
-        {
-            boardId,
-            token: `${randomSuffix()}${randomSuffix()}`.slice(0, 8),
-        }
-    );
-
-    return toBoardToken(record);
 };
 
 const unsafe__getByBoardSlugAndToken = async (
@@ -78,19 +62,6 @@ const unsafe__getByBoardIdAndToken = async (
         ].join(" && ")
     ).then((record) => (record == null ? null : toBoardToken(record)));
 
-const unsafe__deleteAllByBoardId = async (boardId: string): Promise<true> => {
-    const records = await PocketBaseClient.listRecords<BoardTokenRecord>(
-        BOARD_TOKEN_COLLECTION,
-        { filter: `boardId = ${PocketBaseClient.escapeFilterValue(boardId)}` }
-    );
-    await Promise.all(
-        records.map((record) =>
-            PocketBaseClient.deleteRecord(BOARD_TOKEN_COLLECTION, record.id)
-        )
-    );
-    return true;
-};
-
 const toBoardToken = (record: BoardTokenRecord): BoardToken => ({
     boardId: record.boardId,
     createdAt: record.createdAt,
@@ -101,10 +72,8 @@ const toBoardToken = (record: BoardTokenRecord): BoardToken => ({
 
 const BoardTokensStore = {
     getByBoardSlugAndToken,
-    unsafe__deleteAllByBoardId,
     unsafe__getByBoardIdAndToken,
     unsafe__getByBoardSlugAndToken,
-    unsafe__insert,
 };
 
 export { BoardTokensStore };

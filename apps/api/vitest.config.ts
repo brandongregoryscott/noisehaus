@@ -9,6 +9,12 @@ const config = defineConfig({
             "@": srcPath,
         },
     },
+    test: {
+        include: [
+            "src/**/*.test.ts",
+            "../../pocketbase/migrations/**/*.test.mjs",
+        ],
+    },
 });
 
 // eslint-disable-next-line collation/no-default-export -- This config needs to be default exported

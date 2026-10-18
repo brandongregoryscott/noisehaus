@@ -1,71 +1,82 @@
 import type {
+    ApiError,
     ApiErrorResponse,
-    CreateBoardOptions,
-    CreateBoardResult,
     ApiSuccessResponse,
     BoardFile,
+    CreateBoardOptions,
+    CreateBoardResult,
 } from "common";
-import type { ApiError } from "common/api/errors";
 import { useMutation } from "@tanstack/react-query";
-import { CREATE_BOARD_FILE_ROUTE, CREATE_BOARD_ROUTE } from "common";
+import { CREATE_BOARD_FILE_ROUTE, CREATE_BOARD_ROUTE, ErrorName } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardFileOptions } from "@/hooks/use-create-board-file";
 import { post, postMultipartForm } from "@/utils/fetch";
 import { generateRoute } from "@/utils/route-utils";
 
-type UseCreateBoardOptions = {
-    onError?: (error: ApiError) => void;
-    onSuccess?: (response: CreateBoardMutationResult) => void;
-};
+type CreateBoardMutationOptions = {
+    files?: CreateBoardFileOptions[];
+} & CreateBoardOptions;
 
 type CreateBoardMutationResult = {
     data: CreateBoardResult;
     error: ApiError | null;
 };
 
+type UseCreateBoardOptions = {
+    onError?: (error: ApiError) => void;
+    onSuccess?: (response: CreateBoardMutationResult) => void;
+};
+
 const useCreateBoard = (options?: UseCreateBoardOptions) => {
     const { onError, onSuccess } = options ?? {};
-    const result = useMutation<
+    return useMutation<
         CreateBoardMutationResult,
         ApiError,
-        { files?: CreateBoardFileOptions[] } & CreateBoardOptions
+        CreateBoardMutationOptions
     >({
-        mutationFn: async (
-            options: { files?: CreateBoardFileOptions[] } & CreateBoardOptions
-        ) => {
+        mutationFn: async (options) => {
             const { files, ...board } = options;
-
             const { data: createdBoard, error } = await post<
                 CreateBoardOptions,
                 ApiErrorResponse | ApiSuccessResponse<CreateBoardResult>
             >(CREATE_BOARD_ROUTE, board);
-
             if (error !== null) {
                 throw error;
             }
 
-            const { token } = createdBoard;
-            if (files !== undefined && !isEmpty(files)) {
+            if (files === undefined || isEmpty(files)) {
+                return { data: createdBoard, error: null };
+            }
+
+            // Once creation succeeds, every upload outcome must retain the board/token.
+            // A lost response is ambiguous: inspect the board rather than auto-retrying.
+            try {
+                const formData = getFormData(files, createdBoard.token);
                 const route = generateRoute(CREATE_BOARD_FILE_ROUTE, {
                     slug: createdBoard.slug,
                 });
-
-                const formData = getFormData(files, token);
-                const { error: boardFilesError } = await postMultipartForm<
+                const { error: uploadError } = await postMultipartForm<
                     ApiErrorResponse | ApiSuccessResponse<BoardFile[]>
                 >(route, formData);
-
-                return { data: createdBoard, error: boardFilesError };
+                if (uploadError === undefined) {
+                    throw new Error("Missing upload result");
+                }
+                return { data: createdBoard, error: uploadError };
+            } catch {
+                return {
+                    data: createdBoard,
+                    error: {
+                        message:
+                            "Your board was created, but the upload could not be confirmed. Check its sounds before uploading again.",
+                        name: ErrorName.ERROR_UNHANDLED,
+                    },
+                };
             }
-
-            return { data: createdBoard, error: null };
         },
         mutationKey: [CREATE_BOARD_ROUTE],
         onError,
         onSuccess,
     });
-
-    return result;
 };
 
 const getFormData = (
@@ -88,5 +99,5 @@ const getFormData = (
     return formData;
 };
 
-export { useCreateBoard };
 export type { CreateBoardMutationResult };
+export { useCreateBoard };

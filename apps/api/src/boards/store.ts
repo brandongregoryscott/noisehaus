@@ -1,15 +1,14 @@
-import type { Board } from "common";
+import type { Board, BoardToken } from "common";
 import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
+import { randomBytes } from "node:crypto";
 import type {
     CreateBoardOptions,
     CreateBoardResult,
     GetBoardByTokenOptions,
     UpdateBoardOptions,
 } from "@/boards/types";
-import { BoardFilesStore } from "@/board-files/store";
 import { BoardTokensStore } from "@/board-tokens/store";
-import { FeedbackStore } from "@/feedback/store";
 import { PocketBaseClient } from "@/pocketbase-client";
 import {
     BOARD_NOT_FOUND_ERROR,
@@ -43,12 +42,8 @@ const VALID_GET_BY_SLUG_PERMISSIONS = [
 const _delete = async (slug: string, token: string): Promise<true> => {
     const board = await authorizeWritePermissionOrThrow({ slug, token });
 
-    await Promise.all([
-        BoardFilesStore.unsafe__deleteAllByBoardId(board.id),
-        BoardTokensStore.unsafe__deleteAllByBoardId(board.id),
-        FeedbackStore.unsafe__deleteByBoardId(board.id),
-    ]);
-    await unsafe__delete(slug);
+    // PocketBase cascades files, tokens, and feedback in the same transaction.
+    await PocketBaseClient.deleteRecord(BOARD_COLLECTION, board.id);
 
     return true;
 };
@@ -120,18 +115,16 @@ const insert = async (options: InsertOptions): Promise<CreateBoardResult> => {
 
 const update = async (input: UpdateBoardOptions): Promise<Board> => {
     const { originalSlug, token, ...updatedBoard } = input;
-    await authorizeWritePermissionOrThrow({ slug: originalSlug, token });
-
-    return unsafe__update({ originalSlug, ...updatedBoard });
-};
-
-const unsafe__delete = async (slug: string): Promise<void> => {
-    const board = await unsafe__getBySlug(slug);
-    if (board == null) {
-        return;
-    }
-
-    await PocketBaseClient.deleteRecord(BOARD_COLLECTION, board.id);
+    const board = await authorizeWritePermissionOrThrow({
+        slug: originalSlug,
+        token,
+    });
+    const updated = await PocketBaseClient.updateRecord<BoardRecord>(
+        BOARD_COLLECTION,
+        board.id,
+        updatedBoard
+    );
+    return toBoard(updated);
 };
 
 const unsafe__getAllPublic = async (): Promise<Board[]> => {
@@ -177,45 +170,23 @@ const unsafe__getBySlug = async (slug: string): Promise<Board | null> => {
 const unsafe__insert = async (
     input: CreateBoardOptions
 ): Promise<CreateBoardResult> => {
-    const board = await PocketBaseClient.createRecord<BoardRecord>(
-        BOARD_COLLECTION,
+    const id = randomBytes(8).toString("hex").slice(0, 15);
+    const token = randomBytes(4).toString("hex");
+    const [board, boardToken] = await PocketBaseClient.createRecords<
+        [BoardRecord, BoardToken]
+    >([
         {
-            ...input,
-            viewPermission: ViewPermission.BySlug,
-        }
-    );
+            collection: BOARD_COLLECTION,
+            data: { ...input, id, viewPermission: ViewPermission.BySlug },
+        },
+        { collection: "boardTokens", data: { boardId: id, token } },
+    ]);
 
-    if (board === null) {
-        throw new UnexpectedNullError("board");
-    }
-
-    const boardToken = await BoardTokensStore.unsafe__insert(
-        board.slug,
-        board.id
-    );
-
-    if (boardToken === null) {
-        throw new UnexpectedNullError("boardToken");
+    if (board == null || boardToken == null) {
+        throw new UnexpectedNullError("board creation result");
     }
 
     return { ...toBoard(board), token: boardToken.token };
-};
-
-const unsafe__update = async (
-    input: Omit<UpdateBoardOptions, "token">
-): Promise<Board> => {
-    const { originalSlug, ...updatedBoard } = input;
-    const existingBoard = await unsafe__getBySlug(originalSlug);
-    if (existingBoard == null) {
-        throw BOARD_NOT_FOUND_ERROR;
-    }
-
-    const board = await PocketBaseClient.updateRecord<BoardRecord>(
-        BOARD_COLLECTION,
-        existingBoard.id,
-        updatedBoard
-    );
-    return toBoard(board);
 };
 
 const authorizeWritePermissionOrThrow = getByToken;
@@ -237,12 +208,10 @@ const BoardsStore = {
     getByToken,
     insert,
     MAX_CREATE_ATTEMPTS,
-    unsafe__delete,
     unsafe__getAllPublic,
     unsafe__getById,
     unsafe__getBySlug,
     unsafe__insert,
-    unsafe__update,
     update,
 };
 

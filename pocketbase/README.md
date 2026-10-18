@@ -58,8 +58,26 @@ npm run db:migrations:collections
 
 After creating/updating migrations, commit the new files in `pocketbase/migrations/`.
 
+Migration regression tests are plain JavaScript `*.test.mjs` files next to their migration and run with the API tests. PocketBase's migration loader only matches `.js` and `.ts` files, so it skips these tests during startup. Vitest and Prettier support `.mjs` without extra transformation or formatting configuration.
+
 ## API behavior assumptions
 
 - All collections are accessed only by `apps/api`.
 - Browsers do not authenticate with PocketBase directly.
 - Public file access is disabled; `apps/api` issues short-lived file-token URLs.
+
+## Board consistency
+
+Apply `1792278000_board_consistency.js` before deploying the matching application build. It enables PocketBase batches, turns on cascading deletion for board files, tokens, and feedback, and installs SQLite quota triggers.
+
+- Board creation writes the board and its initial token in one transaction. Slug collisions retry the entire transaction.
+- Each upload writes all its board files in one transaction. A rejected file rolls back the other files in that upload.
+- Deleting a board delegates to PocketBase's transactional cascade. A failed deletion retains the board and its token together.
+- The database rejects inserts and size increases exceeding the board's 10 MiB quota, including concurrent uploads and replacements. The application still checks remaining capacity before writing to give a useful error message. Quota calculations include every page of existing files.
+- After a successful board-creation response, the browser retains the board and token for every initial-upload outcome. An unconfirmed upload directs the user to inspect the board before trying again.
+
+The quota triggers use the same limit as `MAXIMUM_BOARD_SIZE_IN_BYTES` in `packages/common/constants/files.ts`. Change both through a migration if the quota changes. Recreate the triggers after any later migration that rebuilds the `boardFiles` table; SQLite drops a table's triggers when that table is dropped. Stored file sizes are supplied by the upload module from the received file, rather than accepted from the browser.
+
+Rolling back this migration removes the quota triggers, restores the previous relation settings, and disables batches. These persistence guarantees must be preserved if the database implementation changes. PocketBase's [batch processing](https://pocketbase.io/docs/api-records/#batch-createupsertupdatedelete-records) and [transaction handling](https://pocketbase.io/docs/js-records/#transaction) define the atomic behavior used here.
+
+A lost response to board creation itself remains an unknown outcome; the application does not automatically retry it. Recovering that case would require a durable creation identifier retained by the browser. Database rollback also cannot guarantee immediate cleanup of audio bytes in external file storage after a process failure.

@@ -1,5 +1,5 @@
 import type { BoardFile, PresignedBoardFile } from "common";
-import { MAXIMUM_BOARD_SIZE_IN_BYTES } from "common";
+import { MAXIMUM_BOARD_SIZE_IN_BYTES, MAX_FILE_COUNT_PER_UPLOAD } from "common";
 import { isEmpty, sumBy } from "lodash-es";
 import type {
     BulkCreateBoardFileOptions,
@@ -7,7 +7,6 @@ import type {
     GetBoardFileOptions,
     ListBoardFilesByTokenOptions,
     UpdateBoardFileOptions,
-    UnsafeCreateOptions,
 } from "@/board-files/types";
 import { BoardsStore } from "@/boards/store";
 import { PocketBaseClient } from "@/pocketbase-client";
@@ -32,10 +31,23 @@ type BoardFileRecord = {
 
 const BOARD_FILE_COLLECTION = "boardFiles";
 
+const normalizeEmoji = (emoji: null | string | undefined): string =>
+    emoji == null || emoji === "null" ? "" : emoji;
+
 const bulkInsert = async (
     options: BulkCreateBoardFileOptions
 ): Promise<BoardFile[]> => {
     const { boardSlug, displayNames, emojis, files, token } = options;
+    if (
+        isEmpty(files) ||
+        files.length > MAX_FILE_COUNT_PER_UPLOAD ||
+        displayNames.length !== files.length ||
+        emojis.length !== files.length
+    ) {
+        throw new ValidationError(
+            `Each uploaded file must have a name and emoji, with at most ${MAX_FILE_COUNT_PER_UPLOAD} files per upload`
+        );
+    }
     const board = await BoardsStore.getByToken({ slug: boardSlug, token });
 
     await unsafe__verifyRemainingSize(
@@ -43,17 +55,20 @@ const bulkInsert = async (
         sumBy(files, (file) => file.size)
     );
 
-    return Promise.all(
-        files.map((file, index) =>
-            unsafe__create({
+    const records = await PocketBaseClient.createRecords<BoardFileRecord[]>(
+        files.map((file, index) => ({
+            collection: BOARD_FILE_COLLECTION,
+            data: toFormData({
                 boardId: board.id,
-                boardSlug,
                 displayName: displayNames[index],
-                emoji: emojis[index],
+                emoji: normalizeEmoji(emojis[index]),
                 file,
-            })
-        )
+                size: file.size,
+            }),
+        }))
     );
+
+    return records.map(toBoardFile);
 };
 
 const _delete = async (
@@ -66,24 +81,16 @@ const _delete = async (
     return true;
 };
 
-const deleteAll = async (boardSlug: string, token: string): Promise<true> => {
-    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
-    return unsafe__deleteAllByBoardId(board.id);
-};
-
 const insert = async (options: CreateBoardFileOptions): Promise<BoardFile> => {
     const { boardSlug, displayName, emoji, file, token } = options;
-    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
-
-    await unsafe__verifyRemainingSize(board.id, file.size);
-
-    return unsafe__create({
-        boardId: board.id,
+    const [boardFile] = await bulkInsert({
         boardSlug,
-        displayName,
-        emoji,
-        file,
+        displayNames: [displayName],
+        emojis: [emoji ?? "null"],
+        files: [file],
+        token,
     });
+    return boardFile;
 };
 
 const getWritableFile = async (
@@ -172,7 +179,7 @@ const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
     if (!isEmpty(emoji)) {
         updatedBoardFile = {
             ...updatedBoardFile,
-            emoji: emoji === "null" ? "" : emoji!,
+            emoji: normalizeEmoji(emoji),
         };
     }
 
@@ -203,34 +210,6 @@ const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
     );
 
     return toBoardFile(record);
-};
-
-const unsafe__create = async (
-    options: UnsafeCreateOptions
-): Promise<BoardFile> => {
-    const { boardId, displayName, emoji, file } = options;
-    const record = await PocketBaseClient.createRecord<BoardFileRecord>(
-        BOARD_FILE_COLLECTION,
-        toFormData({
-            boardId,
-            displayName,
-            emoji: emoji != null && emoji !== "null" ? emoji : "",
-            file,
-            size: file.size,
-        })
-    );
-
-    return toBoardFile(record);
-};
-
-const unsafe__deleteAllByBoardId = async (boardId: string): Promise<true> => {
-    const records = await unsafe__listRecordsByBoardId(boardId);
-    await Promise.all(
-        records.map((record) =>
-            PocketBaseClient.deleteRecord(BOARD_FILE_COLLECTION, record.id)
-        )
-    );
-    return true;
 };
 
 const unsafe__getById = async (id: string): Promise<BoardFile | null> => {
@@ -288,7 +267,7 @@ const toFormData = (input: Record<string, unknown>): FormData => {
             value != null &&
             "buffer" in value
         ) {
-            const uploadedFile = value as UnsafeCreateOptions["file"];
+            const uploadedFile = value as CreateBoardFileOptions["file"];
             const blob = new Blob([new Uint8Array(uploadedFile.buffer)], {
                 type: uploadedFile.mimetype,
             });
@@ -316,12 +295,10 @@ const toBoardFile = (record: BoardFileRecord): BoardFile => ({
 const BoardFilesStore = {
     bulkInsert,
     delete: _delete,
-    deleteAll,
     get,
     insert,
     listByBoardSlug,
     listByToken,
-    unsafe__deleteAllByBoardId,
     update,
 };
 

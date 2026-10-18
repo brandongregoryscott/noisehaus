@@ -1,4 +1,4 @@
-import { ViewPermission } from "common";
+import { MAXIMUM_BOARD_SIZE_IN_BYTES, ViewPermission } from "common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MulterFile } from "@/storage/types";
 import { BoardFilesStore } from "@/board-files/store";
@@ -46,6 +46,9 @@ describe("BoardFilesStore access", () => {
             displayName: "Updated",
         });
         vi.spyOn(PocketBaseClient, "deleteRecord").mockResolvedValue();
+        vi.spyOn(PocketBaseClient, "createRecords").mockResolvedValue([
+            boardFile,
+        ]);
         vi.spyOn(PocketBaseClient, "listRecords").mockResolvedValue([]);
     });
 
@@ -57,6 +60,7 @@ describe("BoardFilesStore access", () => {
         await expect(operation).rejects.toBe(BOARD_NOT_FOUND_ERROR);
         expect(PocketBaseClient.updateRecord).not.toHaveBeenCalled();
         expect(PocketBaseClient.deleteRecord).not.toHaveBeenCalled();
+        expect(PocketBaseClient.createRecords).not.toHaveBeenCalled();
         expect(PocketBaseClient.listRecords).not.toHaveBeenCalled();
     };
 
@@ -262,6 +266,117 @@ describe("BoardFilesStore access", () => {
                 ).not.toHaveBeenCalled();
             }
         );
+    });
+
+    describe("bulkInsert", () => {
+        const file = {
+            buffer: Buffer.from("sound"),
+            mimetype: "audio/wav",
+            originalname: "sound.wav",
+            size: 5,
+        } as MulterFile;
+
+        it("creates all sounds in one transaction", async () => {
+            const options = {
+                boardSlug: board.slug,
+                displayNames: ["First", "Second"],
+                emojis: ["null", ":smile:"],
+                files: [file, file],
+                token: "token-a",
+            };
+            vi.mocked(PocketBaseClient.createRecords).mockResolvedValue([
+                boardFile,
+                { ...boardFile, id: "file-b" },
+            ]);
+
+            const result = await BoardFilesStore.bulkInsert(options);
+
+            expect(result.map((sound) => sound.id)).toEqual([
+                boardFile.id,
+                "file-b",
+            ]);
+            expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
+            const [requests] = vi.mocked(PocketBaseClient.createRecords).mock
+                .calls[0];
+            expect(requests).toHaveLength(2);
+            const first = requests[0].data as FormData;
+            const second = requests[1].data as FormData;
+            expect(first.get("boardId")).toBe(board.id);
+            expect(first.get("displayName")).toBe("First");
+            expect(first.get("emoji")).toBe("");
+            expect(first.get("size")).toBe("5");
+            expect(first.get("file")).toBeInstanceOf(Blob);
+            expect(second.get("displayName")).toBe("Second");
+            expect(second.get("emoji")).toBe(":smile:");
+        });
+
+        it("propagates a failed batch without retrying any individual sound", async () => {
+            const error = new Error("Second sound failed");
+            vi.mocked(PocketBaseClient.createRecords).mockRejectedValue(error);
+            const options = {
+                boardSlug: board.slug,
+                displayNames: ["First", "Second"],
+                emojis: ["null", "null"],
+                files: [file, file],
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.bulkInsert(options);
+
+            await expect(result).rejects.toBe(error);
+            expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
+            expect(PocketBaseClient.deleteRecord).not.toHaveBeenCalled();
+        });
+
+        it("rejects uploads exceeding the remaining quota before writing", async () => {
+            vi.mocked(PocketBaseClient.listRecords).mockResolvedValue([
+                { ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 4 },
+            ]);
+            const options = {
+                boardSlug: board.slug,
+                displayNames: ["Sound"],
+                emojis: ["null"],
+                files: [file],
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.bulkInsert(options);
+
+            await expect(result).rejects.toThrow("remaining size capacity");
+            expect(PocketBaseClient.createRecords).not.toHaveBeenCalled();
+        });
+
+        it("does not write when authorization fails", async () => {
+            vi.mocked(BoardsStore.getByToken).mockRejectedValue(
+                BOARD_NOT_FOUND_ERROR
+            );
+            const options = {
+                boardSlug: board.slug,
+                displayNames: ["Sound"],
+                emojis: ["null"],
+                files: [file],
+                token: "invalid",
+            };
+
+            const result = BoardFilesStore.bulkInsert(options);
+
+            await expectNotFound(result);
+        });
+
+        it("rejects mismatched file metadata before writing", async () => {
+            const options = {
+                boardSlug: board.slug,
+                displayNames: [],
+                emojis: ["null"],
+                files: [file],
+                token: "token-a",
+            };
+
+            const result = BoardFilesStore.bulkInsert(options);
+
+            await expect(result).rejects.toThrow("Each uploaded file");
+            expect(PocketBaseClient.createRecords).not.toHaveBeenCalled();
+        });
     });
 
     describe("get", () => {
