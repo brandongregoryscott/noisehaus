@@ -1,11 +1,29 @@
 import type { GetBoardByTokenOptions } from "@/boards/types";
-import type { MulterFile } from "@/storage/types";
+
+type UploadedBoardFile = {
+    buffer: Buffer;
+    mimetype: string;
+    originalname: string;
+    size: number;
+};
+
+type InsertBoardFileOptions = {
+    boardId: string;
+    displayName: string;
+    emoji: string;
+    file: UploadedBoardFile;
+    size: number;
+};
+
+type UpdateStoredBoardFileOptions = Partial<
+    Omit<InsertBoardFileOptions, "boardId">
+>;
 
 type CreateBoardFileOptions = {
     boardSlug: string;
     displayName: string;
     emoji: string | undefined;
-    file: MulterFile;
+    file: UploadedBoardFile;
     token: string;
 };
 
@@ -13,7 +31,7 @@ type BulkCreateBoardFileOptions = {
     boardSlug: string;
     displayNames: string[];
     emojis: string[];
-    files: MulterFile[];
+    files: UploadedBoardFile[];
     token: string;
 };
 
@@ -44,7 +62,7 @@ type UpdateBoardFileOptions = {
     /**
      * Replacement file
      */
-    file?: MulterFile;
+    file?: UploadedBoardFile;
 
     /**
      * Id of the record to update
@@ -61,6 +79,9 @@ export type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
     GetBoardFileOptions,
+    InsertBoardFileOptions,
     ListBoardFilesByTokenOptions,
     UpdateBoardFileOptions,
+    UpdateStoredBoardFileOptions,
+    UploadedBoardFile,
 };
