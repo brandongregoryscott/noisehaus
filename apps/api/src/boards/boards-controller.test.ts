@@ -43,64 +43,70 @@ describe("board creation HTTP boundary", () => {
         });
     });
 
-    it.each([
-        [
-            400,
+    it("preserves error responses for provider failures", async () => {
+        const testCases = [
             {
+                calls: 6,
                 data: {
-                    slug: {
-                        code: "validation_not_unique",
-                        message: "Slug is taken",
+                    data: {
+                        slug: {
+                            code: "validation_not_unique",
+                            message: "Slug is taken",
+                        },
                     },
                 },
+                httpStatus: 409,
+                message: "Slug is taken",
+                name: ErrorName.ERROR_UNIQUE_CONSTRAINT,
+                status: 400,
             },
-            409,
-            ErrorName.ERROR_UNIQUE_CONSTRAINT,
-            "Slug is taken",
-            6,
-        ],
-        [
-            400,
-            { message: "Invalid board" },
-            400,
-            ErrorName.ERROR_VALIDATION,
-            "Invalid board",
-            1,
-        ],
-        [
-            503,
-            "Private provider diagnostics",
-            500,
-            ErrorName.ERROR_UNHANDLED,
-            "An unhandled error occurred.",
-            1,
-        ],
-    ])(
-        "preserves the error response for provider failure %s %j",
-        async (status, data, httpStatus, name, message, calls) => {
-            vi.mocked(isDevelopment).mockReturnValue(false);
-            const cause = new PocketBaseHttpError(
-                status as number,
-                data,
-                "POST",
-                "/api/batch"
-            );
-            vi.spyOn(PocketBaseClient, "createRecords").mockRejectedValue(
-                cause
-            );
+            {
+                calls: 1,
+                data: { message: "Invalid board" },
+                httpStatus: 400,
+                message: "Invalid board",
+                name: ErrorName.ERROR_VALIDATION,
+                status: 400,
+            },
+            {
+                calls: 1,
+                data: "Private provider diagnostics",
+                httpStatus: 500,
+                message: "An unhandled error occurred.",
+                name: ErrorName.ERROR_UNHANDLED,
+                status: 503,
+            },
+        ];
+        vi.mocked(isDevelopment).mockReturnValue(false);
+        const createRecords = vi.spyOn(PocketBaseClient, "createRecords");
+
+        for (const {
+            calls,
+            data,
+            httpStatus,
+            message,
+            name,
+            status,
+        } of testCases) {
+            createRecords
+                .mockReset()
+                .mockRejectedValue(
+                    new PocketBaseHttpError(status, data, "POST", "/api/batch")
+                );
             const response = createResponse();
 
             await BoardsController.create(request, response);
 
-            expect(response.status).toHaveBeenCalledWith(httpStatus);
+            expect(response.status, name).toHaveBeenCalledWith(httpStatus);
             expect(
                 JSON.parse(
                     JSON.stringify(vi.mocked(response.json).mock.calls[0][0])
-                )
+                ),
+                name
             ).toEqual({ data: null, error: { message, name } });
-            expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(calls);
+            expect(createRecords, name).toHaveBeenCalledTimes(calls);
         }
-    );
+    });
 
     it("lets unexpected exceptions reach Express's fallback handler", async () => {
         const error = new Error("Unexpected failure");
