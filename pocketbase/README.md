@@ -58,7 +58,7 @@ npm run db:migrations:collections
 
 After creating/updating migrations, commit the new files in `pocketbase/migrations/`.
 
-Migration regression tests live alongside them in `pocketbase/migrations/__tests__/` and run with the API tests. Keep test files in that subdirectory because PocketBase evaluates files directly inside the migration directory when it starts.
+Migration regression tests live next to their migration as `*.test.cts` files and run with the API tests. The `.cts` extension identifies CommonJS TypeScript: Vitest, TypeScript, ESLint, and Prettier process it, while PocketBase's migration loader only matches `.js` and `.ts` files. Keep this extension for migration tests so PocketBase excludes them during startup.
 
 ## API behavior assumptions
 

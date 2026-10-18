@@ -1,6 +1,6 @@
 {
     "extends": "tsconfig/base.json",
-    "include": ["**/*.ts", "../../pocketbase/migrations/**/*.test.ts"],
+    "include": ["**/*.ts", "../../pocketbase/migrations/**/*.test.cts"],
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {

@@ -8,7 +8,7 @@ import reactHooksPlugin from "eslint-plugin-react-hooks";
 import perfectionistPlugin from "eslint-plugin-perfectionist";
 
 const config = defineConfig([
-    { files: ["**/*.{ts,tsx}"] },
+    { files: ["**/*.{cts,ts,tsx}"] },
     {
         rules: {
             curly: ["error", "all"],
