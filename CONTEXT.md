@@ -38,12 +38,17 @@ failure, optionally on a specific field. Both narrow the result so callers can
 access its error without another check. Shared application error types, including
 `StoreError`, live in `utilities/errors.ts`.
 
-Provider failures become typed results; unexpected
-exceptions still reject and reach Express's fallback handler. The service retries
+Provider failures become typed results; unexpected exceptions still reject and
+reach Express's fallback handler. The service retries
 only confirmed slug conflicts. Controllers consume results and send the existing
 HTTP response envelope through the shared error-response formatter. Other
 operations retain their throwing contracts during this pilot. Error `kind`
-getters support narrowing without adding fields to serialized errors.
+getters support narrowing without adding fields to serialized errors. Reference
+the shared `ErrorKind` object instead of repeating kind strings.
+
+The throwing and Result adapters share provider-error translation. Preserve
+underlying errors as causes for diagnostics, keep validation causes
+non-enumerable, and hide provider diagnostics in production HTTP responses.
 
 Atomic board/token creation and native cascade deletion belong to persistence.
 Services check quota for helpful errors; the database also enforces quota against
