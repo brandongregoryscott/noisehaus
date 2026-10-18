@@ -19,6 +19,12 @@ type BulkCreateBoardFileOptions = {
 
 type ListBoardFilesByTokenOptions = GetBoardByTokenOptions;
 
+type GetBoardFileOptions = {
+    boardSlug: string;
+    id: string;
+    token?: string;
+};
+
 type UpdateBoardFileOptions = {
     /**
      * Slug of the related board
@@ -62,6 +68,7 @@ type UnsafeCreateOptions = {
 export type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
+    GetBoardFileOptions,
     ListBoardFilesByTokenOptions,
     UnsafeCreateOptions,
     UpdateBoardFileOptions,
