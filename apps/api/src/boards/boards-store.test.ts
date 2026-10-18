@@ -1,4 +1,4 @@
-import { ViewPermission } from "common";
+import { ViewPermission, ErrorKind } from "common";
 import {
     afterEach,
     assert,
@@ -10,7 +10,6 @@ import {
 } from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
-import { ErrorKind } from "@/utilities/errors";
 
 const board = {
     id: "board-a",

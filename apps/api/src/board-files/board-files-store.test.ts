@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterEach,
+    beforeEach,
+    assert,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import { BoardFilesStore } from "@/board-files/board-files-store";
 import { PocketBaseClient } from "@/pocketbase-client";
 
@@ -50,10 +58,14 @@ describe("BoardFilesStore", () => {
         ];
 
         const result = await BoardFilesStore.bulkInsert(input);
+        assert(result.isOk);
 
-        expect(result.map((sound) => sound.id)).toEqual(["file-a", "file-b"]);
-        expect(result[0].emoji).toBeNull();
-        expect(result[0]).not.toHaveProperty("file");
+        expect(result.value.map((sound) => sound.id)).toEqual([
+            "file-a",
+            "file-b",
+        ]);
+        expect(result.value[0].emoji).toBeNull();
+        expect(result.value[0]).not.toHaveProperty("file");
         expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
         const [requests] = vi.mocked(PocketBaseClient.createRecords).mock
             .calls[0];
@@ -133,6 +145,7 @@ describe("BoardFilesStore", () => {
         const result = await BoardFilesStore.listWithPresignedUrls(
             record.boardId
         );
+        assert(result.isOk);
 
         expect(PocketBaseClient.listRecords).toHaveBeenCalledWith(
             "boardFiles",
@@ -147,10 +160,10 @@ describe("BoardFilesStore", () => {
             record.file,
             "file-token"
         );
-        expect(result[0]).toMatchObject({
+        expect(result.value[0]).toMatchObject({
             id: record.id,
             signedUrl: "https://example.com/sound",
         });
-        expect(result[0]).not.toHaveProperty("file");
+        expect(result.value[0]).not.toHaveProperty("file");
     });
 });

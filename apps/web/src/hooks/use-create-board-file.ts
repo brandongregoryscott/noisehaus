@@ -1,13 +1,9 @@
-import type {
-    ApiErrorResponse,
-    ApiSuccessResponse,
-    BoardFile,
-    BoardToken,
-} from "common";
+import type { BoardFile } from "common";
 import type { ApiError } from "common/api/errors";
 import { useMutation } from "@tanstack/react-query";
 import { CREATE_BOARD_FILE_ROUTE } from "common";
 import { postMultipartForm } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseCreateBoardFileOptions = {
@@ -32,15 +28,9 @@ const useCreateBoardFile = (options: UseCreateBoardFileOptions) => {
             });
 
             const formData = getFormData(files, token);
-            const { data, error } = await postMultipartForm<
-                ApiErrorResponse | ApiSuccessResponse<BoardFile[]>
-            >(route, formData);
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data ?? [];
+            return toQueryPromise(
+                postMultipartForm<BoardFile[]>(route, formData)
+            );
         },
         mutationKey: [CREATE_BOARD_FILE_ROUTE, boardSlug],
         onError,

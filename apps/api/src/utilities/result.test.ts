@@ -1,12 +1,14 @@
-import { assert, describe, expect, it } from "vitest";
-import type { StoreError } from "@/utilities/errors";
-import type { Result } from "@/utilities/result";
+import type { StoreError, Result } from "common";
 import {
+    NotFoundError,
+    PersistenceError,
     ErrorKind,
     UniqueConstraintError,
     ValidationError,
-} from "@/utilities/errors";
-import { err, ok } from "@/utilities/result";
+    err,
+    ok,
+} from "common";
+import { assert, describe, expect, it } from "vitest";
 
 describe("Result", () => {
     it("narrows successful results and preserves their value", () => {
@@ -50,5 +52,31 @@ describe("Result", () => {
         const result = err({ field: "slug", kind: ErrorKind.UniqueConstraint });
 
         expect(result.isUniqueConstraintError()).toBe(false);
+    });
+    it("narrows application failures using their specific predicates", () => {
+        const missing: Result<number, NotFoundError | StoreError> = err(
+            new NotFoundError("Missing")
+        );
+        assert(missing.isNotFoundError());
+        expect(missing.error.kind).toBe(ErrorKind.NotFound);
+        expect(missing.isValidationError()).toBe(false);
+
+        const persistence: Result<number, StoreError> = err(
+            new PersistenceError(new Error("Unavailable"))
+        );
+        assert(persistence.isPersistenceError());
+        expect(persistence.error.cause.message).toBe("Unavailable");
+        expect(persistence.isNotFoundError()).toBe(false);
+
+        const validation: Result<number, StoreError> = err(
+            new ValidationError("Invalid board")
+        );
+        assert(validation.isValidationError());
+        expect(validation.error.message).toBe("Invalid board");
+
+        const success = ok(42);
+        expect(success.isNotFoundError()).toBe(false);
+        expect(success.isValidationError()).toBe(false);
+        expect(success.isPersistenceError()).toBe(false);
     });
 });

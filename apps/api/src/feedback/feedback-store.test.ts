@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, describe, expect, it, vi } from "vitest";
 import { FeedbackStore } from "@/feedback/feedback-store";
 import { PocketBaseClient } from "@/pocketbase-client";
 
@@ -17,12 +17,13 @@ describe("FeedbackStore", () => {
         const input = { comment: "Thanks" };
 
         const result = await FeedbackStore.create(input);
+        assert(result.isOk);
 
         expect(PocketBaseClient.createRecord).toHaveBeenCalledWith(
             "feedback",
             input
         );
-        expect(result).toEqual({
+        expect(result.value).toEqual({
             boardId: null,
             comment: "Thanks",
             createdAt: "2026-10-17T00:00:00Z",

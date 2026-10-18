@@ -1,6 +1,6 @@
 import type { BoardToken } from "common";
 import { PocketBaseClient } from "@/pocketbase-client";
-import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
+import { withPocketBaseResult } from "@/storage/pocketbase-errors";
 
 const BOARD_TOKEN_COLLECTION = "boardTokens";
 
@@ -33,7 +33,7 @@ const toBoardToken = (record: BoardTokenRecord): BoardToken => ({
 });
 
 const BoardTokensStore = {
-    findByBoardIdAndToken: withPocketBaseErrors(findByBoardIdAndToken),
+    findByBoardIdAndToken: withPocketBaseResult(findByBoardIdAndToken),
 };
 
 export { BoardTokensStore };

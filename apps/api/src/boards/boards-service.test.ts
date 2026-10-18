@@ -1,4 +1,12 @@
-import { ViewPermission } from "common";
+import {
+    ViewPermission,
+    BOARD_NOT_FOUND_ERROR,
+    UniqueConstraintError,
+    PersistenceError,
+    ValidationError,
+    ok,
+    err,
+} from "common";
 import {
     afterEach,
     assert,
@@ -11,13 +19,6 @@ import {
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsService } from "@/boards/boards-service";
 import { BoardsStore } from "@/boards/boards-store";
-import {
-    BOARD_NOT_FOUND_ERROR,
-    UniqueConstraintError,
-    PersistenceError,
-    ValidationError,
-} from "@/utilities/errors";
-import { ok, err } from "@/utilities/result";
 import { randomSuffix } from "@/utilities/string-utils";
 
 vi.mock("../utilities/string-utils", () => ({ randomSuffix: vi.fn() }));
@@ -41,20 +42,24 @@ describe("BoardsService", () => {
                 token: "token-a",
             })
         );
-        vi.spyOn(BoardsStore, "findBySlug").mockResolvedValue(board);
-        vi.spyOn(BoardsStore, "findById").mockResolvedValue(board);
-        vi.spyOn(BoardTokensStore, "findByBoardIdAndToken").mockResolvedValue({
-            boardId: board.id,
-            createdAt: board.createdAt,
-            id: "token-id",
-            token: "token-a",
-            updatedAt: board.updatedAt,
-        });
-        vi.spyOn(BoardsStore, "delete").mockResolvedValue();
-        vi.spyOn(BoardsStore, "update").mockResolvedValue({
-            ...board,
-            name: "Updated",
-        });
+        vi.spyOn(BoardsStore, "findBySlug").mockResolvedValue(ok(board));
+        vi.spyOn(BoardsStore, "findById").mockResolvedValue(ok(board));
+        vi.spyOn(BoardTokensStore, "findByBoardIdAndToken").mockResolvedValue(
+            ok({
+                boardId: board.id,
+                createdAt: board.createdAt,
+                id: "token-id",
+                token: "token-a",
+                updatedAt: board.updatedAt,
+            })
+        );
+        vi.spyOn(BoardsStore, "delete").mockResolvedValue(ok(undefined));
+        vi.spyOn(BoardsStore, "update").mockResolvedValue(
+            ok({
+                ...board,
+                name: "Updated",
+            })
+        );
     });
     afterEach(() => vi.restoreAllMocks());
 
@@ -68,6 +73,8 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.insert(input);
 
+            assert(result.isOk);
+
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(2);
             expect(BoardsStore.createWithInitialToken).toHaveBeenLastCalledWith(
                 {
@@ -76,7 +83,6 @@ describe("BoardsService", () => {
                     viewPermission: ViewPermission.BySlug,
                 }
             );
-            assert(result.isOk);
             expect(result.value.token).toBe("token-a");
         });
 
@@ -150,38 +156,44 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.get(board.slug, token);
 
-            expect(result).toEqual(board);
+            assert(result.isOk);
+
+            expect(result.value).toEqual(board);
             expect(
                 BoardTokensStore.findByBoardIdAndToken
             ).not.toHaveBeenCalled();
         });
 
         it("requires a token for a protected board", async () => {
-            vi.mocked(BoardsStore.findBySlug).mockResolvedValue({
-                ...board,
-                viewPermission: ViewPermission.ByToken,
-            });
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(
+                ok({
+                    ...board,
+                    viewPermission: ViewPermission.ByToken,
+                })
+            );
 
-            const result = BoardsService.get(board.slug);
-
-            await expect(result).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+            const result = await BoardsService.get(board.slug);
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
             expect(
                 BoardTokensStore.findByBoardIdAndToken
             ).not.toHaveBeenCalled();
         });
 
         it("conceals a protected board when its token is invalid", async () => {
-            vi.mocked(BoardsStore.findBySlug).mockResolvedValue({
-                ...board,
-                viewPermission: ViewPermission.ByToken,
-            });
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(
+                ok({
+                    ...board,
+                    viewPermission: ViewPermission.ByToken,
+                })
+            );
             vi.mocked(BoardTokensStore.findByBoardIdAndToken).mockResolvedValue(
-                null
+                ok(null)
             );
 
-            const result = BoardsService.get(board.slug, "invalid");
-
-            await expect(result).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+            const result = await BoardsService.get(board.slug, "invalid");
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
             expect(BoardTokensStore.findByBoardIdAndToken).toHaveBeenCalledWith(
                 board.id,
                 "invalid"
@@ -193,11 +205,15 @@ describe("BoardsService", () => {
                 ...board,
                 viewPermission: ViewPermission.ByToken,
             };
-            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(protectedBoard);
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(
+                ok(protectedBoard)
+            );
 
             const result = await BoardsService.get(board.slug, "token-a");
 
-            expect(result).toEqual(protectedBoard);
+            assert(result.isOk);
+
+            expect(result.value).toEqual(protectedBoard);
             expect(BoardTokensStore.findByBoardIdAndToken).toHaveBeenCalledWith(
                 board.id,
                 "token-a"
@@ -205,25 +221,27 @@ describe("BoardsService", () => {
         });
 
         it("conceals a missing board", async () => {
-            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(null);
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(ok(null));
 
-            const result = BoardsService.get("missing");
-
-            await expect(result).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+            const result = await BoardsService.get("missing");
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
             expect(
                 BoardTokensStore.findByBoardIdAndToken
             ).not.toHaveBeenCalled();
         });
 
         it("rejects slug-only reads of a protected board", async () => {
-            vi.mocked(BoardsStore.findBySlug).mockResolvedValue({
-                ...board,
-                viewPermission: ViewPermission.ByToken,
-            });
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(
+                ok({
+                    ...board,
+                    viewPermission: ViewPermission.ByToken,
+                })
+            );
 
-            const result = BoardsService.getBySlug(board.slug);
-
-            await expect(result).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+            const result = await BoardsService.getBySlug(board.slug);
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
         });
     });
 
@@ -231,8 +249,8 @@ describe("BoardsService", () => {
         it("updates the authorized board even if its old slug is reassigned", async () => {
             vi.mocked(BoardsStore.findBySlug)
                 .mockReset()
-                .mockResolvedValueOnce(board)
-                .mockResolvedValue({ ...board, id: "board-b" });
+                .mockResolvedValueOnce(ok(board))
+                .mockResolvedValue(ok({ ...board, id: "board-b" }));
             const input = {
                 name: "Updated",
                 originalSlug: board.slug,
@@ -241,7 +259,12 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.update(input);
 
-            expect(result).toMatchObject({ id: board.id, name: "Updated" });
+            assert(result.isOk);
+
+            expect(result.value).toMatchObject({
+                id: board.id,
+                name: "Updated",
+            });
             expect(BoardsStore.update).toHaveBeenCalledExactlyOnceWith(
                 board.id,
                 {
@@ -257,7 +280,9 @@ describe("BoardsService", () => {
 
             const result = await BoardsService.delete(board.slug, token);
 
-            expect(result).toBe(true);
+            assert(result.isOk);
+
+            expect(result.value).toBe(true);
             expect(BoardsStore.delete).toHaveBeenCalledExactlyOnceWith(
                 board.id
             );
@@ -266,11 +291,11 @@ describe("BoardsService", () => {
         it("leaves all records untouched when authorization fails", async () => {
             vi.mocked(BoardsStore.findBySlug)
                 .mockReset()
-                .mockResolvedValue(null);
+                .mockResolvedValue(ok(null));
 
-            const result = BoardsService.delete(board.slug, "invalid");
-
-            await expect(result).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+            const result = await BoardsService.delete(board.slug, "invalid");
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
             expect(BoardsStore.delete).not.toHaveBeenCalled();
         });
 
@@ -284,6 +309,85 @@ describe("BoardsService", () => {
             expect(BoardsStore.delete).toHaveBeenCalledExactlyOnceWith(
                 board.id
             );
+        });
+    });
+    describe("failure propagation", () => {
+        it("preserves persistence failures without treating them as missing boards", async () => {
+            const error = new PersistenceError(
+                new Error("Provider unavailable")
+            );
+            const testCases = [
+                { name: "get", operation: () => BoardsService.get(board.slug) },
+                {
+                    name: "getBySlug",
+                    operation: () => BoardsService.getBySlug(board.slug),
+                },
+                {
+                    name: "getByToken",
+                    operation: () =>
+                        BoardsService.getByToken({
+                            slug: board.slug,
+                            token: "token-a",
+                        }),
+                },
+                {
+                    name: "update",
+                    operation: () =>
+                        BoardsService.update({
+                            name: "Updated",
+                            originalSlug: board.slug,
+                            token: "token-a",
+                        }),
+                },
+                {
+                    name: "delete",
+                    operation: () =>
+                        BoardsService.delete(board.slug, "token-a"),
+                },
+            ];
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(err(error));
+            for (const { name, operation } of testCases) {
+                const result = await operation();
+                assert(result.isPersistenceError(), name);
+                expect(result.error, name).toBe(error);
+            }
+            expect(
+                BoardTokensStore.findByBoardIdAndToken
+            ).not.toHaveBeenCalled();
+            expect(BoardsStore.update).not.toHaveBeenCalled();
+            expect(BoardsStore.delete).not.toHaveBeenCalled();
+        });
+
+        it("stops writes when token lookup fails", async () => {
+            const error = new PersistenceError(
+                new Error("Token lookup failed")
+            );
+            vi.mocked(BoardTokensStore.findByBoardIdAndToken).mockResolvedValue(
+                err(error)
+            );
+            const result = await BoardsService.update({
+                name: "Updated",
+                originalSlug: board.slug,
+                token: "token-a",
+            });
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardsStore.update).not.toHaveBeenCalled();
+        });
+
+        it("returns validation when token authorization has neither id nor slug", async () => {
+            const result = await BoardsService.getByToken({ token: "token-a" });
+            assert(result.isValidationError());
+            expect(BoardsStore.findBySlug).not.toHaveBeenCalled();
+            expect(BoardsStore.findById).not.toHaveBeenCalled();
+        });
+
+        it("returns a failed delete without reporting success", async () => {
+            const error = new PersistenceError(new Error("Delete failed"));
+            vi.mocked(BoardsStore.delete).mockResolvedValue(err(error));
+            const result = await BoardsService.delete(board.slug, "token-a");
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
         });
     });
 });

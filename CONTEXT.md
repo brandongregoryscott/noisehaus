@@ -29,26 +29,36 @@ validation, quota checks, and retry policy. Stores own persistence operations,
 record mapping, file transport, and translation of provider errors. Controllers
 call services; services call stores. Stores do not call services.
 
-Board creation uses the application-owned `Result`, `ok`, and `err` from
-`utilities/result.ts` with `Promise<Result<T, StoreError>>` from the store
-through the service. Only that wrapper imports `true-myth`; its public contract
-exposes application types and hides library methods. Use `result.isErr` for any
-failure and `result.isUniqueConstraintError(field?)` for a unique constraint
-failure, optionally on a specific field. Both narrow the result so callers can
-access its error without another check. Shared application error types, including
-`StoreError`, live in `utilities/errors.ts`.
+API stores and services return `Promise<Result<T, E>>` for expected failures.
+Stores use `StoreError`; services add access and business failures through
+`ServiceError`. Missing records are successful `null` store results; services
+decide whether absence means not found or is allowed (such as feedback without a
+matching board). Propagate failures before further reads or writes.
 
-Provider failures become typed results; unexpected exceptions still reject and
-reach Express's fallback handler. The service retries
-only confirmed slug conflicts. Controllers consume results and send the existing
-HTTP response envelope through the shared error-response formatter. Other
-operations retain their throwing contracts during this pilot. Error `kind`
-getters support narrowing without adding fields to serialized errors. Reference
-the shared `ErrorKind` object instead of repeating kind strings.
+Both apps import the application-owned `Result`, `ok`, `err`, and error classes
+from `common`. Only `packages/common/result.ts` imports `true-myth`; its public
+contract hides library types and methods. Use `result.isErr` for any failure and
+specific predicates such as `result.isNotFoundError()`,
+`result.isValidationError()`, `result.isPersistenceError()`, and
+`result.isUniqueConstraintError(field?)` to narrow failures. Shared error types
+and `ErrorKind` constants live in `packages/common/errors.ts`; reference those
+constants instead of repeating kind strings.
 
-The throwing and Result adapters share provider-error translation. Preserve
-underlying errors as causes for diagnostics, keep validation causes
+Stores translate PocketBase HTTP and transport failures into typed errors.
+The transport can throw at its external I/O boundary; programming errors,
+configuration errors, and broken invariants still throw and reach Express's
+fallback handler. Controllers consume results through `sendResultResponse`,
+which shares logging and error formatting with that handler and preserves the
+HTTP response envelope. Preserve causes for diagnostics, keep validation causes
 non-enumerable, and hide provider diagnostics in production HTTP responses.
+The board service retries only confirmed slug conflicts.
+
+Frontend request helpers return `Result<T, ApiError>` after decoding the HTTP
+envelope, including failures to fetch or parse a response. Hooks use
+`toQueryPromise` at the TanStack Query boundary so failures reject and Query
+tracks error state. Never put an `Err` into Query's successful data cache.
+After board creation, upload failures retain the created board and token;
+unknown upload outcomes tell the user to inspect the board before retrying.
 
 Atomic board/token creation and native cascade deletion belong to persistence.
 Services check quota for helpful errors; the database also enforces quota against

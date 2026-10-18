@@ -1,6 +1,7 @@
-import { ErrorName } from "common";
+import { ErrorName } from "./api/errors";
 
 const ErrorKind = {
+    NotFound: "not-found",
     Persistence: "persistence",
     UniqueConstraint: "unique-constraint",
     Validation: "validation",
@@ -11,6 +12,10 @@ class NotFoundError extends Error {
         super();
         this.name = ErrorName.ERROR_NOT_FOUND;
         this.message = message;
+    }
+
+    get kind() {
+        return ErrorKind.NotFound;
     }
 }
 
@@ -86,8 +91,9 @@ class PersistenceError extends Error {
 }
 
 type StoreError = PersistenceError | UniqueConstraintError | ValidationError;
+type ServiceError = NotFoundError | StoreError;
 
-export type { StoreError };
+export type { ServiceError, StoreError };
 export {
     BOARD_NOT_FOUND_ERROR,
     ErrorKind,

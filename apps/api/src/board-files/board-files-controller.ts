@@ -1,9 +1,9 @@
 import type { Response, Request } from "express";
+import { ValidationError } from "common";
 import { isEmpty } from "lodash-es";
 import { BoardFilesService } from "@/board-files/board-files-service";
+import { sendErrorResponse, sendResultResponse } from "@/error-handler";
 import { arrify } from "@/utilities/collection-utils";
-import { ValidationError } from "@/utilities/errors";
-import { ok } from "@/utilities/responses";
 
 const BoardFilesController = {
     create: async (request: Request, response: Response): Promise<Response> => {
@@ -13,18 +13,30 @@ const BoardFilesController = {
         const displayNames = arrify<string>(request.body.displayNames);
         const emojis = arrify<string>(request.body.emojis);
         if (!Array.isArray(files) || isEmpty(files)) {
-            throw new ValidationError(
-                "'files' is required and must be an array."
+            return sendErrorResponse(
+                new ValidationError(
+                    "'files' is required and must be an array."
+                ),
+                request,
+                response
             );
         }
 
         if (displayNames.length !== files.length) {
-            throw new ValidationError("Each file must have a name defined");
+            return sendErrorResponse(
+                new ValidationError("Each file must have a name defined"),
+                request,
+                response
+            );
         }
 
         if (emojis.length !== files.length) {
-            throw new ValidationError(
-                "Each file must have an emoji defined (or the string 'null' if no emoji is chosen)"
+            return sendErrorResponse(
+                new ValidationError(
+                    "Each file must have an emoji defined (or the string 'null' if no emoji is chosen)"
+                ),
+                request,
+                response
             );
         }
 
@@ -36,21 +48,21 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFiles);
+        return sendResultResponse(boardFiles, request, response);
     },
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { token } = request.body;
         const result = await BoardFilesService.delete(id, boardSlug, token);
 
-        return ok(response, result);
+        return sendResultResponse(result, request, response);
     },
     get: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
         const boardFile = await BoardFilesService.get({ boardSlug, id, token });
 
-        return ok(response, boardFile);
+        return sendResultResponse(boardFile, request, response);
     },
     list: async (request: Request, response: Response): Promise<Response> => {
         const { slug: boardSlug } = request.params;
@@ -62,7 +74,7 @@ const BoardFilesController = {
                   token: token!,
               }));
 
-        return ok(response, boardFiles);
+        return sendResultResponse(boardFiles, request, response);
     },
     update: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
@@ -78,7 +90,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFile);
+        return sendResultResponse(boardFile, request, response);
     },
 };
 

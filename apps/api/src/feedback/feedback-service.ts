@@ -1,4 +1,5 @@
-import type { Feedback } from "common";
+import type { Feedback, Result, StoreError } from "common";
+import { ok } from "common";
 import type { CreateStoredFeedbackOptions } from "@/feedback/feedback-store";
 import { BoardsStore } from "@/boards/boards-store";
 import { FeedbackStore } from "@/feedback/feedback-store";
@@ -7,25 +8,33 @@ type CreateFeedbackOptions = {
     boardSlug?: string;
 } & CreateStoredFeedbackOptions;
 
-const create = async (input: CreateFeedbackOptions): Promise<Feedback> => {
+const create = async (
+    input: CreateFeedbackOptions
+): Promise<Result<Feedback, StoreError>> => {
     const createInput = await normalizeCreateInput(input);
-    return FeedbackStore.create(createInput);
+    if (createInput.isErr) {
+        return createInput;
+    }
+    return FeedbackStore.create(createInput.value);
 };
 
 const normalizeCreateInput = async (
     input: CreateFeedbackOptions
-): Promise<CreateStoredFeedbackOptions> => {
+): Promise<Result<CreateStoredFeedbackOptions, StoreError>> => {
     const { boardSlug } = input;
     if (boardSlug == null) {
-        return omitBoardFields(input);
+        return ok(omitBoardFields(input));
     }
 
     const board = await BoardsStore.findBySlug(boardSlug);
-    if (board == null) {
-        return omitBoardFields(input);
+    if (board.isErr) {
+        return board;
+    }
+    if (board.value == null) {
+        return ok(omitBoardFields(input));
     }
 
-    return { ...omitBoardFields(input), boardId: board.id };
+    return ok({ ...omitBoardFields(input), boardId: board.value.id });
 };
 
 const omitBoardFields = (

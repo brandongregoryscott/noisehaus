@@ -1,13 +1,17 @@
+import type { Result } from "common";
 import type { NextFunction, Request, Response } from "express";
-import { ErrorName, isNotFoundError } from "common";
-import { isDevelopment } from "@/utilities/environment";
 import {
+    ErrorName,
+    isNotFoundError,
     UnhandledError,
     UniqueConstraintError,
     PersistenceError,
-} from "@/utilities/errors";
+} from "common";
+import { isDevelopment } from "@/utilities/environment";
 import { logger } from "@/utilities/logger";
 import {
+    created,
+    ok,
     badRequest,
     conflict,
     internalError,
@@ -16,7 +20,7 @@ import {
 
 const sendErrorResponse = (
     error: unknown,
-    request: Request,
+    request: Partial<Request>,
     response: Response
 ) => {
     const log = request.logger ?? logger;
@@ -55,6 +59,20 @@ const sendErrorResponse = (
     return internalError(response, error);
 };
 
+const sendResultResponse = <T, E>(
+    result: Result<T, E>,
+    request: Partial<Request>,
+    response: Response,
+    status: 200 | 201 = 200
+): Response => {
+    if (result.isErr) {
+        return sendErrorResponse(result.error, request, response);
+    }
+    return status === 201
+        ? created(response, result.value)
+        : ok(response, result.value);
+};
+
 const errorHandler = (
     error: unknown,
     request: Request,
@@ -62,4 +80,4 @@ const errorHandler = (
     _next: NextFunction
 ) => sendErrorResponse(error, request, response);
 
-export { errorHandler, sendErrorResponse };
+export { errorHandler, sendErrorResponse, sendResultResponse };

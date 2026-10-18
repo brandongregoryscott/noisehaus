@@ -1,22 +1,43 @@
 import type { Err as MythErr, Ok as MythOk } from "true-myth/result";
 import type MythResult from "true-myth/result";
 import { err as mythErr, ok as mythOk } from "true-myth/result";
-import { UniqueConstraintError } from "@/utilities/errors";
+import {
+    NotFoundError,
+    PersistenceError,
+    UniqueConstraintError,
+    ValidationError,
+} from "./errors";
 
-type UniqueConstraintFailure<E> = {
-    readonly error: E & UniqueConstraintError;
+type Failure<E, SpecificError> = {
+    readonly error: E & SpecificError;
     readonly isErr: true;
     readonly isOk: false;
 };
 
 abstract class ResultChecks<E> {
+    isNotFoundError(): this is Failure<E, NotFoundError> & this {
+        return this instanceof ErrResult && this.error instanceof NotFoundError;
+    }
+
+    isPersistenceError(): this is Failure<E, PersistenceError> & this {
+        return (
+            this instanceof ErrResult && this.error instanceof PersistenceError
+        );
+    }
+
     isUniqueConstraintError(
         field?: string
-    ): this is this & UniqueConstraintFailure<E> {
+    ): this is Failure<E, UniqueConstraintError> & this {
         return (
             this instanceof ErrResult &&
             this.error instanceof UniqueConstraintError &&
             (field === undefined || this.error.field === field)
+        );
+    }
+
+    isValidationError(): this is Failure<E, ValidationError> & this {
+        return (
+            this instanceof ErrResult && this.error instanceof ValidationError
         );
     }
 }

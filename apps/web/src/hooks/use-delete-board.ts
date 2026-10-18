@@ -1,14 +1,8 @@
-import type {
-    DeleteBoardOptions,
-    ApiErrorResponse,
-    DeleteBoardResponse,
-    Board,
-    BoardToken,
-    ApiError,
-} from "common";
+import type { DeleteBoardOptions, Board, BoardToken, ApiError } from "common";
 import { useMutation } from "@tanstack/react-query";
 import { DELETE_BOARD_ROUTE } from "common";
 import { _delete } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseDeleteBoardOptions = {
@@ -25,16 +19,9 @@ const useDeleteBoard = (options?: UseDeleteBoardOptions) => {
             const { slug, token } = options;
             const route = generateRoute(DELETE_BOARD_ROUTE, { slug });
 
-            const { data, error } = await _delete<
-                DeleteBoardOptions,
-                ApiErrorResponse | DeleteBoardResponse
-            >(route, { token });
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data;
+            return toQueryPromise(
+                _delete<DeleteBoardOptions, true>(route, { token })
+            );
         },
         onError,
         onSuccess,

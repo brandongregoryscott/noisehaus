@@ -29,6 +29,18 @@ class PocketBaseHttpError extends Error {
     }
 }
 
+class PocketBaseTransportError extends Error {
+    constructor(cause: unknown) {
+        super(
+            cause instanceof Error
+                ? cause.message
+                : "PocketBase transport failed",
+            { cause }
+        );
+        this.name = "PocketBaseTransportError";
+    }
+}
+
 type ListOptions = {
     filter?: string;
     perPage?: number;
@@ -86,6 +98,20 @@ const parseResponseBody = async (response: Response): Promise<unknown> => {
     return response.text();
 };
 
+const fetchResponse = async (
+    path: string,
+    options: RequestInit
+): Promise<{ body: unknown; response: Response }> => {
+    // Configuration errors stay outside the transport failure boundary.
+    const url = `${baseUrl()}${path}`;
+    try {
+        const response = await fetch(url, options);
+        return { body: await parseResponseBody(response), response };
+    } catch (cause) {
+        throw new PocketBaseTransportError(cause);
+    }
+};
+
 const authenticate = async (signal?: AbortSignal): Promise<void> => {
     if (authToken !== "") {
         return;
@@ -103,8 +129,8 @@ const authenticate = async (signal?: AbortSignal): Promise<void> => {
         );
     }
 
-    const response = await fetch(
-        `${baseUrl()}/api/collections/_superusers/auth-with-password`,
+    const { body: rawBody, response } = await fetchResponse(
+        "/api/collections/_superusers/auth-with-password",
         {
             body: JSON.stringify({
                 identity: POCKETBASE_SUPERUSER_EMAIL,
@@ -117,11 +143,11 @@ const authenticate = async (signal?: AbortSignal): Promise<void> => {
             signal,
         }
     );
-    const body = (await parseResponseBody(response)) as { token?: string };
+    const body = isObjectLike(rawBody) ? (rawBody as { token?: string }) : {};
     if (!response.ok || body.token == null) {
         throw new PocketBaseHttpError(
             response.status,
-            body,
+            rawBody,
             "POST",
             "/api/collections/_superusers/auth-with-password"
         );
@@ -148,12 +174,11 @@ const request = async <T>(
     logger.debug({ method, path }, "pocketbase request");
     const start = Date.now();
 
-    const response = await fetch(`${baseUrl()}${path}`, {
+    const { body, response } = await fetchResponse(path, {
         ...options,
         headers,
     });
 
-    const body = await parseResponseBody(response);
     if (response.ok) {
         return body as T;
     }
@@ -365,4 +390,4 @@ const PocketBaseClient = {
     updateRecord,
 };
 
-export { PocketBaseClient, PocketBaseHttpError };
+export { PocketBaseClient, PocketBaseHttpError, PocketBaseTransportError };
