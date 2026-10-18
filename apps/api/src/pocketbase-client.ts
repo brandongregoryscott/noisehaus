@@ -1,4 +1,4 @@
-import { find, isEmpty, isNil, isObjectLike, isString } from "lodash-es";
+import { find, isEmpty, isObjectLike, isString } from "lodash-es";
 import {
     POCKETBASE_SUPERUSER_EMAIL,
     POCKETBASE_SUPERUSER_PASSWORD,
@@ -280,9 +280,9 @@ const createRecords = async <T extends unknown[]>(
         const { data } = error.data as BatchErrorBody;
         const failure = find(
             data?.requests,
-            (entry) => !isNil(entry.response)
+            (entry) => entry.response != null
         )?.response;
-        if (isNil(failure)) {
+        if (failure == null) {
             throw error;
         }
 

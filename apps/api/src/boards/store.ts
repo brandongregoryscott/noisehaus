@@ -1,6 +1,6 @@
 import type { Board, BoardToken } from "common";
 import { ViewPermission } from "common";
-import { isEmpty, isNil } from "lodash-es";
+import { isEmpty } from "lodash-es";
 import { randomBytes } from "node:crypto";
 import type {
     CreateBoardOptions,
@@ -182,7 +182,7 @@ const unsafe__insert = async (
         { collection: "boardTokens", data: { boardId: id, token } },
     ]);
 
-    if (isNil(board) || isNil(boardToken)) {
+    if (board == null || boardToken == null) {
         throw new UnexpectedNullError("board creation result");
     }
 
