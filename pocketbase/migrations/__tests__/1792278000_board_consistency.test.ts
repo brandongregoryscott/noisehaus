@@ -19,10 +19,7 @@ const { DatabaseSync } = createRequire(__filename)(
     "node:sqlite"
 ) as SQLiteModule;
 const migration = readFileSync(
-    path.resolve(
-        __dirname,
-        "../../../../pocketbase/migrations/1792278000_board_consistency.js"
-    ),
+    path.resolve(__dirname, "../1792278000_board_consistency.js"),
     "utf8"
 );
 

@@ -58,6 +58,8 @@ npm run db:migrations:collections
 
 After creating/updating migrations, commit the new files in `pocketbase/migrations/`.
 
+Migration regression tests live alongside them in `pocketbase/migrations/__tests__/` and run with the API tests. Keep test files in that subdirectory because PocketBase evaluates files directly inside the migration directory when it starts.
+
 ## API behavior assumptions
 
 - All collections are accessed only by `apps/api`.
