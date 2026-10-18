@@ -31,6 +31,9 @@ type BoardFileRecord = {
 
 const BOARD_FILE_COLLECTION = "boardFiles";
 
+const normalizeEmoji = (emoji: null | string | undefined): string =>
+    emoji == null || emoji === "null" ? "" : emoji;
+
 const bulkInsert = async (
     options: BulkCreateBoardFileOptions
 ): Promise<BoardFile[]> => {
@@ -58,10 +61,7 @@ const bulkInsert = async (
             data: toFormData({
                 boardId: board.id,
                 displayName: displayNames[index],
-                emoji:
-                    emojis[index] != null && emojis[index] !== "null"
-                        ? emojis[index]
-                        : "",
+                emoji: normalizeEmoji(emojis[index]),
                 file,
                 size: file.size,
             }),
@@ -179,7 +179,7 @@ const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
     if (!isEmpty(emoji)) {
         updatedBoardFile = {
             ...updatedBoardFile,
-            emoji: emoji === "null" ? "" : emoji!,
+            emoji: normalizeEmoji(emoji),
         };
     }
 
