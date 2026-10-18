@@ -14,11 +14,10 @@ import {
     notFound,
 } from "@/utilities/responses";
 
-const errorHandler = async (
+const sendErrorResponse = (
     error: unknown,
     request: Request,
-    response: Response,
-    _next: NextFunction
+    response: Response
 ) => {
     const log = request.logger ?? logger;
 
@@ -56,4 +55,11 @@ const errorHandler = async (
     return internalError(response, error);
 };
 
-export { errorHandler };
+const errorHandler = (
+    error: unknown,
+    request: Request,
+    response: Response,
+    _next: NextFunction
+) => sendErrorResponse(error, request, response);
+
+export { errorHandler, sendErrorResponse };

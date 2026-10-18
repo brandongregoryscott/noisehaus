@@ -1,4 +1,5 @@
 import { ViewPermission } from "common";
+import { ok, err } from "true-myth/result";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsService } from "@/boards/boards-service";
@@ -6,6 +7,8 @@ import { BoardsStore } from "@/boards/boards-store";
 import {
     BOARD_NOT_FOUND_ERROR,
     UniqueConstraintError,
+    PersistenceError,
+    ValidationError,
 } from "@/utilities/errors";
 import { randomSuffix } from "@/utilities/string-utils";
 
@@ -24,10 +27,12 @@ const slugConflict = () =>
 describe("BoardsService", () => {
     beforeEach(() => {
         vi.mocked(randomSuffix).mockReset().mockReturnValue("suffix");
-        vi.spyOn(BoardsStore, "createWithInitialToken").mockResolvedValue({
-            ...board,
-            token: "token-a",
-        });
+        vi.spyOn(BoardsStore, "createWithInitialToken").mockResolvedValue(
+            ok({
+                ...board,
+                token: "token-a",
+            })
+        );
         vi.spyOn(BoardsStore, "findBySlug").mockResolvedValue(board);
         vi.spyOn(BoardsStore, "findById").mockResolvedValue(board);
         vi.spyOn(BoardTokensStore, "findByBoardIdAndToken").mockResolvedValue({
@@ -47,8 +52,8 @@ describe("BoardsService", () => {
 
     describe("insert", () => {
         it("retries the whole transaction with a suffix after a slug collision", async () => {
-            vi.mocked(BoardsStore.createWithInitialToken).mockRejectedValueOnce(
-                slugConflict()
+            vi.mocked(BoardsStore.createWithInitialToken).mockResolvedValueOnce(
+                err(slugConflict())
             );
             vi.mocked(randomSuffix).mockReturnValue("abc123");
             const input = { name: board.name, slug: board.slug };
@@ -63,18 +68,24 @@ describe("BoardsService", () => {
                     viewPermission: ViewPermission.BySlug,
                 }
             );
-            expect(result.token).toBe("token-a");
+            expect(result.isOk).toBe(true);
+            if (result.isOk) {
+                expect(result.value.token).toBe("token-a");
+            }
         });
 
         it("stops after the maximum number of slug collision retries", async () => {
-            vi.mocked(BoardsStore.createWithInitialToken).mockRejectedValue(
-                slugConflict()
+            vi.mocked(BoardsStore.createWithInitialToken).mockResolvedValue(
+                err(slugConflict())
             );
             const input = { name: board.name, slug: board.slug };
 
-            const result = BoardsService.insert(input);
+            const result = await BoardsService.insert(input);
 
-            await expect(result).rejects.toBeInstanceOf(UniqueConstraintError);
+            expect(result.isErr).toBe(true);
+            if (result.isErr) {
+                expect(result.error.kind).toBe("unique-constraint");
+            }
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(
                 BoardsService.MAX_CREATE_ATTEMPTS + 1
             );
@@ -85,14 +96,31 @@ describe("BoardsService", () => {
                 "Token is taken",
                 new Error()
             );
-            vi.mocked(BoardsStore.createWithInitialToken).mockRejectedValue(
-                error
+            vi.mocked(BoardsStore.createWithInitialToken).mockResolvedValue(
+                err(error)
             );
             const input = { name: board.name, slug: board.slug };
 
-            const result = BoardsService.insert(input);
+            const result = await BoardsService.insert(input);
 
-            await expect(result).rejects.toBe(error);
+            expect(result).toEqual(err(error));
+            expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(1);
+        });
+
+        it.each([
+            new PersistenceError(new Error("Ambiguous write outcome")),
+            new ValidationError("Invalid board"),
+        ])("returns $kind failures without retrying", async (error) => {
+            vi.mocked(BoardsStore.createWithInitialToken).mockResolvedValue(
+                err(error)
+            );
+
+            const result = await BoardsService.insert({
+                name: board.name,
+                slug: board.slug,
+            });
+
+            expect(result).toEqual(err(error));
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(1);
         });
 

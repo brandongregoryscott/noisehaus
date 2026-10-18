@@ -1,14 +1,12 @@
 import type { Board } from "common";
+import type Result from "true-myth/result";
 import { ViewPermission } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardResult } from "@/boards/boards-store";
+import type { StoreError } from "@/storage/pocketbase-errors";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsStore } from "@/boards/boards-store";
-import {
-    BOARD_NOT_FOUND_ERROR,
-    UniqueConstraintError,
-    ValidationError,
-} from "@/utilities/errors";
+import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
 import { randomSuffix } from "@/utilities/string-utils";
 
 type CreateBoardOptions = Pick<Board, "name" | "slug">;
@@ -98,30 +96,30 @@ const getByToken = async (options: GetBoardByTokenOptions): Promise<Board> => {
     return board;
 };
 
-const insert = async (options: InsertOptions): Promise<CreateBoardResult> => {
+const insert = async (
+    options: InsertOptions
+): Promise<Result<CreateBoardResult, StoreError>> => {
     const { attempt = 0, name } = options;
     let { slug } = options;
     if (attempt > 0) {
         slug = `${slug}-${randomSuffix()}`;
     }
 
-    try {
-        return await BoardsStore.createWithInitialToken({
-            name,
-            slug,
-            viewPermission: ViewPermission.BySlug,
-        });
-    } catch (error) {
-        if (
-            error instanceof UniqueConstraintError &&
-            error.field === "slug" &&
-            attempt < MAX_CREATE_ATTEMPTS
-        ) {
-            return insert({ ...options, attempt: attempt + 1 });
-        }
-
-        throw error;
+    const result = await BoardsStore.createWithInitialToken({
+        name,
+        slug,
+        viewPermission: ViewPermission.BySlug,
+    });
+    if (
+        result.isErr &&
+        result.error.kind === "unique-constraint" &&
+        result.error.field === "slug" &&
+        attempt < MAX_CREATE_ATTEMPTS
+    ) {
+        return insert({ ...options, attempt: attempt + 1 });
     }
+
+    return result;
 };
 
 const update = async (input: UpdateBoardOptions): Promise<Board> => {

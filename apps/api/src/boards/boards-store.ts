@@ -2,7 +2,10 @@ import type { Board, BoardToken } from "common";
 import { ViewPermission } from "common";
 import { randomBytes } from "node:crypto";
 import { PocketBaseClient } from "@/pocketbase-client";
-import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
+import {
+    withPocketBaseErrors,
+    withPocketBaseResult,
+} from "@/storage/pocketbase-errors";
 import { UnexpectedNullError } from "@/utilities/errors";
 
 type CreateBoardResult = {
@@ -110,7 +113,7 @@ const _delete = async (id: string): Promise<void> => {
 };
 
 const BoardsStore = {
-    createWithInitialToken: withPocketBaseErrors(createWithInitialToken),
+    createWithInitialToken: withPocketBaseResult(createWithInitialToken),
     delete: withPocketBaseErrors(_delete),
     findById: withPocketBaseErrors(findById),
     findBySlug: withPocketBaseErrors(findBySlug),

@@ -1,7 +1,7 @@
 import { ViewPermission } from "common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
-import { PocketBaseClient } from "@/pocketbase-client";
+import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
 
 const board = {
     id: "board-a",
@@ -40,7 +40,13 @@ describe("BoardsStore", () => {
 
             const result = await BoardsStore.createWithInitialToken(input);
 
-            expect(result).toMatchObject({ ...board, token: "token-a" });
+            expect(result.isOk).toBe(true);
+            if (result.isOk) {
+                expect(result.value).toMatchObject({
+                    ...board,
+                    token: "token-a",
+                });
+            }
             expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
             const [requests] = vi.mocked(PocketBaseClient.createRecords).mock
                 .calls[0];
@@ -65,6 +71,48 @@ describe("BoardsStore", () => {
                 boardId: (requests[0].data as Record<string, unknown>).id,
             });
             expect(PocketBaseClient.createRecord).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            [
+                400,
+                { data: { slug: { code: "validation_not_unique" } } },
+                "unique-constraint",
+            ],
+            [400, { message: "Invalid board" }, "validation"],
+            [503, "Unavailable", "persistence"],
+        ])(
+            "returns a typed result for provider failure %s %j",
+            async (status, data, kind) => {
+                const cause = new PocketBaseHttpError(
+                    status as number,
+                    data,
+                    "POST",
+                    "/api/batch"
+                );
+                vi.mocked(PocketBaseClient.createRecords).mockRejectedValue(
+                    cause
+                );
+
+                const result = await BoardsStore.createWithInitialToken({
+                    ...board,
+                });
+
+                expect(result.isErr).toBe(true);
+                if (result.isErr) {
+                    expect(result.error.kind).toBe(kind);
+                    expect(result.error.cause).toBe(cause);
+                }
+                expect(PocketBaseClient.createRecords).toHaveBeenCalledTimes(1);
+            }
+        );
+
+        it("rejects malformed successful batches as unexpected failures", async () => {
+            vi.mocked(PocketBaseClient.createRecords).mockResolvedValue([]);
+
+            await expect(
+                BoardsStore.createWithInitialToken({ ...board })
+            ).rejects.toThrow("'board creation result' was unexpectedly null.");
         });
 
         it("propagates a failed batch without retrying individual writes", async () => {

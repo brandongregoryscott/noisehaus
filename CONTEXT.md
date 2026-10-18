@@ -29,6 +29,14 @@ validation, quota checks, and retry policy. Stores own persistence operations,
 record mapping, file transport, and translation of provider errors. Controllers
 call services; services call stores. Stores do not call services.
 
+Board creation pilots `true-myth` with `Promise<Result<T, StoreError>>` from
+the store through the service. Provider failures become typed results; unexpected
+exceptions still reject and reach Express's fallback handler. The service retries
+only confirmed slug conflicts. Controllers consume results and send the existing
+HTTP response envelope through the shared error-response formatter. Other
+operations retain their throwing contracts during this pilot. Error `kind`
+getters support narrowing without adding fields to serialized errors.
+
 Atomic board/token creation and native cascade deletion belong to persistence.
 Services check quota for helpful errors; the database also enforces quota against
 concurrent writes. Board-token lookups have no additional business rules and stay

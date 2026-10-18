@@ -37,6 +37,10 @@ class ValidationError extends Error {
         this.name = ErrorName.ERROR_VALIDATION;
         this.message = message;
     }
+
+    get kind() {
+        return "validation" as const;
+    }
 }
 
 const BOARD_NOT_FOUND_ERROR = new NotFoundError(
@@ -54,6 +58,10 @@ class UniqueConstraintError extends Error {
         this.message = message;
         this.field = field;
     }
+
+    get kind() {
+        return "unique-constraint" as const;
+    }
 }
 
 class PersistenceError extends Error {
@@ -61,6 +69,10 @@ class PersistenceError extends Error {
     constructor(cause: Error) {
         super(cause.message);
         this.cause = cause;
+    }
+
+    get kind() {
+        return "persistence" as const;
     }
 }
 
