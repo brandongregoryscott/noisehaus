@@ -1,32 +1,18 @@
 import { MAXIMUM_BOARD_SIZE_IN_BYTES } from "common";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { runInNewContext } from "node:vm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-type TestDatabase = {
-    close: () => void;
-    exec: (sql: string) => void;
-    prepare: (sql: string) => { all: () => unknown[] };
-};
-
-// Node 24 is the project's runtime; the older @types/node package does not
-// declare node:sqlite yet. Keep this small test-only view of its native module.
-type SQLiteModule = { DatabaseSync: new (filename: string) => TestDatabase };
-
-const { DatabaseSync } = createRequire(__filename)(
-    "node:sqlite"
-) as SQLiteModule;
 const migration = readFileSync(
-    path.resolve(__dirname, "1792278000_board_consistency.js"),
+    new URL("./1792278000_board_consistency.js", import.meta.url),
     "utf8"
 );
 
 describe("board consistency migration", () => {
-    let database: TestDatabase;
-    let apply: () => void;
-    let rollback: () => void;
+    let database;
+    let apply;
+    let rollback;
     const relations = {
         boardFiles: { cascadeDelete: false },
         boardTokens: { cascadeDelete: false },
@@ -43,21 +29,18 @@ describe("board consistency migration", () => {
         );
         const app = {
             db: () => ({
-                newQuery: (sql: string) => ({
+                newQuery: (sql) => ({
                     execute: () => database.exec(sql),
                 }),
             }),
-            findCollectionByNameOrId: (name: keyof typeof relations) => ({
+            findCollectionByNameOrId: (name) => ({
                 fields: { getByName: () => relations[name] },
             }),
             save: vi.fn(),
             settings: () => settings,
         };
         runInNewContext(migration, {
-            migrate: (
-                up: (value: typeof app) => void,
-                down: (value: typeof app) => void
-            ) => {
+            migrate: (up, down) => {
                 apply = () => up(app);
                 rollback = () => down(app);
             },

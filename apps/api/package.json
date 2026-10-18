@@ -35,8 +35,8 @@
         "start": "node dist/server.js",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "eslint \"**/*.{ts,js}\" && cd ../.. && eslint --config apps/api/eslint.config.mjs \"pocketbase/migrations/**/*.test.cts\"",
-        "lint:fix": "eslint \"**/*.{ts,js}\" --fix && cd ../.. && eslint --config apps/api/eslint.config.mjs \"pocketbase/migrations/**/*.test.cts\" --fix"
+        "lint": "eslint \"**/*.{ts,js}\"",
+        "lint:fix": "eslint \"**/*.{ts,js}\" --fix"
     },
     "version": "1.0.0"
 }

@@ -4,9 +4,6 @@ import { defineConfig } from "vitest/config";
 const srcPath = path.resolve(__dirname, "src");
 
 const config = defineConfig({
-    oxc: {
-        include: /\.([cm]?ts|[jt]sx)$/,
-    },
     resolve: {
         alias: {
             "@": srcPath,
@@ -15,7 +12,7 @@ const config = defineConfig({
     test: {
         include: [
             "src/**/*.test.ts",
-            "../../pocketbase/migrations/**/*.test.cts",
+            "../../pocketbase/migrations/**/*.test.mjs",
         ],
     },
 });
