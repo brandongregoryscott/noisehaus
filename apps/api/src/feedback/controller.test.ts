@@ -5,8 +5,8 @@ const { mockCreateFeedback } = vi.hoisted(() => ({
     mockCreateFeedback: vi.fn(),
 }));
 
-vi.mock("../feedback/store", () => ({
-    FeedbackStore: {
+vi.mock("../feedback/service", () => ({
+    FeedbackService: {
         create: mockCreateFeedback,
     },
 }));

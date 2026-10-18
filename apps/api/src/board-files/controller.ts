@@ -1,6 +1,6 @@
 import type { Response, Request } from "express";
 import { isEmpty } from "lodash-es";
-import { BoardFilesStore } from "@/board-files/store";
+import { BoardFilesService } from "@/board-files/service";
 import { arrify } from "@/utilities/collection-utils";
 import { ValidationError } from "@/utilities/errors";
 import { ok } from "@/utilities/responses";
@@ -28,7 +28,7 @@ const BoardFilesController = {
             );
         }
 
-        const boardFiles = await BoardFilesStore.bulkInsert({
+        const boardFiles = await BoardFilesService.bulkInsert({
             boardSlug,
             displayNames,
             emojis,
@@ -41,14 +41,14 @@ const BoardFilesController = {
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { token } = request.body;
-        const result = await BoardFilesStore.delete(id, boardSlug, token);
+        const result = await BoardFilesService.delete(id, boardSlug, token);
 
         return ok(response, result);
     },
     get: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFile = await BoardFilesStore.get({ boardSlug, id, token });
+        const boardFile = await BoardFilesService.get({ boardSlug, id, token });
 
         return ok(response, boardFile);
     },
@@ -56,8 +56,8 @@ const BoardFilesController = {
         const { slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
         const boardFiles = await (isEmpty(token)
-            ? BoardFilesStore.listByBoardSlug(boardSlug)
-            : BoardFilesStore.listByToken({
+            ? BoardFilesService.listByBoardSlug(boardSlug)
+            : BoardFilesService.listByToken({
                   slug: boardSlug,
                   token: token!,
               }));
@@ -69,7 +69,7 @@ const BoardFilesController = {
         const { file } = request;
         const { displayName, emoji, token } = request.body;
 
-        const boardFile = await BoardFilesStore.update({
+        const boardFile = await BoardFilesService.update({
             boardSlug,
             displayName,
             emoji,

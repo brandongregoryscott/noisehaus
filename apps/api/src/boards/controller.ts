@@ -10,10 +10,7 @@ import type {
     UpdateBoardResponse,
 } from "common";
 import type { Response } from "express";
-import { ViewPermission } from "common";
-import { isEmpty } from "lodash-es";
-import { BoardsStore } from "@/boards/store";
-import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
+import { BoardsService } from "@/boards/service";
 import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {
@@ -22,7 +19,7 @@ const BoardsController = {
         response: Response
     ): Promise<Response<CreateBoardResponse>> => {
         const { body } = request;
-        const data = await BoardsStore.insert(body);
+        const data = await BoardsService.insert(body);
 
         return created(response, data);
     },
@@ -33,7 +30,7 @@ const BoardsController = {
         const { body } = request;
         const { slug } = request.params;
         const { token } = body;
-        const data = await BoardsStore.delete(slug, token);
+        const data = await BoardsService.delete(slug, token);
 
         return ok(response, data);
     },
@@ -43,32 +40,15 @@ const BoardsController = {
     ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
-        const board = await BoardsStore.unsafe__getBySlug(slug);
-        if (board === null) {
-            throw BOARD_NOT_FOUND_ERROR;
-        }
+        const board = await BoardsService.get(slug, token);
 
-        // If the board is not protected by a token, just return it. This way, users can't brute force
-        // their way into figuring out a token that could administrate the board
-        if (board.viewPermission !== ViewPermission.ByToken) {
-            return ok(response, board);
-        }
-
-        if (isEmpty(token)) {
-            throw BOARD_NOT_FOUND_ERROR;
-        }
-
-        await BoardsStore.authorizeWritePermissionOrThrow({
-            slug,
-            token: token!,
-        });
         return ok(response, board);
     },
     list: async (
         _request: ListBoardsRequest,
         response: Response
     ): Promise<Response<ListBoardsResponse>> => {
-        const boards = await BoardsStore.getAllPublic();
+        const boards = await BoardsService.getAllPublic();
 
         return ok(response, boards);
     },
@@ -79,7 +59,7 @@ const BoardsController = {
         const { body } = request;
         const { slug: originalSlug } = request.params;
         const { token, ...input } = body;
-        const board = await BoardsStore.update({
+        const board = await BoardsService.update({
             originalSlug,
             token,
             ...input,

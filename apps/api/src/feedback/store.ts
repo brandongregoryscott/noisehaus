@@ -1,8 +1,8 @@
 import type { Feedback } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateFeedbackOptions } from "@/feedback/types";
-import { BoardsStore } from "@/boards/store";
 import { PocketBaseClient } from "@/pocketbase-client";
+import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
 import { UnexpectedNullError } from "@/utilities/errors";
 
 const FEEDBACK_COLLECTION = "feedback";
@@ -10,11 +10,12 @@ type FeedbackRecord = {
     createdAt: string;
 } & Omit<Feedback, "createdAt">;
 
-const create = async (input: CreateFeedbackOptions): Promise<Feedback> => {
-    const createInput = await normalizeCreateInput(input);
+const create = async (
+    input: Omit<CreateFeedbackOptions, "boardSlug">
+): Promise<Feedback> => {
     const data = await PocketBaseClient.createRecord<FeedbackRecord>(
         FEEDBACK_COLLECTION,
-        createInput
+        input
     );
 
     if (data == null) {
@@ -24,31 +25,8 @@ const create = async (input: CreateFeedbackOptions): Promise<Feedback> => {
     return toFeedback(data);
 };
 
-const normalizeCreateInput = async (
-    input: CreateFeedbackOptions
-): Promise<CreateFeedbackOptions> => {
-    const { boardSlug } = input;
-    if (boardSlug == null) {
-        return omitBoardFields(input);
-    }
-
-    const board = await BoardsStore.unsafe__getBySlug(boardSlug);
-    if (board == null) {
-        return omitBoardFields(input);
-    }
-
-    return { ...omitBoardFields(input), boardId: board.id };
-};
-
-const omitBoardFields = (
-    input: CreateFeedbackOptions
-): CreateFeedbackOptions => {
-    const { boardSlug: _boardSlug, ...rest } = input;
-    return rest;
-};
-
 const FeedbackStore = {
-    create,
+    create: withPocketBaseErrors(create),
 };
 
 const toFeedback = (record: FeedbackRecord): Feedback => ({

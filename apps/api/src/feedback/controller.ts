@@ -1,6 +1,6 @@
 import type { CreateFeedbackRequest, CreateFeedbackResponse } from "common";
 import type { Response } from "express";
-import { FeedbackStore } from "@/feedback/store";
+import { FeedbackService } from "@/feedback/service";
 import { created } from "@/utilities/responses";
 
 const FeedbackController = {
@@ -9,7 +9,7 @@ const FeedbackController = {
         response: Response
     ): Promise<Response<CreateFeedbackResponse>> => {
         const { body } = request;
-        const feedback = await FeedbackStore.create(body);
+        const feedback = await FeedbackService.create(body);
 
         return created(response, feedback);
     },

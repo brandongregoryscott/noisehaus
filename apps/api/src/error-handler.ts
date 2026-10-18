@@ -2,11 +2,9 @@ import type { NextFunction, Request, Response } from "express";
 import { ErrorName, isNotFoundError } from "common";
 import { isDevelopment } from "@/utilities/environment";
 import {
-    ValidationError,
     UnhandledError,
-    getPocketBaseValidationMessage,
-    getPocketBaseUniqueConstraintMessage,
-    isPocketBaseHttpError,
+    UniqueConstraintError,
+    PersistenceError,
 } from "@/utilities/errors";
 import { logger } from "@/utilities/logger";
 import {
@@ -38,45 +36,19 @@ const errorHandler = async (
         return badRequest(response, error);
     }
 
-    if (isPocketBaseHttpError(error)) {
-        const uniqueConstraintMessage =
-            getPocketBaseUniqueConstraintMessage(error);
-        if (uniqueConstraintMessage != null) {
-            log.error(
-                {
-                    err: error,
-                    pocketbase: { method: error.method, path: error.path },
-                },
-                "pocketbase unique constraint"
-            );
-            return conflict(response, {
-                message: uniqueConstraintMessage,
-                name: ErrorName.ERROR_UNIQUE_CONSTRAINT,
-            });
-        }
+    if (error instanceof UniqueConstraintError) {
+        log.error({ err: error }, "unique constraint");
+        return conflict(response, {
+            message: error.message,
+            name: error.name,
+        });
+    }
 
-        const validationMessage = getPocketBaseValidationMessage(error);
-        if (validationMessage != null) {
-            log.error(
-                {
-                    err: error,
-                    pocketbase: { method: error.method, path: error.path },
-                },
-                "pocketbase validation error"
-            );
-            return badRequest(response, new ValidationError(validationMessage));
-        }
-
-        log.error(
-            {
-                err: error,
-                pocketbase: { method: error.method, path: error.path },
-            },
-            "pocketbase error"
-        );
+    if (error instanceof PersistenceError) {
+        log.error({ err: error }, "persistence error");
         return internalError(
             response,
-            isDevelopment() ? error : new UnhandledError()
+            isDevelopment() ? error.cause : new UnhandledError()
         );
     }
 
