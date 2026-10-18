@@ -1,9 +1,8 @@
 import type { Response, Request } from "express";
 import { isEmpty } from "lodash-es";
 import { BoardFilesStore } from "@/board-files/store";
-import { BoardsStore } from "@/boards/store";
 import { arrify } from "@/utilities/collection-utils";
-import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
+import { ValidationError } from "@/utilities/errors";
 import { ok } from "@/utilities/responses";
 
 const BoardFilesController = {
@@ -47,14 +46,9 @@ const BoardFilesController = {
         return ok(response, result);
     },
     get: async (request: Request, response: Response): Promise<Response> => {
-        const { id, slug } = request.params;
-        const [board, boardFile] = await Promise.all([
-            BoardsStore.unsafe__getBySlug(slug),
-            BoardFilesStore.getById(id),
-        ]);
-        if (board === null || boardFile.boardId !== board.id) {
-            throw BOARD_NOT_FOUND_ERROR;
-        }
+        const { id, slug: boardSlug } = request.params;
+        const token = request.query.token as string | undefined;
+        const boardFile = await BoardFilesStore.get({ boardSlug, id, token });
 
         return ok(response, boardFile);
     },

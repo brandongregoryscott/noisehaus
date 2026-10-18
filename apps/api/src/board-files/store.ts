@@ -4,6 +4,7 @@ import { isEmpty, sumBy } from "lodash-es";
 import type {
     BulkCreateBoardFileOptions,
     CreateBoardFileOptions,
+    GetBoardFileOptions,
     ListBoardFilesByTokenOptions,
     UpdateBoardFileOptions,
     UnsafeCreateOptions,
@@ -11,7 +12,7 @@ import type {
 import { BoardsStore } from "@/boards/store";
 import { PocketBaseClient } from "@/pocketbase-client";
 import {
-    NotFoundError,
+    BOARD_NOT_FOUND_ERROR,
     UnexpectedNullError,
     ValidationError,
 } from "@/utilities/errors";
@@ -37,7 +38,7 @@ const bulkInsert = async (
     const { boardSlug, displayNames, emojis, files, token } = options;
     const board = await BoardsStore.getByToken({ slug: boardSlug, token });
 
-    await BoardFilesStore.unsafe__verifyRemainingSize(
+    await unsafe__verifyRemainingSize(
         board.id,
         sumBy(files, (file) => file.size)
     );
@@ -60,8 +61,8 @@ const _delete = async (
     boardSlug: string,
     token: string
 ): Promise<true> => {
-    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
-    await unsafe__delete(id, board.id);
+    const boardFile = await getWritableFile(id, boardSlug, token);
+    await PocketBaseClient.deleteRecord(BOARD_FILE_COLLECTION, boardFile.id);
     return true;
 };
 
@@ -74,7 +75,7 @@ const insert = async (options: CreateBoardFileOptions): Promise<BoardFile> => {
     const { boardSlug, displayName, emoji, file, token } = options;
     const board = await BoardsStore.getByToken({ slug: boardSlug, token });
 
-    await BoardFilesStore.unsafe__verifyRemainingSize(board.id, file.size);
+    await unsafe__verifyRemainingSize(board.id, file.size);
 
     return unsafe__create({
         boardId: board.id,
@@ -85,23 +86,39 @@ const insert = async (options: CreateBoardFileOptions): Promise<BoardFile> => {
     });
 };
 
-const getByIdBoardSlugAndToken = async (
+const getWritableFile = async (
     id: string,
     boardSlug: string,
     token: string
 ): Promise<BoardFile> => {
-    const [boardFile] = await Promise.all([
-        getById(id),
-        BoardsStore.authorizeWritePermissionOrThrow({ slug: boardSlug, token }),
-    ]);
+    if (typeof token !== "string" || isEmpty(token)) {
+        throw BOARD_NOT_FOUND_ERROR;
+    }
 
-    return boardFile;
+    const board = await BoardsStore.getByToken({ slug: boardSlug, token });
+    return getByIdAndBoardId(id, board.id);
 };
 
-const getById = async (id: string): Promise<BoardFile> => {
+const get = async (options: GetBoardFileOptions): Promise<BoardFile> => {
+    const { boardSlug, id, token } = options;
+    if (token !== undefined && typeof token !== "string") {
+        throw BOARD_NOT_FOUND_ERROR;
+    }
+
+    const board = await (isEmpty(token)
+        ? BoardsStore.getBySlug(boardSlug)
+        : BoardsStore.getByToken({ slug: boardSlug, token: token! }));
+
+    return getByIdAndBoardId(id, board.id);
+};
+
+const getByIdAndBoardId = async (
+    id: string,
+    boardId: string
+): Promise<BoardFile> => {
     const boardFile = await unsafe__getById(id);
-    if (boardFile === null) {
-        throw new NotFoundError("No file with this id was found");
+    if (boardFile === null || boardFile.boardId !== boardId) {
+        throw BOARD_NOT_FOUND_ERROR;
     }
 
     return boardFile;
@@ -145,7 +162,7 @@ const unsafe__listWithPresignedUrls = async (
 
 const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
     const { boardSlug, displayName, emoji, file, id, token } = options;
-    const boardFile = await getByIdBoardSlugAndToken(id, boardSlug, token);
+    const boardFile = await getWritableFile(id, boardSlug, token);
 
     let updatedBoardFile: Record<string, unknown> = {};
     if (!isEmpty(displayName)) {
@@ -161,7 +178,7 @@ const update = async (options: UpdateBoardFileOptions): Promise<BoardFile> => {
 
     if (file !== undefined) {
         const additionalSizeInBytes = Math.max(file.size - boardFile.size, 0);
-        await BoardFilesStore.unsafe__verifyRemainingSize(
+        await unsafe__verifyRemainingSize(
             boardFile.boardId,
             additionalSizeInBytes
         );
@@ -204,11 +221,6 @@ const unsafe__create = async (
     );
 
     return toBoardFile(record);
-};
-
-const unsafe__delete = async (id: string, _boardId: string): Promise<true> => {
-    await PocketBaseClient.deleteRecord(BOARD_FILE_COLLECTION, id);
-    return true;
 };
 
 const unsafe__deleteAllByBoardId = async (boardId: string): Promise<true> => {
@@ -305,13 +317,11 @@ const BoardFilesStore = {
     bulkInsert,
     delete: _delete,
     deleteAll,
-    getById,
+    get,
     insert,
     listByBoardSlug,
     listByToken,
     unsafe__deleteAllByBoardId,
-    unsafe__getById,
-    unsafe__verifyRemainingSize,
     update,
 };
 
