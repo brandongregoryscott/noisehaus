@@ -1,5 +1,11 @@
 import { ErrorName } from "common";
 
+const ErrorKind = {
+    Persistence: "persistence",
+    UniqueConstraint: "unique-constraint",
+    Validation: "validation",
+} as const;
+
 class NotFoundError extends Error {
     constructor(message: string) {
         super();
@@ -33,13 +39,16 @@ class ValidationError extends Error {
 
     constructor(message: string, cause?: unknown) {
         super();
-        Object.defineProperty(this, "cause", { enumerable: false, value: cause });
+        Object.defineProperty(this, "cause", {
+            enumerable: false,
+            value: cause,
+        });
         this.name = ErrorName.ERROR_VALIDATION;
         this.message = message;
     }
 
     get kind() {
-        return "validation" as const;
+        return ErrorKind.Validation;
     }
 }
 
@@ -60,7 +69,7 @@ class UniqueConstraintError extends Error {
     }
 
     get kind() {
-        return "unique-constraint" as const;
+        return ErrorKind.UniqueConstraint;
     }
 }
 
@@ -72,7 +81,7 @@ class PersistenceError extends Error {
     }
 
     get kind() {
-        return "persistence" as const;
+        return ErrorKind.Persistence;
     }
 }
 
@@ -81,6 +90,7 @@ type StoreError = PersistenceError | UniqueConstraintError | ValidationError;
 export type { StoreError };
 export {
     BOARD_NOT_FOUND_ERROR,
+    ErrorKind,
     NotFoundError,
     PersistenceError,
     UnexpectedNullError,

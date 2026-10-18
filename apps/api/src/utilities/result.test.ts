@@ -1,7 +1,11 @@
 import { assert, describe, expect, it } from "vitest";
 import type { StoreError } from "@/utilities/errors";
 import type { Result } from "@/utilities/result";
-import { UniqueConstraintError, ValidationError } from "@/utilities/errors";
+import {
+    ErrorKind,
+    UniqueConstraintError,
+    ValidationError,
+} from "@/utilities/errors";
 import { err, ok } from "@/utilities/result";
 
 describe("application Result", () => {
@@ -43,7 +47,7 @@ describe("application Result", () => {
     });
 
     it("does not treat lookalike errors as unique constraint failures", () => {
-        const result = err({ field: "slug", kind: "unique-constraint" });
+        const result = err({ field: "slug", kind: ErrorKind.UniqueConstraint });
 
         expect(result.isUniqueConstraintError()).toBe(false);
     });

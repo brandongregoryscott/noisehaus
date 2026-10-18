@@ -10,6 +10,7 @@ import {
 } from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
+import { ErrorKind } from "@/utilities/errors";
 
 const board = {
     id: "board-a",
@@ -83,17 +84,17 @@ describe("BoardsStore", () => {
             const testCases = [
                 {
                     data: { data: { slug: { code: "validation_not_unique" } } },
-                    kind: "unique-constraint",
+                    kind: ErrorKind.UniqueConstraint,
                     status: 400,
                 },
                 {
                     data: { message: "Invalid board" },
-                    kind: "validation",
+                    kind: ErrorKind.Validation,
                     status: 400,
                 },
                 {
                     data: "Unavailable",
-                    kind: "persistence",
+                    kind: ErrorKind.Persistence,
                     status: 503,
                 },
             ];
