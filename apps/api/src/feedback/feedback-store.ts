@@ -1,9 +1,13 @@
 import type { Feedback } from "common";
 import { isEmpty } from "lodash-es";
-import type { CreateFeedbackOptions } from "@/feedback/types";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
 import { UnexpectedNullError } from "@/utilities/errors";
+
+type CreateStoredFeedbackOptions = Partial<
+    Pick<Feedback, "boardId" | "email">
+> &
+    Pick<Feedback, "comment">;
 
 const FEEDBACK_COLLECTION = "feedback";
 type FeedbackRecord = {
@@ -11,7 +15,7 @@ type FeedbackRecord = {
 } & Omit<Feedback, "createdAt">;
 
 const create = async (
-    input: Omit<CreateFeedbackOptions, "boardSlug">
+    input: CreateStoredFeedbackOptions
 ): Promise<Feedback> => {
     const data = await PocketBaseClient.createRecord<FeedbackRecord>(
         FEEDBACK_COLLECTION,
@@ -38,4 +42,5 @@ const toFeedback = (record: FeedbackRecord): Feedback => ({
     respondedAt: isEmpty(record.respondedAt) ? null : record.respondedAt,
 });
 
+export type { CreateStoredFeedbackOptions };
 export { FeedbackStore };

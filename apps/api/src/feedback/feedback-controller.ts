@@ -1,6 +1,6 @@
 import type { CreateFeedbackRequest, CreateFeedbackResponse } from "common";
 import type { Response } from "express";
-import { FeedbackService } from "@/feedback/service";
+import { FeedbackService } from "@/feedback/feedback-service";
 import { created } from "@/utilities/responses";
 
 const FeedbackController = {

@@ -19,6 +19,11 @@ Creating a board together with its initial board token. Uploading initial sounds
 ## Architecture
 
 Each API feature keeps its controller, service, and store in the same directory.
+Filenames include the feature name (for example, `boards/boards-service.ts`),
+including tests. Types live in and are exported from the service or store that
+owns them. Stores own persistence input/result types; services own access and
+business-operation input types. Services may import store types; stores do not
+import service types.
 Controllers decode HTTP input and format responses. Services own access rules,
 validation, quota checks, and retry policy. Stores own persistence operations,
 record mapping, file transport, and translation of provider errors. Controllers

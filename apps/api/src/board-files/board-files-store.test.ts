@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BoardFilesStore } from "@/board-files/store";
+import { BoardFilesStore } from "@/board-files/board-files-store";
 import { PocketBaseClient } from "@/pocketbase-client";
 
 const record = {

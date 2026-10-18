@@ -1,10 +1,15 @@
 import type { Board, BoardToken } from "common";
 import { ViewPermission } from "common";
 import { randomBytes } from "node:crypto";
-import type { CreateBoardOptions, CreateBoardResult } from "@/boards/types";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
 import { UnexpectedNullError } from "@/utilities/errors";
+
+type CreateBoardResult = {
+    token: string;
+} & Board;
+
+type CreateStoredBoardOptions = Pick<Board, "name" | "slug" | "viewPermission">;
 
 const BOARD_COLLECTION = "boards";
 type BoardRecord = {
@@ -57,7 +62,7 @@ const findBySlug = async (slug: string): Promise<Board | null> => {
 };
 
 const createWithInitialToken = async (
-    input: CreateBoardOptions & Pick<Board, "viewPermission">
+    input: CreateStoredBoardOptions
 ): Promise<CreateBoardResult> => {
     const id = randomBytes(8).toString("hex").slice(0, 15);
     const token = randomBytes(4).toString("hex");
@@ -113,4 +118,5 @@ const BoardsStore = {
     update: withPocketBaseErrors(update),
 };
 
+export type { CreateBoardResult, CreateStoredBoardOptions };
 export { BoardsStore };
