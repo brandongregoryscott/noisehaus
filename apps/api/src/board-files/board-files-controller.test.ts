@@ -20,6 +20,7 @@ const request = {
 const createResponse = () =>
     ({
         json: vi.fn().mockReturnThis(),
+        req: request,
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 

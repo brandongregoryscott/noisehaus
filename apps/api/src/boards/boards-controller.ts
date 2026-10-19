@@ -5,21 +5,21 @@ import type {
     ListBoardsRequest,
     UpdateBoardRequest,
 } from "common";
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { BoardsService } from "@/boards/boards-service";
-import { sendResultResponse } from "@/error-handler";
+import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (
-        request: CreateBoardRequest & Request,
+        request: CreateBoardRequest,
         response: Response
     ): Promise<Response> => {
         const { body } = request;
         const result = await BoardsService.insert(body);
-        return sendResultResponse(result, request, response, 201);
+        return created(response, result);
     },
     delete: async (
-        request: DeleteBoardRequest & Request,
+        request: DeleteBoardRequest,
         response: Response
     ): Promise<Response> => {
         const { body } = request;
@@ -27,28 +27,28 @@ const BoardsController = {
         const { token } = body;
         const data = await BoardsService.delete(slug, token);
 
-        return sendResultResponse(data, request, response);
+        return ok(response, data);
     },
     get: async (
-        request: GetBoardRequest & Request,
+        request: GetBoardRequest,
         response: Response
     ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
         const board = await BoardsService.get(slug, token);
 
-        return sendResultResponse(board, request, response);
+        return ok(response, board);
     },
     list: async (
-        request: ListBoardsRequest & Request,
+        _request: ListBoardsRequest,
         response: Response
     ): Promise<Response> => {
         const boards = await BoardsService.getAllPublic();
 
-        return sendResultResponse(boards, request, response);
+        return ok(response, boards);
     },
     update: async (
-        request: Request & UpdateBoardRequest,
+        request: UpdateBoardRequest,
         response: Response
     ): Promise<Response> => {
         const { body } = request;
@@ -60,7 +60,7 @@ const BoardsController = {
             ...input,
         });
 
-        return sendResultResponse(board, request, response);
+        return ok(response, board);
     },
 };
 

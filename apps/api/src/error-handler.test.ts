@@ -16,6 +16,7 @@ const next = vi.fn() as NextFunction;
 const createResponse = () =>
     ({
         json: vi.fn().mockReturnThis(),
+        req: request,
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 

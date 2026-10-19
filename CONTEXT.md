@@ -47,9 +47,13 @@ constants instead of repeating kind strings.
 Stores translate PocketBase HTTP and transport failures into typed errors.
 The transport can throw at its external I/O boundary; programming errors,
 configuration errors, and broken invariants still throw and reach Express's
-fallback handler. Controllers consume results through `sendResultResponse`,
-which shares logging and error formatting with that handler and preserves the
-HTTP response envelope. Preserve causes for diagnostics, keep validation causes
+fallback handler. Controllers pass results to `ok(response, result)` or
+`created(response, result)` from `utilities/responses.ts`. Each helper names its
+success status (200 or 201) and maps an `Err` through `error(response, cause)`.
+That response-first error helper also handles controller decoding failures and
+Express's fallback middleware. It owns status mapping, logging, and redaction,
+using `response.req.logger` with a fallback logger, and preserves the HTTP
+response envelope. Preserve causes for diagnostics, keep validation causes
 non-enumerable, and hide provider diagnostics in production HTTP responses.
 The board service retries only confirmed slug conflicts.
 
