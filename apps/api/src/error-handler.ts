@@ -1,15 +1,11 @@
-import type {
-    NextFunction,
-    Request,
-    Response as ExpressResponse,
-} from "express";
-import { Response } from "@/utilities/responses";
+import type { NextFunction, Request, Response } from "express";
+import { HttpResponse } from "@/utilities/responses";
 
 const errorHandler = (
     cause: unknown,
     _request: Request,
-    response: ExpressResponse,
+    response: Response,
     _next: NextFunction
-) => Response.error(response, cause);
+) => HttpResponse.error(response, cause);
 
 export { errorHandler };

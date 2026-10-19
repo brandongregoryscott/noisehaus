@@ -1,4 +1,4 @@
-import type { Response as ExpressResponse } from "express";
+import type { Response } from "express";
 import {
     err,
     ErrorName,
@@ -11,24 +11,24 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isDevelopment } from "@/utilities/environment";
 import { logger } from "@/utilities/logger";
-import { Response } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 vi.mock("./environment", () => ({ isDevelopment: vi.fn() }));
 vi.mock("./logger", () => ({ logger: { error: vi.fn() } }));
 
-const createResponse = (log?: ReturnType<typeof vi.fn>): ExpressResponse =>
+const createResponse = (log?: ReturnType<typeof vi.fn>): Response =>
     ({
         ...(log === undefined ? {} : { req: { logger: { error: log } } }),
         json: vi.fn().mockReturnThis(),
         status: vi.fn().mockReturnThis(),
-    }) as unknown as ExpressResponse;
+    }) as unknown as Response;
 
 const helpers = [
-    { name: "ok", send: Response.ok, status: 200 },
-    { name: "created", send: Response.created, status: 201 },
+    { name: "ok", send: HttpResponse.ok, status: 200 },
+    { name: "created", send: HttpResponse.created, status: 201 },
 ];
 
-describe("Response", () => {
+describe("HttpResponse", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(isDevelopment).mockReturnValue(false);
@@ -144,7 +144,7 @@ describe("Response", () => {
         const cause = new ValidationError("Invalid upload");
         const response = createResponse();
 
-        Response.error(response, cause);
+        HttpResponse.error(response, cause);
 
         expect(logger.error).toHaveBeenCalledExactlyOnceWith(
             { err: cause },

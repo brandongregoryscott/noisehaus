@@ -1,17 +1,17 @@
 import type { CreateFeedbackRequest } from "common";
-import type { Response as ExpressResponse } from "express";
+import type { Response } from "express";
 import { FeedbackService } from "@/feedback/feedback-service";
-import { Response } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 const FeedbackController = {
     create: async (
         request: CreateFeedbackRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const { body } = request;
         const feedbackResult = await FeedbackService.create(body);
 
-        return Response.created(response, feedbackResult);
+        return HttpResponse.created(response, feedbackResult);
     },
 };
 

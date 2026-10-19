@@ -5,52 +5,52 @@ import type {
     ListBoardsRequest,
     UpdateBoardRequest,
 } from "common";
-import type { Response as ExpressResponse } from "express";
+import type { Response } from "express";
 import { BoardsService } from "@/boards/boards-service";
-import { Response } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (
         request: CreateBoardRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const { body } = request;
         const result = await BoardsService.insert(body);
-        return Response.created(response, result);
+        return HttpResponse.created(response, result);
     },
     delete: async (
         request: DeleteBoardRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const { body } = request;
         const { slug } = request.params;
         const { token } = body;
         const deleteResult = await BoardsService.delete(slug, token);
 
-        return Response.ok(response, deleteResult);
+        return HttpResponse.ok(response, deleteResult);
     },
     get: async (
         request: GetBoardRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
         const boardResult = await BoardsService.get(slug, token);
 
-        return Response.ok(response, boardResult);
+        return HttpResponse.ok(response, boardResult);
     },
     list: async (
         _request: ListBoardsRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const boardsResult = await BoardsService.getAllPublic();
 
-        return Response.ok(response, boardsResult);
+        return HttpResponse.ok(response, boardsResult);
     },
     update: async (
         request: UpdateBoardRequest,
-        response: ExpressResponse
-    ): Promise<ExpressResponse> => {
+        response: Response
+    ): Promise<Response> => {
         const { body } = request;
         const { slug: originalSlug } = request.params;
         const { token, ...input } = body;
@@ -60,7 +60,7 @@ const BoardsController = {
             ...input,
         });
 
-        return Response.ok(response, boardResult);
+        return HttpResponse.ok(response, boardResult);
     },
 };
 
