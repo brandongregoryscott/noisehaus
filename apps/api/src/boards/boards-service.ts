@@ -6,7 +6,6 @@ import {
     BOARD_NOT_FOUND_ERROR,
     ValidationError,
     Task,
-    UniqueConstraintError,
 } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardResult } from "@/boards/boards-store";
@@ -106,15 +105,14 @@ const insert = (
             slug,
             viewPermission: ViewPermission.BySlug,
         });
-    }).orElse((error) => {
+    }).orElseResult((result) => {
         if (
-            error instanceof UniqueConstraintError &&
-            error.field === "slug" &&
+            result.isUniqueConstraintError("slug") &&
             attempt < MAX_CREATE_ATTEMPTS
         ) {
             return insert({ ...options, attempt: attempt + 1 });
         }
-        return err(error);
+        return result;
     });
 };
 

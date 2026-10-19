@@ -92,9 +92,21 @@ another Task. Successful values pass through without invoking recovery. A failur
 from recovery replaces the original error type. Unexpected exceptions bypass all
 recovery callbacks and still reject when converted at the controller boundary.
 
-Board creation uses `orElse` for a selective retry decision. Only a confirmed
-`UniqueConstraintError` on the slug permits retry, with the existing attempt limit.
-A general automatic retry would be unsafe for writes with an ambiguous outcome.
+`orElseResult` provides the same recovery behavior with an application `Err<E>`
+instead of the raw error. This preserves Result predicates in recovery callbacks:
+
+```ts
+.orElseResult((result) => {
+    if (result.isUniqueConstraintError("slug") && attempt < MAX_CREATE_ATTEMPTS) {
+        return insert({ ...options, attempt: attempt + 1 });
+    }
+    return result;
+})
+```
+
+Board creation uses this method to retry only confirmed slug conflicts, with the
+existing attempt limit. A general automatic retry would be unsafe for writes with
+an ambiguous outcome.
 
 Transport error translation, HTTP response mapping, and the TanStack Query
 rejection adapter remain explicit boundaries. The frontend board creation flow
@@ -103,7 +115,7 @@ are always preserved. Task is used to compose service operations, rather than to
 replace every Result inspection in the application.
 
 The wrapper exposes a small composition API and hides True Myth types. Its
-`ok`, `err`, `andThen`, `map`, and `orElse` methods retain the application's
+`ok`, `err`, `andThen`, `map`, `orElse`, and `orElseResult` methods retain the application's
 exception policy while avoiding conversions between service calls.
 Reference: [True Myth Task API](https://true-myth.dev/api/task/classes/Task) and
 [Task constructors](https://true-myth.dev/api/task/). The installed 9.4.0 source

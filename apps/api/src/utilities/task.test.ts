@@ -261,4 +261,66 @@ describe("Task", () => {
 
         await expect(promise).rejects.toBe(unexpected);
     });
+
+    it("provides a known failed Result with narrowing helpers to recovery", async () => {
+        const error = new UniqueConstraintError(
+            "slug",
+            "Slug is taken",
+            undefined
+        );
+        const recover = vi.fn(() => Task.ok("new-slug"));
+
+        const result = await Task.err(error)
+            .orElseResult((failure) => {
+                expectTypeOf(
+                    failure.error
+                ).toEqualTypeOf<UniqueConstraintError>();
+                if (failure.isUniqueConstraintError("slug")) {
+                    return recover();
+                }
+                return failure;
+            })
+            .toPromise();
+
+        assert(result.isOk);
+        expect(result.value).toBe("new-slug");
+        expect(recover).toHaveBeenCalledTimes(1);
+    });
+
+    it("preserves an unmatched failure returned from Result recovery", async () => {
+        const error = new PersistenceError(
+            new Error("Ambiguous write outcome")
+        );
+        const retry = vi.fn(() => Task.ok("new-slug"));
+
+        const result = await Task.err(error)
+            .orElseResult((failure) =>
+                failure.isUniqueConstraintError("slug") ? retry() : failure
+            )
+            .toPromise();
+
+        assert(result.isPersistenceError());
+        expect(result.error).toBe(error);
+        expect(retry).not.toHaveBeenCalled();
+    });
+
+    it("skips Result recovery for success and unexpected exceptions", async () => {
+        const error = new Error("Broken invariant");
+        const unexpected = async () => {
+            throw error;
+        };
+        const recover = vi.fn(() => Task.ok("fallback"));
+
+        const success = await Task.ok("original")
+            .orElseResult(recover)
+            .toPromise();
+        const failure = Task.fromPromise(unexpected)
+            .orElseResult(recover)
+            .toPromise();
+
+        assert(success.isOk);
+        expect(success.value).toBe("original");
+        await expect(failure).rejects.toBe(error);
+        expect(recover).not.toHaveBeenCalled();
+    });
 });

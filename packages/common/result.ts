@@ -49,6 +49,8 @@ type Result<T, E> = (
 ) &
     ResultChecks<E>;
 
+type Err<E> = Extract<Result<never, E>, { readonly isErr: true }>;
+
 class OkResult<T, E> extends ResultChecks<E> {
     readonly isErr = false;
     readonly isOk = true;
@@ -83,8 +85,9 @@ const wrap = <T, E>(result: MythResult<T, E>): Result<T, E> =>
     result.isOk ? new OkResult(result) : new ErrResult(result);
 
 const ok = <T, E = never>(value: T): Result<T, E> => wrap(mythOk<T, E>(value));
-const err = <E, T = never>(error: E): Result<T, E> =>
-    wrap(mythErr<T, E>(error));
+// True Myth types its err constructor as Result; this constructor always fails.
+const err = <E, T = never>(error: E): Err<E> =>
+    wrap(mythErr<T, E>(error)) as Err<E>;
 
-export type { Result };
+export type { Err, Result };
 export { err, ok };

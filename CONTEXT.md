@@ -47,7 +47,9 @@ Use `Task.ok(value)` and `Task.err(error)` for immediate outcomes, and
 `Task.fromPromise(() => storeOperation())` to start a store operation. Services
 chain other services directly. Keep dependent work inside callbacks so it only
 starts after prior checks succeed. Use `orElse` for selective recovery such as
-confirmed slug-conflict retries; unexpected exceptions bypass recovery.
+confirmed slug-conflict retries. Use `orElseResult` when recovery needs Result
+predicates such as `isUniqueConstraintError("slug")`; it receives a known `Err`.
+Unexpected exceptions bypass both recovery methods.
 See [Task composition](docs/task-composition.md) for examples and exception behavior.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes

@@ -1,6 +1,6 @@
 import type { Task as MythTask } from "true-myth/task";
 import { reject, resolve, tryOrElse } from "true-myth/task";
-import type { Result } from "./result";
+import type { Err, Result } from "./result";
 import { err, ok } from "./result";
 
 // Keep unexpected exceptions separate from typed application failures.
@@ -88,6 +88,15 @@ class Task<T, E> {
                 );
             })
         );
+    }
+
+    /** Recover using the application Result predicates instead of a raw error. */
+    orElseResult<U, F>(
+        operation: (
+            result: Err<E>
+        ) => PromiseLike<Result<U, F>> | Result<U, F> | Task<U, F>
+    ): Task<T | U, F> {
+        return this.orElse((error) => operation(err(error)));
     }
 
     /** Preserve the application's Result predicates and exception boundary. */
