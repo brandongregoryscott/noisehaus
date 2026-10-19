@@ -18,23 +18,23 @@ describe("fetch", () => {
     });
 
     it("unwraps successful envelopes and preserves valid error responses", async () => {
-        vi.stubGlobal("fetch", mockFetch);
         const board = { id: "board-a" };
-        mockFetch.mockResolvedValueOnce(
-            Response.json({ data: board, error: null })
-        );
-        const result = await get<typeof board>("/boards/drums");
-        assert(result.isOk);
-        expect(result.value).toEqual(board);
-
         const error = {
             message: "Board not found",
             name: ErrorName.ERROR_NOT_FOUND,
         };
-        mockFetch.mockResolvedValueOnce(
-            Response.json({ data: null, error }, { status: 404 })
-        );
+        mockFetch
+            .mockResolvedValueOnce(Response.json({ data: board, error: null }))
+            .mockResolvedValueOnce(
+                Response.json({ data: null, error }, { status: 404 })
+            );
+        vi.stubGlobal("fetch", mockFetch);
+
+        const result = await get<typeof board>("/boards/drums");
         const failure = await get("/boards/missing");
+
+        assert(result.isOk);
+        expect(result.value).toEqual(board);
         assert(failure.isErr);
         expect(failure.error).toEqual(error);
     });
@@ -74,9 +74,12 @@ describe("fetch", () => {
             },
         ];
         vi.stubGlobal("fetch", mockFetch);
+
         for (const { name, response } of testCases) {
             mockFetch.mockReset().mockImplementation(response);
+
             const result = await get("/boards/drums");
+
             assert(result.isErr, name);
             expect(result.error.name, name).toBe(ErrorName.ERROR_UNHANDLED);
             expect(result.error.message, name).not.toBe("");
@@ -91,7 +94,9 @@ describe("fetch", () => {
                 Response.json({ data: false, error: null })
             )
         );
+
         const result = await get<boolean>("/status");
+
         assert(result.isOk);
         expect(result.value).toBe(false);
     });
@@ -133,6 +138,7 @@ describe("fetch", () => {
             },
         ];
         vi.stubGlobal("fetch", mockFetch);
+
         for (const {
             body: expectedBody,
             method,
@@ -142,7 +148,9 @@ describe("fetch", () => {
             mockFetch
                 .mockReset()
                 .mockResolvedValue(Response.json({ data: true, error: null }));
+
             const result = await operation();
+
             assert(result.isOk, method);
             expect(mockFetch, method).toHaveBeenCalledTimes(1);
             const options = mockFetch.mock.calls[0][1];

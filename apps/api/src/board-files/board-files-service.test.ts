@@ -79,6 +79,7 @@ describe("BoardFilesService", () => {
         operation: Promise<Result<unknown, ServiceError>>
     ) => {
         const result = await operation;
+
         assert(result.isNotFoundError());
         expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
         expect(BoardFilesStore.update).not.toHaveBeenCalled();
@@ -99,7 +100,6 @@ describe("BoardFilesService", () => {
             const result = await BoardFilesService.update(options);
 
             assert(result.isOk);
-
             expect(result.value).toMatchObject({
                 displayName: "Updated",
                 id: boardFile.id,
@@ -157,6 +157,7 @@ describe("BoardFilesService", () => {
             };
 
             const result = await BoardFilesService.update(options);
+
             assert(result.isValidationError());
             expect(result.error.message).toContain("remaining size capacity");
             expect(BoardFilesStore.update).not.toHaveBeenCalled();
@@ -263,7 +264,6 @@ describe("BoardFilesService", () => {
             const result = await BoardFilesService.delete(id, slug, token);
 
             assert(result.isOk);
-
             expect(result.value).toBe(true);
             expect(BoardsService.getByToken).toHaveBeenCalledWith({
                 slug,
@@ -359,7 +359,6 @@ describe("BoardFilesService", () => {
             const result = await BoardFilesService.bulkInsert(options);
 
             assert(result.isOk);
-
             expect(result.value.map((sound) => sound.id)).toEqual([
                 boardFile.id,
                 "file-b",
@@ -414,6 +413,7 @@ describe("BoardFilesService", () => {
             };
 
             const result = await BoardFilesService.bulkInsert(options);
+
             assert(result.isValidationError());
             expect(result.error.message).toContain("remaining size capacity");
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
@@ -446,6 +446,7 @@ describe("BoardFilesService", () => {
             };
 
             const result = await BoardFilesService.bulkInsert(options);
+
             assert(result.isValidationError());
             expect(result.error.message).toContain("Each uploaded file");
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
@@ -465,7 +466,6 @@ describe("BoardFilesService", () => {
                 const result = await BoardFilesService.get(options);
 
                 assert(result.isOk);
-
                 expect(result.value).toMatchObject({
                     boardId: board.id,
                     id: boardFile.id,
@@ -487,7 +487,6 @@ describe("BoardFilesService", () => {
             const result = await BoardFilesService.get(options);
 
             assert(result.isOk);
-
             expect(result.value).toMatchObject({
                 boardId: board.id,
                 id: boardFile.id,
@@ -574,6 +573,7 @@ describe("BoardFilesService", () => {
             vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
                 err(error)
             );
+
             const result = await BoardFilesService.bulkInsert({
                 boardSlug: board.slug,
                 displayNames: ["Sound"],
@@ -588,6 +588,7 @@ describe("BoardFilesService", () => {
                 ],
                 token: "token-a",
             });
+
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
@@ -596,10 +597,12 @@ describe("BoardFilesService", () => {
         it("preserves file-lookup failures without concealing them as not found", async () => {
             const error = new PersistenceError(new Error("File lookup failed"));
             vi.mocked(BoardFilesStore.findById).mockResolvedValue(err(error));
+
             const result = await BoardFilesService.get({
                 boardSlug: board.slug,
                 id: boardFile.id,
             });
+
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
         });
@@ -609,6 +612,7 @@ describe("BoardFilesService", () => {
                 "Quota exceeded during concurrent upload"
             );
             vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue(err(error));
+
             const result = await BoardFilesService.bulkInsert({
                 boardSlug: board.slug,
                 displayNames: ["Sound"],
@@ -623,6 +627,7 @@ describe("BoardFilesService", () => {
                 ],
                 token: "token-a",
             });
+
             assert(result.isValidationError());
             expect(result.error).toBe(error);
             expect(BoardFilesStore.bulkInsert).toHaveBeenCalledTimes(1);

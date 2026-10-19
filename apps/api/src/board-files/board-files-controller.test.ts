@@ -81,11 +81,14 @@ describe("BoardFilesController", () => {
                 status: 404,
             },
         ];
+
         for (const { arrange, error, name, operation, status } of testCases) {
             vi.restoreAllMocks();
             arrange();
             const response = createResponse();
+
             await operation(request, response);
+
             expect(response.status, name).toHaveBeenCalledWith(status);
             expect(response.json, name).toHaveBeenCalledWith({
                 data: null,
@@ -97,17 +100,21 @@ describe("BoardFilesController", () => {
     it("returns success values rather than result wrappers", async () => {
         vi.spyOn(BoardFilesService, "delete").mockResolvedValue(ok(true));
         const response = createResponse();
+
         await BoardFilesController.delete(request, response);
+
         expect(response.json).toHaveBeenCalledWith({ data: true, error: null });
     });
 
     it("returns decoding failures before calling the service", async () => {
         const insert = vi.spyOn(BoardFilesService, "bulkInsert");
         const response = createResponse();
+
         await BoardFilesController.create(
             { ...request, files: [] } as unknown as Request,
             response
         );
+
         expect(response.status).toHaveBeenCalledWith(400);
         expect(insert).not.toHaveBeenCalled();
     });

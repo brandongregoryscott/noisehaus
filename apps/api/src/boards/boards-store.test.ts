@@ -126,9 +126,11 @@ describe("BoardsStore", () => {
         it("rejects malformed successful batches as unexpected failures", async () => {
             vi.mocked(PocketBaseClient.createRecords).mockResolvedValue([]);
 
-            await expect(
-                BoardsStore.createWithInitialToken({ ...board })
-            ).rejects.toThrow("'board creation result' was unexpectedly null.");
+            const result = BoardsStore.createWithInitialToken({ ...board });
+
+            await expect(result).rejects.toThrow(
+                "'board creation result' was unexpectedly null."
+            );
         });
 
         it("propagates a failed batch without retrying individual writes", async () => {

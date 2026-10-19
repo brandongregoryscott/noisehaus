@@ -23,11 +23,14 @@ describe("getAudioDevices", () => {
                 getUserMedia: vi.fn().mockRejectedValue(new Error("Denied")),
             },
         });
+
         const result = await getAudioDevices();
+        const permission = await hasAudioPermission();
+
         assert(result.isValidationError());
         expect(result.error.message).toContain("enable audio permissions");
         expect(enumerateDevices).not.toHaveBeenCalled();
-        await expect(hasAudioPermission()).resolves.toBe(false);
+        expect(permission).toBe(false);
     });
 
     it("returns usable output devices and filters unsupported choices", async () => {
@@ -45,7 +48,9 @@ describe("getAudioDevices", () => {
                 getUserMedia: vi.fn().mockResolvedValue({}),
             },
         });
+
         const result = await getAudioDevices();
+
         assert(result.isOk);
         expect(result.value).toEqual([speaker]);
     });
@@ -58,7 +63,9 @@ describe("getAudioDevices", () => {
                 getUserMedia: vi.fn().mockResolvedValue({}),
             },
         });
+
         const result = await getAudioDevices();
+
         assert(result.isErr);
         expect(result.error).toBe(error);
     });

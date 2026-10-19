@@ -58,8 +58,8 @@ describe("BoardFilesStore", () => {
         ];
 
         const result = await BoardFilesStore.bulkInsert(input);
-        assert(result.isOk);
 
+        assert(result.isOk);
         expect(result.value.map((sound) => sound.id)).toEqual([
             "file-a",
             "file-b",
@@ -145,8 +145,8 @@ describe("BoardFilesStore", () => {
         const result = await BoardFilesStore.listWithPresignedUrls(
             record.boardId
         );
-        assert(result.isOk);
 
+        assert(result.isOk);
         expect(PocketBaseClient.listRecords).toHaveBeenCalledWith(
             "boardFiles",
             {

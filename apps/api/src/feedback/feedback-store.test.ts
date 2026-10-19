@@ -17,8 +17,8 @@ describe("FeedbackStore", () => {
         const input = { comment: "Thanks" };
 
         const result = await FeedbackStore.create(input);
-        assert(result.isOk);
 
+        assert(result.isOk);
         expect(PocketBaseClient.createRecord).toHaveBeenCalledWith(
             "feedback",
             input

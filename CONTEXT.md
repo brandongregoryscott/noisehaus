@@ -67,6 +67,13 @@ in their store without a pass-through service.
 
 ## Testing patterns
 
+Keep each test in arrange, act, assert order, with blank lines separating the
+three phases, including each iteration of a test-case loop. Set up fixtures and
+mocks first, invoke the operation in the act phase, then assert on its outcome.
+Keep the main operation out of `expect(...)` calls so the action is visible on
+its own.
+Result-narrowing `assert(...)` calls belong with the other assertions.
+
 Name the outer `describe` after the class, exported object, or function under test
 (for example, `Result`, `BoardsController`, or `errorHandler`). Describe behavior
 in nested suites and test names. Descriptive outer names are appropriate for

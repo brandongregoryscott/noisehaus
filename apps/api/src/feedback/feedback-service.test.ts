@@ -104,10 +104,12 @@ describe("FeedbackService", () => {
     it("does not create feedback when board lookup fails", async () => {
         const error = new PersistenceError(new Error("Board lookup failed"));
         mockGetBoardBySlug.mockResolvedValue(err(error));
+
         const result = await FeedbackService.create({
             boardSlug: "drums",
             comment: "Thanks",
         });
+
         assert(result.isPersistenceError());
         expect(result.error).toBe(error);
         expect(mockCreateFeedback).not.toHaveBeenCalled();

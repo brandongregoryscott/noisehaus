@@ -23,7 +23,9 @@ it("shares one health deadline across authentication and the native health reque
         .mockResolvedValueOnce(Response.json({ code: 200 }));
     vi.stubGlobal("fetch", request);
     const { PocketBaseClient } = await import("@/pocketbase-client");
+
     await PocketBaseClient.healthcheck();
+
     expect(timeout).toHaveBeenCalledWith(3000);
     expect(request).toHaveBeenNthCalledWith(
         1,
@@ -53,10 +55,11 @@ it("cancels a stalled authentication request when the health deadline expires", 
         )
     );
     const { PocketBaseClient } = await import("@/pocketbase-client");
+
     const pending = PocketBaseClient.healthcheck();
-    const rejected = expect(pending).rejects.toThrow("deadline expired");
     controller.abort(new Error("deadline expired"));
-    await rejected;
+
+    await expect(pending).rejects.toThrow("deadline expired");
 });
 
 it("submits related record creation as one multipart batch", async () => {
@@ -228,7 +231,9 @@ it("preserves parse failures as transport errors", async () => {
     );
     const { PocketBaseClient, PocketBaseTransportError } =
         await import("@/pocketbase-client");
+
     const result = PocketBaseClient.healthcheck();
+
     await expect(result).rejects.toBeInstanceOf(PocketBaseTransportError);
     await expect(result).rejects.toHaveProperty(
         "cause",

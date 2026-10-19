@@ -60,7 +60,10 @@ describe("useCreateBoard", () => {
                 Response.json({ data: null, error }, { status: 400 })
             );
         vi.stubGlobal("fetch", request);
-        await expect(runMutation()).rejects.toEqual(error);
+
+        const result = runMutation();
+
+        await expect(result).rejects.toEqual(error);
         expect(request).toHaveBeenCalledTimes(1);
     });
 
@@ -69,7 +72,10 @@ describe("useCreateBoard", () => {
             .fn<typeof fetch>()
             .mockResolvedValue(Response.json({ data: board, error: null }));
         vi.stubGlobal("fetch", request);
-        await expect(runMutation(false)).resolves.toEqual({
+
+        const result = await runMutation(false);
+
+        expect(result).toEqual({
             data: board,
             error: null,
         });
@@ -117,6 +123,7 @@ describe("useCreateBoard", () => {
                 response: () => Promise.resolve(Response.json({})),
             },
         ];
+
         for (const { error, name, response } of testCases) {
             const request = vi
                 .fn<typeof fetch>()
@@ -125,7 +132,9 @@ describe("useCreateBoard", () => {
                 )
                 .mockImplementationOnce(response);
             vi.stubGlobal("fetch", request);
+
             const result = await runMutation();
+
             expect(result, name).toEqual({ data: board, error });
             expect(request, name).toHaveBeenCalledTimes(2);
             const upload = request.mock.calls[1][1]?.body as FormData;

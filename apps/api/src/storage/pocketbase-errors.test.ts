@@ -30,8 +30,8 @@ describe("withPocketBaseResult", () => {
         );
 
         const result = await operation();
-        assert(result.isErr);
 
+        assert(result.isErr);
         expect(result.error).toBeInstanceOf(UniqueConstraintError);
         expect(result.error).toMatchObject({
             cause,
@@ -54,8 +54,8 @@ describe("withPocketBaseResult", () => {
         );
 
         const result = await operation();
-        assert(result.isErr);
 
+        assert(result.isErr);
         expect(result.error).toMatchObject({
             field: "slug",
             name: "ERROR_UNIQUE_CONSTRAINT",
@@ -77,8 +77,8 @@ describe("withPocketBaseResult", () => {
         );
 
         const result = await operation();
-        assert(result.isErr);
 
+        assert(result.isErr);
         expect(result.error).toBeInstanceOf(ValidationError);
         expect(result.error.message).toBe("Board storage quota exceeded");
     });
@@ -95,8 +95,8 @@ describe("withPocketBaseResult", () => {
         );
 
         const result = await operation();
-        assert(result.isErr);
 
+        assert(result.isErr);
         expect(result.error).toBeInstanceOf(ValidationError);
         expect(result.error.message).toBe("Invalid request");
     });
@@ -113,8 +113,8 @@ describe("withPocketBaseResult", () => {
         );
 
         const result = await operation();
-        assert(result.isErr);
 
+        assert(result.isErr);
         expect(result.error).toBeInstanceOf(PersistenceError);
         expect(result.error).toHaveProperty("cause", cause);
     });
@@ -135,7 +135,9 @@ describe("withPocketBaseResult", () => {
         const operation = withPocketBaseResult(
             vi.fn().mockRejectedValue(error)
         );
+
         const result = await operation();
+
         assert(result.isPersistenceError());
         expect(result.error.cause).toBe(error);
         expect(result.error.cause.cause).toBe(cause);

@@ -5,17 +5,25 @@ import { toQueryPromise } from "./query-result";
 describe("toQueryPromise", () => {
     it("resolves the successful payload for TanStack Query", async () => {
         const value = { id: "board-a" };
-        await expect(toQueryPromise(ok(value))).resolves.toBe(value);
-        await expect(toQueryPromise(Promise.resolve(ok(false)))).resolves.toBe(
-            false
-        );
+        const directResult = ok(value);
+        const promisedResult = Promise.resolve(ok(false));
+
+        const direct = toQueryPromise(directResult);
+        const promised = toQueryPromise(promisedResult);
+
+        await expect(direct).resolves.toBe(value);
+        await expect(promised).resolves.toBe(false);
     });
 
     it("rejects with the original error so Query can track failure", async () => {
         const error = new ValidationError("Invalid board");
-        await expect(toQueryPromise(err(error))).rejects.toBe(error);
-        await expect(toQueryPromise(Promise.resolve(err(error)))).rejects.toBe(
-            error
-        );
+        const directResult = err(error);
+        const promisedResult = Promise.resolve(err(error));
+
+        const direct = toQueryPromise(directResult);
+        const promised = toQueryPromise(promisedResult);
+
+        await expect(direct).rejects.toBe(error);
+        await expect(promised).rejects.toBe(error);
     });
 });
