@@ -71,7 +71,7 @@ describe("BoardsService", () => {
             vi.mocked(randomSuffix).mockReturnValue("abc123");
             const input = { name: board.name, slug: board.slug };
 
-            const result = await BoardsService.insert(input);
+            const result = await BoardsService.insert(input).toPromise();
 
             assert(result.isOk);
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(2);
@@ -91,7 +91,7 @@ describe("BoardsService", () => {
             );
             const input = { name: board.name, slug: board.slug };
 
-            const result = await BoardsService.insert(input);
+            const result = await BoardsService.insert(input).toPromise();
 
             assert(result.isUniqueConstraintError("slug"));
             expect(result.error.field).toBe("slug");
@@ -111,7 +111,7 @@ describe("BoardsService", () => {
             );
             const input = { name: board.name, slug: board.slug };
 
-            const result = await BoardsService.insert(input);
+            const result = await BoardsService.insert(input).toPromise();
 
             assert(result.isErr);
             expect(result.error).toBe(error);
@@ -129,7 +129,7 @@ describe("BoardsService", () => {
             const result = await BoardsService.insert({
                 name: board.name,
                 slug: board.slug,
-            });
+            }).toPromise();
 
             assert(result.isErr);
             expect(result.error).toBe(error);
@@ -143,7 +143,7 @@ describe("BoardsService", () => {
             );
             const input = { name: board.name, slug: board.slug };
 
-            const result = BoardsService.insert(input);
+            const result = BoardsService.insert(input).toPromise();
 
             await expect(result).rejects.toBe(error);
             expect(BoardsStore.createWithInitialToken).toHaveBeenCalledTimes(1);
@@ -154,7 +154,10 @@ describe("BoardsService", () => {
         it("ignores an invalid token when the board can be read by slug", async () => {
             const token = "invalid";
 
-            const result = await BoardsService.get(board.slug, token);
+            const result = await BoardsService.get(
+                board.slug,
+                token
+            ).toPromise();
 
             assert(result.isOk);
             expect(result.value).toEqual(board);
@@ -171,7 +174,7 @@ describe("BoardsService", () => {
                 })
             );
 
-            const result = await BoardsService.get(board.slug);
+            const result = await BoardsService.get(board.slug).toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -191,7 +194,10 @@ describe("BoardsService", () => {
                 ok(null)
             );
 
-            const result = await BoardsService.get(board.slug, "invalid");
+            const result = await BoardsService.get(
+                board.slug,
+                "invalid"
+            ).toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -210,7 +216,10 @@ describe("BoardsService", () => {
                 ok(protectedBoard)
             );
 
-            const result = await BoardsService.get(board.slug, "token-a");
+            const result = await BoardsService.get(
+                board.slug,
+                "token-a"
+            ).toPromise();
 
             assert(result.isOk);
             expect(result.value).toEqual(protectedBoard);
@@ -223,7 +232,7 @@ describe("BoardsService", () => {
         it("conceals a missing board", async () => {
             vi.mocked(BoardsStore.findBySlug).mockResolvedValue(ok(null));
 
-            const result = await BoardsService.get("missing");
+            const result = await BoardsService.get("missing").toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -240,7 +249,9 @@ describe("BoardsService", () => {
                 })
             );
 
-            const result = await BoardsService.getBySlug(board.slug);
+            const result = await BoardsService.getBySlug(
+                board.slug
+            ).toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -255,7 +266,7 @@ describe("BoardsService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardsService.getByToken(options);
+            const result = await BoardsService.getByToken(options).toPromise();
 
             assert(result.isOk);
             expect(result.value).toBe(board);
@@ -272,7 +283,7 @@ describe("BoardsService", () => {
             vi.mocked(BoardsStore.findBySlug).mockResolvedValue(ok(null));
             const options = { slug: "missing", token: "token-a" };
 
-            const result = await BoardsService.getByToken(options);
+            const result = await BoardsService.getByToken(options).toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -288,7 +299,7 @@ describe("BoardsService", () => {
             vi.mocked(BoardsStore.findById).mockResolvedValue(err(error));
             const options = { id: board.id, token: "token-a" };
 
-            const result = await BoardsService.getByToken(options);
+            const result = await BoardsService.getByToken(options).toPromise();
 
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
@@ -310,7 +321,7 @@ describe("BoardsService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardsService.update(input);
+            const result = await BoardsService.update(input).toPromise();
 
             assert(result.isOk);
             expect(result.value).toMatchObject({
@@ -330,7 +341,10 @@ describe("BoardsService", () => {
         it("deletes the authorized board by ID and delegates cascading to persistence", async () => {
             const token = "token-a";
 
-            const result = await BoardsService.delete(board.slug, token);
+            const result = await BoardsService.delete(
+                board.slug,
+                token
+            ).toPromise();
 
             assert(result.isOk);
             expect(result.value).toBe(true);
@@ -344,7 +358,10 @@ describe("BoardsService", () => {
                 .mockReset()
                 .mockResolvedValue(ok(null));
 
-            const result = await BoardsService.delete(board.slug, "invalid");
+            const result = await BoardsService.delete(
+                board.slug,
+                "invalid"
+            ).toPromise();
 
             assert(result.isNotFoundError());
             expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
@@ -355,7 +372,10 @@ describe("BoardsService", () => {
             const error = new Error("Cascade failed");
             vi.mocked(BoardsStore.delete).mockRejectedValue(error);
 
-            const result = BoardsService.delete(board.slug, "token-a");
+            const result = BoardsService.delete(
+                board.slug,
+                "token-a"
+            ).toPromise();
 
             await expect(result).rejects.toBe(error);
             expect(BoardsStore.delete).toHaveBeenCalledExactlyOnceWith(
@@ -370,10 +390,14 @@ describe("BoardsService", () => {
                 new Error("Provider unavailable")
             );
             const testCases = [
-                { name: "get", operation: () => BoardsService.get(board.slug) },
+                {
+                    name: "get",
+                    operation: () => BoardsService.get(board.slug).toPromise(),
+                },
                 {
                     name: "getBySlug",
-                    operation: () => BoardsService.getBySlug(board.slug),
+                    operation: () =>
+                        BoardsService.getBySlug(board.slug).toPromise(),
                 },
                 {
                     name: "getByToken",
@@ -381,7 +405,7 @@ describe("BoardsService", () => {
                         BoardsService.getByToken({
                             slug: board.slug,
                             token: "token-a",
-                        }),
+                        }).toPromise(),
                 },
                 {
                     name: "update",
@@ -390,12 +414,12 @@ describe("BoardsService", () => {
                             name: "Updated",
                             originalSlug: board.slug,
                             token: "token-a",
-                        }),
+                        }).toPromise(),
                 },
                 {
                     name: "delete",
                     operation: () =>
-                        BoardsService.delete(board.slug, "token-a"),
+                        BoardsService.delete(board.slug, "token-a").toPromise(),
                 },
             ];
             vi.mocked(BoardsStore.findBySlug).mockResolvedValue(err(error));
@@ -425,7 +449,7 @@ describe("BoardsService", () => {
                 name: "Updated",
                 originalSlug: board.slug,
                 token: "token-a",
-            });
+            }).toPromise();
 
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
@@ -433,7 +457,9 @@ describe("BoardsService", () => {
         });
 
         it("returns validation when token authorization has neither id nor slug", async () => {
-            const result = await BoardsService.getByToken({ token: "token-a" });
+            const result = await BoardsService.getByToken({
+                token: "token-a",
+            }).toPromise();
 
             assert(result.isValidationError());
             expect(BoardsStore.findBySlug).not.toHaveBeenCalled();
@@ -444,7 +470,10 @@ describe("BoardsService", () => {
             const error = new PersistenceError(new Error("Delete failed"));
             vi.mocked(BoardsStore.delete).mockResolvedValue(err(error));
 
-            const result = await BoardsService.delete(board.slug, "token-a");
+            const result = await BoardsService.delete(
+                board.slug,
+                "token-a"
+            ).toPromise();
 
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);

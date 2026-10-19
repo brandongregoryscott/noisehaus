@@ -1,4 +1,4 @@
-import type { ServiceError, Board, StoreError, Result } from "common";
+import type { ServiceError, Board, StoreError } from "common";
 import {
     err,
     ok,
@@ -6,6 +6,7 @@ import {
     BOARD_NOT_FOUND_ERROR,
     ValidationError,
     Task,
+    UniqueConstraintError,
 } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardResult } from "@/boards/boards-store";
@@ -51,112 +52,93 @@ const VALID_GET_BY_SLUG_PERMISSIONS = [
     ViewPermission.BySlug,
 ];
 
-const _delete = (
-    slug: string,
-    token: string
-): Promise<Result<true, ServiceError>> =>
-    Task.fromPromise(() => authorizeWritePermission({ slug, token }))
+const _delete = (slug: string, token: string): Task<true, ServiceError> =>
+    authorizeWritePermission({ slug, token })
         .andThen((board) => BoardsStore.delete(board.id))
-        .map(() => true as const)
-        .toPromise();
+        .map(() => true as const);
 
-const getAllPublic = async (): Promise<Result<Board[], StoreError>> =>
-    BoardsStore.getAllPublic();
+const getAllPublic = (): Task<Board[], StoreError> =>
+    Task.fromPromise(() => BoardsStore.getAllPublic());
 
-const getBySlug = (slug: string): Promise<Result<Board, ServiceError>> =>
-    Task.fromPromise(() => BoardsStore.findBySlug(slug))
-        .andThen((board) =>
-            board === null ||
-            !VALID_GET_BY_SLUG_PERMISSIONS.includes(
-                board.viewPermission as ViewPermission
-            )
-                ? err(BOARD_NOT_FOUND_ERROR)
-                : ok(board)
+const getBySlug = (slug: string): Task<Board, ServiceError> =>
+    Task.fromPromise(() => BoardsStore.findBySlug(slug)).andThen((board) =>
+        board === null ||
+        !VALID_GET_BY_SLUG_PERMISSIONS.includes(
+            board.viewPermission as ViewPermission
         )
-        .toPromise();
+            ? err(BOARD_NOT_FOUND_ERROR)
+            : ok(board)
+    );
 
 const getByToken = (
     options: GetBoardByTokenOptions
-): Promise<Result<Board, ServiceError>> => {
+): Task<Board, ServiceError> => {
     const { id = "", slug = "", token } = options;
     const hasId = !isEmpty(id);
     const hasSlug = !isEmpty(slug);
     if (!hasId && !hasSlug) {
-        return Task.fromResult(
-            err(new ValidationError("An id or slug is required"))
-        ).toPromise();
+        return Task.err(new ValidationError("An id or slug is required"));
     }
 
     return Task.fromPromise(() =>
         hasId ? BoardsStore.findById(id) : BoardsStore.findBySlug(slug)
-    )
-        .andThen((board) => {
-            if (board === null) {
-                return err(BOARD_NOT_FOUND_ERROR);
-            }
-            return Task.fromPromise(() =>
-                BoardTokensStore.findByBoardIdAndToken(board.id, token)
-            ).andThen((boardToken) =>
-                boardToken === null ? err(BOARD_NOT_FOUND_ERROR) : ok(board)
-            );
-        })
-        .toPromise();
-};
-
-const insert = async (
-    options: InsertOptions
-): Promise<Result<CreateBoardResult, StoreError>> => {
-    const { attempt = 0, name } = options;
-    let { slug } = options;
-    if (attempt > 0) {
-        slug = `${slug}-${randomSuffix()}`;
-    }
-
-    const boardResult = await BoardsStore.createWithInitialToken({
-        name,
-        slug,
-        viewPermission: ViewPermission.BySlug,
+    ).andThen((board) => {
+        if (board === null) {
+            return err(BOARD_NOT_FOUND_ERROR);
+        }
+        return Task.fromPromise(() =>
+            BoardTokensStore.findByBoardIdAndToken(board.id, token)
+        ).andThen((boardToken) =>
+            boardToken === null ? err(BOARD_NOT_FOUND_ERROR) : ok(board)
+        );
     });
-    if (
-        boardResult.isUniqueConstraintError("slug") &&
-        attempt < MAX_CREATE_ATTEMPTS
-    ) {
-        return insert({ ...options, attempt: attempt + 1 });
-    }
-
-    return boardResult;
 };
 
-const update = (
-    input: UpdateBoardOptions
-): Promise<Result<Board, ServiceError>> => {
+const insert = (
+    options: InsertOptions
+): Task<CreateBoardResult, StoreError> => {
+    const { attempt = 0, name } = options;
+    return Task.fromPromise(() => {
+        const slug =
+            attempt > 0 ? `${options.slug}-${randomSuffix()}` : options.slug;
+        return BoardsStore.createWithInitialToken({
+            name,
+            slug,
+            viewPermission: ViewPermission.BySlug,
+        });
+    }).orElse((error) => {
+        if (
+            error instanceof UniqueConstraintError &&
+            error.field === "slug" &&
+            attempt < MAX_CREATE_ATTEMPTS
+        ) {
+            return insert({ ...options, attempt: attempt + 1 });
+        }
+        return err(error);
+    });
+};
+
+const update = (input: UpdateBoardOptions): Task<Board, ServiceError> => {
     const { originalSlug, token, ...updatedBoard } = input;
-    return Task.fromPromise(() =>
-        authorizeWritePermission({ slug: originalSlug, token })
-    )
-        .andThen((board) => BoardsStore.update(board.id, updatedBoard))
-        .toPromise();
+    return authorizeWritePermission({ slug: originalSlug, token }).andThen(
+        (board) => BoardsStore.update(board.id, updatedBoard)
+    );
 };
 
-const get = (
-    slug: string,
-    token?: string
-): Promise<Result<Board, ServiceError>> =>
-    Task.fromPromise(() => BoardsStore.findBySlug(slug))
-        .andThen((board) => {
-            if (board === null) {
-                return err(BOARD_NOT_FOUND_ERROR);
-            }
-            // Ignore tokens for boards that can be read by slug.
-            if (board.viewPermission !== ViewPermission.ByToken) {
-                return ok(board);
-            }
-            if (isEmpty(token)) {
-                return err(BOARD_NOT_FOUND_ERROR);
-            }
-            return getByToken({ slug, token: token! });
-        })
-        .toPromise();
+const get = (slug: string, token?: string): Task<Board, ServiceError> =>
+    Task.fromPromise(() => BoardsStore.findBySlug(slug)).andThen((board) => {
+        if (board === null) {
+            return err(BOARD_NOT_FOUND_ERROR);
+        }
+        // Ignore tokens for boards that can be read by slug.
+        if (board.viewPermission !== ViewPermission.ByToken) {
+            return ok(board);
+        }
+        if (isEmpty(token)) {
+            return err(BOARD_NOT_FOUND_ERROR);
+        }
+        return getByToken({ slug, token: token! });
+    });
 
 const authorizeWritePermission = getByToken;
 const BoardsService = {

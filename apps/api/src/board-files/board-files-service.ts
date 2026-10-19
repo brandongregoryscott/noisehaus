@@ -82,9 +82,9 @@ type UpdateBoardFileOptions = {
 const normalizeEmoji = (emoji: null | string | undefined): string =>
     emoji == null || emoji === "null" ? "" : emoji;
 
-const bulkInsert = async (
+const bulkInsert = (
     options: BulkCreateBoardFileOptions
-): Promise<Result<BoardFile[], ServiceError>> => {
+): Task<BoardFile[], ServiceError> => {
     const { boardSlug, displayNames, emojis, files, token } = options;
     if (
         isEmpty(files) ||
@@ -92,16 +92,14 @@ const bulkInsert = async (
         displayNames.length !== files.length ||
         emojis.length !== files.length
     ) {
-        return err(
+        return Task.err(
             new ValidationError(
                 `Each uploaded file must have a name and emoji, with at most ${MAX_FILE_COUNT_PER_UPLOAD} files per upload`
             )
         );
     }
-    return Task.fromPromise(() =>
-        BoardsService.getByToken({ slug: boardSlug, token })
-    )
-        .andThen((board) =>
+    return BoardsService.getByToken({ slug: boardSlug, token }).andThen(
+        (board) =>
             verifyRemainingSize(
                 board.id,
                 sumBy(files, (file) => file.size)
@@ -116,35 +114,29 @@ const bulkInsert = async (
                     }))
                 )
             )
-        )
-        .toPromise();
+    );
 };
 
 const _delete = (
     id: string,
     boardSlug: string,
     token: string
-): Promise<Result<true, ServiceError>> =>
+): Task<true, ServiceError> =>
     getWritableFile(id, boardSlug, token)
         .andThen((boardFile) => BoardFilesStore.delete(boardFile.id))
-        .map(() => true as const)
-        .toPromise();
+        .map(() => true as const);
 
 const insert = (
     options: CreateBoardFileOptions
-): Promise<Result<BoardFile, ServiceError>> => {
+): Task<BoardFile, ServiceError> => {
     const { boardSlug, displayName, emoji, file, token } = options;
-    return Task.fromPromise(() =>
-        bulkInsert({
-            boardSlug,
-            displayNames: [displayName],
-            emojis: [emoji ?? "null"],
-            files: [file],
-            token,
-        })
-    )
-        .map((boardFiles) => boardFiles[0])
-        .toPromise();
+    return bulkInsert({
+        boardSlug,
+        displayNames: [displayName],
+        emojis: [emoji ?? "null"],
+        files: [file],
+        token,
+    }).map((boardFiles) => boardFiles[0]);
 };
 
 const getWritableFile = (
@@ -153,29 +145,25 @@ const getWritableFile = (
     token: string
 ): Task<BoardFile, ServiceError> => {
     if (!isString(token) || isEmpty(token)) {
-        return Task.fromResult(err(BOARD_NOT_FOUND_ERROR));
+        return Task.err(BOARD_NOT_FOUND_ERROR);
     }
 
-    return Task.fromPromise(() =>
-        BoardsService.getByToken({ slug: boardSlug, token })
-    ).andThen((board) => getByIdAndBoardId(id, board.id));
+    return BoardsService.getByToken({ slug: boardSlug, token }).andThen(
+        (board) => getByIdAndBoardId(id, board.id)
+    );
 };
 
-const get = (
-    options: GetBoardFileOptions
-): Promise<Result<BoardFile, ServiceError>> => {
+const get = (options: GetBoardFileOptions): Task<BoardFile, ServiceError> => {
     const { boardSlug, id, token } = options;
     if (token !== undefined && !isString(token)) {
-        return Task.fromResult(err(BOARD_NOT_FOUND_ERROR)).toPromise();
+        return Task.err(BOARD_NOT_FOUND_ERROR);
     }
 
-    return Task.fromPromise(() =>
+    return (
         isEmpty(token)
             ? BoardsService.getBySlug(boardSlug)
             : BoardsService.getByToken({ slug: boardSlug, token: token! })
-    )
-        .andThen((board) => getByIdAndBoardId(id, board.id))
-        .toPromise();
+    ).andThen((board) => getByIdAndBoardId(id, board.id));
 };
 
 const getByIdAndBoardId = (
@@ -190,57 +178,52 @@ const getByIdAndBoardId = (
 
 const listByBoardSlug = (
     boardSlug: string
-): Promise<Result<PresignedBoardFile[], ServiceError>> =>
-    Task.fromPromise(() => BoardsService.getBySlug(boardSlug))
-        .andThen((board) => BoardFilesStore.listWithPresignedUrls(board.id))
-        .toPromise();
+): Task<PresignedBoardFile[], ServiceError> =>
+    BoardsService.getBySlug(boardSlug).andThen((board) =>
+        BoardFilesStore.listWithPresignedUrls(board.id)
+    );
 
 const listByToken = (
     options: ListBoardFilesByTokenOptions
-): Promise<Result<PresignedBoardFile[], ServiceError>> =>
-    Task.fromPromise(() => BoardsService.getByToken(options))
-        .andThen((board) => BoardFilesStore.listWithPresignedUrls(board.id))
-        .toPromise();
+): Task<PresignedBoardFile[], ServiceError> =>
+    BoardsService.getByToken(options).andThen((board) =>
+        BoardFilesStore.listWithPresignedUrls(board.id)
+    );
 
 const update = (
     options: UpdateBoardFileOptions
-): Promise<Result<BoardFile, ServiceError>> => {
+): Task<BoardFile, ServiceError> => {
     const { boardSlug, displayName, emoji, file, id, token } = options;
-    return getWritableFile(id, boardSlug, token)
-        .andThen((boardFile) => {
-            let updatedBoardFile: UpdateStoredBoardFileOptions = {};
-            if (!isEmpty(displayName)) {
-                updatedBoardFile = {
-                    ...updatedBoardFile,
-                    displayName: displayName!,
-                };
-            }
-            if (!isEmpty(emoji)) {
-                updatedBoardFile = {
-                    ...updatedBoardFile,
-                    emoji: normalizeEmoji(emoji),
-                };
-            }
-            if (file === undefined) {
-                return BoardFilesStore.update(id, updatedBoardFile);
-            }
+    return getWritableFile(id, boardSlug, token).andThen((boardFile) => {
+        let updatedBoardFile: UpdateStoredBoardFileOptions = {};
+        if (!isEmpty(displayName)) {
+            updatedBoardFile = {
+                ...updatedBoardFile,
+                displayName: displayName!,
+            };
+        }
+        if (!isEmpty(emoji)) {
+            updatedBoardFile = {
+                ...updatedBoardFile,
+                emoji: normalizeEmoji(emoji),
+            };
+        }
+        if (file === undefined) {
+            return BoardFilesStore.update(id, updatedBoardFile);
+        }
 
-            const additionalSizeInBytes = Math.max(
-                file.size - boardFile.size,
-                0
-            );
-            return verifyRemainingSize(
-                boardFile.boardId,
-                additionalSizeInBytes
-            ).andThen(() =>
-                BoardFilesStore.update(id, {
-                    ...updatedBoardFile,
-                    file,
-                    size: file.size,
-                })
-            );
-        })
-        .toPromise();
+        const additionalSizeInBytes = Math.max(file.size - boardFile.size, 0);
+        return verifyRemainingSize(
+            boardFile.boardId,
+            additionalSizeInBytes
+        ).andThen(() =>
+            BoardFilesStore.update(id, {
+                ...updatedBoardFile,
+                file,
+                size: file.size,
+            })
+        );
+    });
 };
 
 const verifyRemainingSize = (

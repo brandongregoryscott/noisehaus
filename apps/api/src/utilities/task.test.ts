@@ -26,7 +26,7 @@ describe("Task", () => {
         const write = vi.fn(async (_id: string) => ok(true));
         const transform = vi.fn(() => "saved");
 
-        const result = await Task.fromResult(err(error))
+        const result = await Task.err(error)
             .andThen(write)
             .map(transform)
             .toPromise();
@@ -129,7 +129,7 @@ describe("Task", () => {
         };
         const afterFailure = vi.fn(() => ok(true));
 
-        const promise = Task.fromResult(ok("board-a"))
+        const promise = Task.ok("board-a")
             .andThen(operation)
             .andThen(afterFailure)
             .toPromise();
@@ -145,7 +145,7 @@ describe("Task", () => {
         };
         const afterFailure = vi.fn(() => ok(true));
 
-        const promise = Task.fromResult(ok("board-a"))
+        const promise = Task.ok("board-a")
             .andThen(operation)
             .andThen(afterFailure)
             .toPromise();
@@ -160,10 +160,105 @@ describe("Task", () => {
             throw error;
         };
 
-        const promise = Task.fromResult(ok("board-a"))
-            .map(transform)
-            .toPromise();
+        const promise = Task.ok("board-a").map(transform).toPromise();
 
         await expect(promise).rejects.toBe(error);
+    });
+
+    it("does not run recovery after success", async () => {
+        const recover = vi.fn(() => Task.ok("recovered"));
+
+        const result = await Task.ok("original").orElse(recover).toPromise();
+
+        assert(result.isOk);
+        expect(result.value).toBe("original");
+        expect(recover).not.toHaveBeenCalled();
+    });
+
+    it("recovers an expected failure with a Task", async () => {
+        const error = new PersistenceError(new Error("Read unavailable"));
+        const recover = vi.fn(() => Task.ok("fallback"));
+
+        const result = await Task.err(error).orElse(recover).toPromise();
+
+        assert(result.isOk);
+        expect(result.value).toBe("fallback");
+        expect(recover).toHaveBeenCalledExactlyOnceWith(error);
+    });
+
+    it("recovers an expected failure with a synchronous Result", async () => {
+        const error = new PersistenceError(new Error("Read unavailable"));
+
+        const result = await Task.err(error)
+            .orElse(() => ok(42))
+            .toPromise();
+
+        assert(result.isOk);
+        expect(result.value).toBe(42);
+    });
+
+    it("retains a replacement error from asynchronous recovery", async () => {
+        const original = new PersistenceError(new Error("Read unavailable"));
+        const replacement = new UniqueConstraintError(
+            "slug",
+            "Slug is taken",
+            original
+        );
+        const recover = vi.fn(async () => err(replacement));
+        const afterRecovery = vi.fn(() => ok(true));
+
+        const result = await Task.err(original)
+            .orElse(recover)
+            .andThen(afterRecovery)
+            .toPromise();
+
+        expectTypeOf(result).toEqualTypeOf<
+            Result<boolean, UniqueConstraintError>
+        >();
+        assert(result.isUniqueConstraintError("slug"));
+        expect(result.error).toBe(replacement);
+        expect(afterRecovery).not.toHaveBeenCalled();
+    });
+
+    it("bypasses recovery for unexpected exceptions", async () => {
+        const error = new Error("Unexpected read failure");
+        const operation = async () => {
+            throw error;
+        };
+        const recover = vi.fn(() => Task.ok("fallback"));
+
+        const promise = Task.fromPromise(operation).orElse(recover).toPromise();
+
+        await expect(promise).rejects.toBe(error);
+        expect(recover).not.toHaveBeenCalled();
+    });
+
+    it("preserves synchronous recovery exceptions and skips further recovery", async () => {
+        const original = new PersistenceError(new Error("Read unavailable"));
+        const unexpected = new Error("Broken recovery invariant");
+        const recover = () => {
+            throw unexpected;
+        };
+        const afterFailure = vi.fn(() => Task.ok("fallback"));
+
+        const promise = Task.err(original)
+            .orElse(recover)
+            .orElse(afterFailure)
+            .toPromise();
+
+        await expect(promise).rejects.toBe(unexpected);
+        expect(afterFailure).not.toHaveBeenCalled();
+    });
+
+    it("preserves asynchronous recovery exceptions", async () => {
+        const original = new PersistenceError(new Error("Read unavailable"));
+        const unexpected = new Error("Unexpected recovery failure");
+        const recover = async () => {
+            throw unexpected;
+        };
+
+        const promise = Task.err(original).orElse(recover).toPromise();
+
+        await expect(promise).rejects.toBe(unexpected);
     });
 });

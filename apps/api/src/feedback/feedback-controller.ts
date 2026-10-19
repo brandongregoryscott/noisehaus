@@ -9,7 +9,7 @@ const FeedbackController = {
         response: Response
     ): Promise<Response> => {
         const { body } = request;
-        const feedbackResult = await FeedbackService.create(body);
+        const feedbackResult = await FeedbackService.create(body).toPromise();
 
         return HttpResponse.created(response, feedbackResult);
     },

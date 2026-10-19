@@ -2,8 +2,8 @@
 
 API services use an application-owned `Task<T, E>` backed by True Myth 9.4.0.
 The adapter lives in `packages/common/task.ts`. Stores continue to return
-`Promise<Result<T, E>>`; services compose those operations with Task and convert
-back to `Promise<Result<T, E>>` at their public boundary.
+`Promise<Result<T, E>>`; services return `Task<T, E>` and compose other services
+directly. Controllers convert to `Promise<Result<T, E>>` at the HTTP boundary.
 
 ## Reading a dependent sequence
 
@@ -24,8 +24,7 @@ Deletion now expresses that sequence as:
 ```ts
 return getWritableFile(id, boardSlug, token)
     .andThen((boardFile) => BoardFilesStore.delete(boardFile.id))
-    .map(() => true as const)
-    .toPromise();
+    .map(() => true as const);
 ```
 
 `andThen` receives the successful value and only starts its callback after the
@@ -34,9 +33,10 @@ or another application Task. Error types accumulate as a union. `map` changes a
 successful value. Both skip their callbacks after a failure. The `boardFile`
 variable is the actual file, so there is no need for a wrapper variable or `.value`.
 
-Private helpers such as `getWritableFile`, `getByIdAndBoardId`,
-`verifyRemainingSize`, and `normalizeCreateInput` return Task directly. They can
-be chained without wrapping them again. For example, an upload checks capacity
+All service operations and their composition helpers return Task directly.
+Calls between services chain without wrapping them again. Immediate outcomes use
+`Task.ok(value)` or `Task.err(error)` rather than converting through a Result.
+Result-returning callbacks can still use `ok(value)` and `err(error)`. For example, an upload checks capacity
 before writing:
 
 ```ts
@@ -57,10 +57,19 @@ need an explicit `Result<T, E>` return annotation to guide TypeScript inference.
 - `fromPromise` takes a callback producing an existing `Promise<Result<T, E>>`.
   It starts immediately. Pass dependent work inside `andThen` callbacks; creating
   a promise before the chain would start that work too early.
-- Call `.toPromise()` once at the service boundary. It returns the same
-  `Promise<Result<T, E>>` consumed by controllers and existing callers. The
-  application adapter deliberately is not directly awaitable; awaiting a raw
-  True Myth Task would expose its own Result rather than our error predicates.
+- Controllers call `.toPromise()` before passing a Result to `HttpResponse.ok`
+  or `HttpResponse.created`. For example:
+
+    ```ts
+    const boardResult = await BoardsService.get(slug, token).toPromise();
+    return HttpResponse.ok(response, boardResult);
+    ```
+
+    The application adapter deliberately is not directly awaitable; use
+    `.toPromise()` in tests and other consumers that need to inspect the Result.
+    Awaiting a raw True Myth Task would expose its own Result rather than our error
+    predicates.
+
 - Expected failures preserve their error object and application Result predicates.
   Unexpected synchronous throws and rejected promises remain exceptions when
   `.toPromise()` is awaited, so Express's fallback handler still receives them.
@@ -78,9 +87,14 @@ Keep domain decisions visible: an absent optional feedback board is allowed,
 whereas a missing or unauthorized requested board is not found. Branching on
 those values inside callbacks remains ordinary business logic.
 
-Board creation retains its explicit Result-based retry decision. Only a confirmed
-slug conflict permits retry, with the existing attempt limit. A general automatic
-retry would be unsafe for writes with an ambiguous outcome.
+`orElse` receives an expected error and can return a Result, a promise of one, or
+another Task. Successful values pass through without invoking recovery. A failure
+from recovery replaces the original error type. Unexpected exceptions bypass all
+recovery callbacks and still reject when converted at the controller boundary.
+
+Board creation uses `orElse` for a selective retry decision. Only a confirmed
+`UniqueConstraintError` on the slug permits retry, with the existing attempt limit.
+A general automatic retry would be unsafe for writes with an ambiguous outcome.
 
 Transport error translation, HTTP response mapping, and the TanStack Query
 rejection adapter remain explicit boundaries. The frontend board creation flow
@@ -88,9 +102,9 @@ also retains its handling of partial upload failure so the created board and tok
 are always preserved. Task is used to compose service operations, rather than to
 replace every Result inspection in the application.
 
-The wrapper intentionally exposes a small composition API. It does not expose
-True Myth types, add recovery combinators, or change the application's exception
-policy.
+The wrapper exposes a small composition API and hides True Myth types. Its
+`ok`, `err`, `andThen`, `map`, and `orElse` methods retain the application's
+exception policy while avoiding conversions between service calls.
 Reference: [True Myth Task API](https://true-myth.dev/api/task/classes/Task) and
 [Task constructors](https://true-myth.dev/api/task/). The installed 9.4.0 source
 was used to verify the constructor and callback exception behavior.

@@ -29,7 +29,8 @@ validation, quota checks, and retry policy. Stores own persistence operations,
 record mapping, file transport, and translation of provider errors. Controllers
 call services; services call stores. Stores do not call services.
 
-API stores and services return `Promise<Result<T, E>>` for expected failures.
+API stores return `Promise<Result<T, E>>`; services return the application-owned
+`Task<T, E>` for expected failures.
 Stores use `StoreError`; services add access and business failures through
 `ServiceError`. Missing records are successful `null` store results; services
 decide whether absence means not found or is allowed (such as feedback without a
@@ -39,12 +40,15 @@ When naming a Result wrapper after a domain value, include the `Result` suffix
 Keep domain names for domain values. Services compose dependent operations with
 `Task` from `common`: `andThen` receives successful values and propagates failures;
 `map` transforms successful values. Callbacks may return a `Result`, a
-`Promise<Result>`, or another `Task`. Private composition helpers return `Task`
-directly; exported service operations convert with `.toPromise()` to keep the
-`Promise<Result>` contract. Keep dependent work inside callbacks so it only starts
-after prior checks succeed. Business branches and confirmed slug-conflict retries
-can still inspect a Result explicitly. See [Task composition](docs/task-composition.md)
-for examples and exception behavior.
+`Promise<Result>`, or another `Task`. Service operations and their private
+composition helpers return `Task` directly. Controllers await `.toPromise()`
+at the HTTP boundary before passing the application Result to `HttpResponse`.
+Use `Task.ok(value)` and `Task.err(error)` for immediate outcomes, and
+`Task.fromPromise(() => storeOperation())` to start a store operation. Services
+chain other services directly. Keep dependent work inside callbacks so it only
+starts after prior checks succeed. Use `orElse` for selective recovery such as
+confirmed slug-conflict retries; unexpected exceptions bypass recovery.
+See [Task composition](docs/task-composition.md) for examples and exception behavior.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes
 from `common`. Only `packages/common/result.ts` and

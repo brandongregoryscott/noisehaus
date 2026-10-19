@@ -17,6 +17,10 @@ class Task<T, E> {
         this.#task = task;
     }
 
+    static err<E, T = never>(error: E): Task<T, E> {
+        return new Task<T, E>(reject(error));
+    }
+
     /** The callback catches both synchronous throws and promise rejections. */
     static fromPromise<T, E>(
         operation: () => PromiseLike<Result<T, E>>
@@ -33,6 +37,10 @@ class Task<T, E> {
         return new Task<T, E>(
             result.isErr ? reject(result.error) : resolve(result.value)
         );
+    }
+
+    static ok<T, E = never>(value: T): Task<T, E> {
+        return new Task<T, E>(resolve(value));
     }
 
     /** Only invoke the next operation when the preceding one succeeds. */
@@ -57,6 +65,29 @@ class Task<T, E> {
 
     map<U>(transform: (value: T) => U): Task<U, E> {
         return this.andThen((value) => ok(transform(value)));
+    }
+
+    /** Recover from an expected failure; unexpected exceptions bypass recovery. */
+    orElse<U, F>(
+        operation: (
+            error: E
+        ) => PromiseLike<Result<U, F>> | Result<U, F> | Task<U, F>
+    ): Task<T | U, F> {
+        return new Task<T | U, F>(
+            this.#task.orElse((error): MythTask<U, F | UnexpectedFailure> => {
+                if (error instanceof UnexpectedFailure) {
+                    return reject(error);
+                }
+                return tryOrElse(
+                    (cause) => new UnexpectedFailure(cause),
+                    async () => operation(error)
+                ).andThen((next) =>
+                    next instanceof Task
+                        ? next.#task
+                        : Task.fromResult(next).#task
+                );
+            })
+        );
     }
 
     /** Preserve the application's Result predicates and exception boundary. */

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { BOARD_NOT_FOUND_ERROR, err, ok, ValidationError } from "common";
+import { Task, BOARD_NOT_FOUND_ERROR, ValidationError } from "common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BoardFilesController } from "@/board-files/board-files-controller";
 import { BoardFilesService } from "@/board-files/board-files-service";
@@ -25,7 +25,7 @@ describe("BoardFilesController", () => {
         const cause = new ValidationError("Quota exceeded");
         const insert = vi
             .spyOn(BoardFilesService, "bulkInsert")
-            .mockResolvedValue(err(cause));
+            .mockReturnValue(Task.err(cause));
         const response = createResponse();
 
         await BoardFilesController.create(request, response);
@@ -47,7 +47,7 @@ describe("BoardFilesController", () => {
     it("returns 404 when deletion is denied", async () => {
         const remove = vi
             .spyOn(BoardFilesService, "delete")
-            .mockResolvedValue(err(BOARD_NOT_FOUND_ERROR));
+            .mockReturnValue(Task.err(BOARD_NOT_FOUND_ERROR));
         const response = createResponse();
 
         await BoardFilesController.delete(request, response);
@@ -63,7 +63,7 @@ describe("BoardFilesController", () => {
     it("returns 404 when a file cannot be read", async () => {
         const get = vi
             .spyOn(BoardFilesService, "get")
-            .mockResolvedValue(err(BOARD_NOT_FOUND_ERROR));
+            .mockReturnValue(Task.err(BOARD_NOT_FOUND_ERROR));
         const response = createResponse();
 
         await BoardFilesController.get(request, response);
@@ -83,7 +83,7 @@ describe("BoardFilesController", () => {
     it("returns 404 when the board files cannot be listed", async () => {
         const list = vi
             .spyOn(BoardFilesService, "listByBoardSlug")
-            .mockResolvedValue(err(BOARD_NOT_FOUND_ERROR));
+            .mockReturnValue(Task.err(BOARD_NOT_FOUND_ERROR));
         const response = createResponse();
 
         await BoardFilesController.list(request, response);
@@ -99,7 +99,7 @@ describe("BoardFilesController", () => {
     it("returns 404 when an update is denied", async () => {
         const update = vi
             .spyOn(BoardFilesService, "update")
-            .mockResolvedValue(err(BOARD_NOT_FOUND_ERROR));
+            .mockReturnValue(Task.err(BOARD_NOT_FOUND_ERROR));
         const response = createResponse();
 
         await BoardFilesController.update(request, response);
@@ -120,7 +120,7 @@ describe("BoardFilesController", () => {
     });
 
     it("returns success values rather than result wrappers", async () => {
-        vi.spyOn(BoardFilesService, "delete").mockResolvedValue(ok(true));
+        vi.spyOn(BoardFilesService, "delete").mockReturnValue(Task.ok(true));
         const response = createResponse();
 
         await BoardFilesController.delete(request, response);

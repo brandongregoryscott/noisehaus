@@ -41,14 +41,18 @@ const BoardFilesController = {
             emojis,
             files,
             token,
-        });
+        }).toPromise();
 
         return HttpResponse.ok(response, boardFilesResult);
     },
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { token } = request.body;
-        const result = await BoardFilesService.delete(id, boardSlug, token);
+        const result = await BoardFilesService.delete(
+            id,
+            boardSlug,
+            token
+        ).toPromise();
 
         return HttpResponse.ok(response, result);
     },
@@ -59,19 +63,21 @@ const BoardFilesController = {
             boardSlug,
             id,
             token,
-        });
+        }).toPromise();
 
         return HttpResponse.ok(response, boardFileResult);
     },
     list: async (request: Request, response: Response): Promise<Response> => {
         const { slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFilesResult = await (isEmpty(token)
-            ? BoardFilesService.listByBoardSlug(boardSlug)
-            : BoardFilesService.listByToken({
-                  slug: boardSlug,
-                  token: token!,
-              }));
+        const boardFilesResult = await (
+            isEmpty(token)
+                ? BoardFilesService.listByBoardSlug(boardSlug)
+                : BoardFilesService.listByToken({
+                      slug: boardSlug,
+                      token: token!,
+                  })
+        ).toPromise();
 
         return HttpResponse.ok(response, boardFilesResult);
     },
@@ -87,7 +93,7 @@ const BoardFilesController = {
             file,
             id,
             token,
-        });
+        }).toPromise();
 
         return HttpResponse.ok(response, boardFileResult);
     },

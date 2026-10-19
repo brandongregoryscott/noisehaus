@@ -1,5 +1,5 @@
-import type { Feedback, Result, StoreError } from "common";
-import { ok, Task } from "common";
+import type { Feedback, StoreError } from "common";
+import { Task } from "common";
 import type { CreateStoredFeedbackOptions } from "@/feedback/feedback-store";
 import { BoardsStore } from "@/boards/boards-store";
 import { FeedbackStore } from "@/feedback/feedback-store";
@@ -8,19 +8,17 @@ type CreateFeedbackOptions = {
     boardSlug?: string;
 } & CreateStoredFeedbackOptions;
 
-const create = (
-    input: CreateFeedbackOptions
-): Promise<Result<Feedback, StoreError>> =>
-    normalizeCreateInput(input)
-        .andThen((createInput) => FeedbackStore.create(createInput))
-        .toPromise();
+const create = (input: CreateFeedbackOptions): Task<Feedback, StoreError> =>
+    normalizeCreateInput(input).andThen((createInput) =>
+        FeedbackStore.create(createInput)
+    );
 
 const normalizeCreateInput = (
     input: CreateFeedbackOptions
 ): Task<CreateStoredFeedbackOptions, StoreError> => {
     const { boardSlug } = input;
     if (boardSlug == null) {
-        return Task.fromResult(ok(omitBoardFields(input)));
+        return Task.ok(omitBoardFields(input));
     }
 
     return Task.fromPromise(() => BoardsStore.findBySlug(boardSlug)).map(
