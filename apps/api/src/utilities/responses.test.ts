@@ -1,9 +1,9 @@
-import type { Response } from "express";
+import type { Response as ExpressResponse } from "express";
 import {
     err,
     ErrorName,
     NotFoundError,
-    ok as success,
+    ok,
     PersistenceError,
     UniqueConstraintError,
     ValidationError,
@@ -11,24 +11,24 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isDevelopment } from "@/utilities/environment";
 import { logger } from "@/utilities/logger";
-import { created, error, ok } from "@/utilities/responses";
+import { Response } from "@/utilities/responses";
 
 vi.mock("./environment", () => ({ isDevelopment: vi.fn() }));
 vi.mock("./logger", () => ({ logger: { error: vi.fn() } }));
 
-const createResponse = (log?: ReturnType<typeof vi.fn>): Response =>
+const createResponse = (log?: ReturnType<typeof vi.fn>): ExpressResponse =>
     ({
         ...(log === undefined ? {} : { req: { logger: { error: log } } }),
         json: vi.fn().mockReturnThis(),
         status: vi.fn().mockReturnThis(),
-    }) as unknown as Response;
+    }) as unknown as ExpressResponse;
 
 const helpers = [
-    { name: "ok", send: ok, status: 200 },
-    { name: "created", send: created, status: 201 },
+    { name: "ok", send: Response.ok, status: 200 },
+    { name: "created", send: Response.created, status: 201 },
 ];
 
-describe("responses", () => {
+describe("Response", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(isDevelopment).mockReturnValue(false);
@@ -36,7 +36,7 @@ describe("responses", () => {
 
     it("uses each helper's success status and unwraps its payload", () => {
         const payload = { id: "board-a", token: "token-a" };
-        const result = success(payload);
+        const result = ok(payload);
 
         for (const { name, send, status } of helpers) {
             const log = vi.fn();
@@ -56,7 +56,7 @@ describe("responses", () => {
     });
 
     it("preserves false payloads as successful responses", () => {
-        const result = success(false);
+        const result = ok(false);
 
         for (const { name, send, status } of helpers) {
             const response = createResponse();
@@ -144,7 +144,7 @@ describe("responses", () => {
         const cause = new ValidationError("Invalid upload");
         const response = createResponse();
 
-        error(response, cause);
+        Response.error(response, cause);
 
         expect(logger.error).toHaveBeenCalledExactlyOnceWith(
             { err: cause },
