@@ -3,7 +3,7 @@ import { ValidationError } from "common";
 import { isEmpty } from "lodash-es";
 import { BoardFilesService } from "@/board-files/board-files-service";
 import { arrify } from "@/utilities/collection-utils";
-import { error, ok } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 const BoardFilesController = {
     create: async (request: Request, response: Response): Promise<Response> => {
@@ -13,21 +13,21 @@ const BoardFilesController = {
         const displayNames = arrify<string>(request.body.displayNames);
         const emojis = arrify<string>(request.body.emojis);
         if (!Array.isArray(files) || isEmpty(files)) {
-            return error(
+            return HttpResponse.error(
                 response,
                 new ValidationError("'files' is required and must be an array.")
             );
         }
 
         if (displayNames.length !== files.length) {
-            return error(
+            return HttpResponse.error(
                 response,
                 new ValidationError("Each file must have a name defined")
             );
         }
 
         if (emojis.length !== files.length) {
-            return error(
+            return HttpResponse.error(
                 response,
                 new ValidationError(
                     "Each file must have an emoji defined (or the string 'null' if no emoji is chosen)"
@@ -43,14 +43,14 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFilesResult);
+        return HttpResponse.ok(response, boardFilesResult);
     },
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { token } = request.body;
         const result = await BoardFilesService.delete(id, boardSlug, token);
 
-        return ok(response, result);
+        return HttpResponse.ok(response, result);
     },
     get: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
@@ -61,7 +61,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFileResult);
+        return HttpResponse.ok(response, boardFileResult);
     },
     list: async (request: Request, response: Response): Promise<Response> => {
         const { slug: boardSlug } = request.params;
@@ -73,7 +73,7 @@ const BoardFilesController = {
                   token: token!,
               }));
 
-        return ok(response, boardFilesResult);
+        return HttpResponse.ok(response, boardFilesResult);
     },
     update: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
@@ -89,7 +89,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFileResult);
+        return HttpResponse.ok(response, boardFileResult);
     },
 };
 

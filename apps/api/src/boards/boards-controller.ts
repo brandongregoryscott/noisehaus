@@ -7,7 +7,7 @@ import type {
 } from "common";
 import type { Response } from "express";
 import { BoardsService } from "@/boards/boards-service";
-import { created, ok } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (
@@ -16,7 +16,7 @@ const BoardsController = {
     ): Promise<Response> => {
         const { body } = request;
         const result = await BoardsService.insert(body);
-        return created(response, result);
+        return HttpResponse.created(response, result);
     },
     delete: async (
         request: DeleteBoardRequest,
@@ -27,7 +27,7 @@ const BoardsController = {
         const { token } = body;
         const deleteResult = await BoardsService.delete(slug, token);
 
-        return ok(response, deleteResult);
+        return HttpResponse.ok(response, deleteResult);
     },
     get: async (
         request: GetBoardRequest,
@@ -37,7 +37,7 @@ const BoardsController = {
         const token = request.query.token;
         const boardResult = await BoardsService.get(slug, token);
 
-        return ok(response, boardResult);
+        return HttpResponse.ok(response, boardResult);
     },
     list: async (
         _request: ListBoardsRequest,
@@ -45,7 +45,7 @@ const BoardsController = {
     ): Promise<Response> => {
         const boardsResult = await BoardsService.getAllPublic();
 
-        return ok(response, boardsResult);
+        return HttpResponse.ok(response, boardsResult);
     },
     update: async (
         request: UpdateBoardRequest,
@@ -60,7 +60,7 @@ const BoardsController = {
             ...input,
         });
 
-        return ok(response, boardResult);
+        return HttpResponse.ok(response, boardResult);
     },
 };
 

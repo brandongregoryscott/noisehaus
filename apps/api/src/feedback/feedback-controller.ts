@@ -1,7 +1,7 @@
 import type { CreateFeedbackRequest } from "common";
 import type { Response } from "express";
 import { FeedbackService } from "@/feedback/feedback-service";
-import { created } from "@/utilities/responses";
+import { HttpResponse } from "@/utilities/responses";
 
 const FeedbackController = {
     create: async (
@@ -11,7 +11,7 @@ const FeedbackController = {
         const { body } = request;
         const feedbackResult = await FeedbackService.create(body);
 
-        return created(response, feedbackResult);
+        return HttpResponse.created(response, feedbackResult);
     },
 };
 
