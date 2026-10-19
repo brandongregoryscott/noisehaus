@@ -39,11 +39,16 @@ When naming a Result wrapper after a domain value, include the `Result` suffix
 After returning early on failure, extract a successful value as `board` or
 `boardFile` when it makes the remaining business logic clearer. Keep domain
 names for domain values. Services use `async`/`await` and explicit
-early returns for asynchronous failure propagation.
+early returns for asynchronous failure propagation. A limited Task proof of
+concept in `BoardFilesService.bulkInsert`, `delete`, and `getWritableFile` uses
+`Task` from `common` for dependent operations, then `.toPromise()` to preserve the
+service contract. See [the prototype assessment](docs/task-proof-of-concept.md)
+before extending this experimental pattern.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes
-from `common`. Only `packages/common/result.ts` imports `true-myth`; its public
-contract hides library types and methods. Use `result.isErr` for any failure and
+from `common`. Only `packages/common/result.ts` and the experimental
+`packages/common/task.ts` adapter import `true-myth`; their public contracts hide
+library types and methods. Use `result.isErr` for any failure and
 specific predicates such as `result.isNotFoundError()`,
 `result.isValidationError()`, `result.isPersistenceError()`, and
 `result.isUniqueConstraintError(field?)` to narrow failures. Shared error types

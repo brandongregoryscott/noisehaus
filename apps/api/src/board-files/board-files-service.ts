@@ -11,6 +11,7 @@ import {
     ok,
     BOARD_NOT_FOUND_ERROR,
     ValidationError,
+    Task,
 } from "common";
 import { isEmpty, isString, sumBy } from "lodash-es";
 import type {
@@ -97,32 +98,28 @@ const bulkInsert = async (
             )
         );
     }
-    const boardResult = await BoardsService.getByToken({
-        slug: boardSlug,
-        token,
-    });
-
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    const quotaResult = await verifyRemainingSize(
-        board.id,
-        sumBy(files, (file) => file.size)
-    );
-    if (quotaResult.isErr) {
-        return quotaResult;
-    }
-
-    return BoardFilesStore.bulkInsert(
-        files.map((file, index) => ({
-            boardId: board.id,
-            displayName: displayNames[index],
-            emoji: normalizeEmoji(emojis[index]),
-            file,
-            size: file.size,
-        }))
-    );
+    return Task.fromPromise(() =>
+        BoardsService.getByToken({ slug: boardSlug, token })
+    )
+        .andThen((board) =>
+            Task.fromPromise(() =>
+                verifyRemainingSize(
+                    board.id,
+                    sumBy(files, (file) => file.size)
+                )
+            ).andThen(() =>
+                BoardFilesStore.bulkInsert(
+                    files.map((file, index) => ({
+                        boardId: board.id,
+                        displayName: displayNames[index],
+                        emoji: normalizeEmoji(emojis[index]),
+                        file,
+                        size: file.size,
+                    }))
+                )
+            )
+        )
+        .toPromise();
 };
 
 const _delete = async (
@@ -130,13 +127,10 @@ const _delete = async (
     boardSlug: string,
     token: string
 ): Promise<Result<true, ServiceError>> => {
-    const boardFileResult = await getWritableFile(id, boardSlug, token);
-    if (boardFileResult.isErr) {
-        return boardFileResult;
-    }
-    const boardFile = boardFileResult.value;
-    const deleteResult = await BoardFilesStore.delete(boardFile.id);
-    return deleteResult.isErr ? deleteResult : ok(true);
+    return Task.fromPromise(() => getWritableFile(id, boardSlug, token))
+        .andThen((boardFile) => BoardFilesStore.delete(boardFile.id))
+        .map(() => true as const)
+        .toPromise();
 };
 
 const insert = async (
@@ -164,15 +158,11 @@ const getWritableFile = async (
         return err(BOARD_NOT_FOUND_ERROR);
     }
 
-    const boardResult = await BoardsService.getByToken({
-        slug: boardSlug,
-        token,
-    });
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    return getByIdAndBoardId(id, board.id);
+    return Task.fromPromise(() =>
+        BoardsService.getByToken({ slug: boardSlug, token })
+    )
+        .andThen((board) => getByIdAndBoardId(id, board.id))
+        .toPromise();
 };
 
 const get = async (
