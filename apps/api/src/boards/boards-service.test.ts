@@ -99,6 +99,7 @@ describe("BoardsService", () => {
                 BoardsService.MAX_CREATE_ATTEMPTS + 1
             );
         });
+
         it("does not retry conflicts on fields other than slug", async () => {
             const error = new UniqueConstraintError(
                 "token",
@@ -311,6 +312,7 @@ describe("BoardsService", () => {
             );
         });
     });
+
     describe("failure propagation", () => {
         it("preserves persistence failures without treating them as missing boards", async () => {
             const error = new PersistenceError(

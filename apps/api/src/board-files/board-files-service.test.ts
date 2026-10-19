@@ -565,6 +565,7 @@ describe("BoardFilesService", () => {
             expect(BoardFilesStore.findById).not.toHaveBeenCalled();
         });
     });
+
     describe("failure propagation", () => {
         it("stops uploads when quota storage cannot be read", async () => {
             const error = new PersistenceError(

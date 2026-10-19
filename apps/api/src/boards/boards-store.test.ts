@@ -17,6 +17,7 @@ const board = {
     slug: "drums",
     viewPermission: ViewPermission.BySlug,
 };
+
 describe("BoardsStore", () => {
     beforeEach(() => {
         vi.spyOn(PocketBaseClient, "createRecords").mockResolvedValue([

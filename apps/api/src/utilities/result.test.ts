@@ -58,6 +58,7 @@ describe("Result", () => {
 
         expect(result.isUniqueConstraintError()).toBe(false);
     });
+
     it("narrows application failures using their specific predicates", () => {
         const notFoundError = new NotFoundError("Missing");
         const persistenceError = new PersistenceError(new Error("Unavailable"));

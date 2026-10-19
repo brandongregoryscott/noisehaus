@@ -77,6 +77,9 @@ in their store without a pass-through service.
 
 ## Testing patterns
 
+Separate sibling `it` and `describe` blocks from neighboring statements with a
+blank line, including nested suites and parameterized tests.
+
 Keep each test in arrange, act, assert order, with blank lines separating the
 three phases, including each iteration of a test-case loop. Set up fixtures and
 mocks first, invoke the operation in the act phase, then assert on its outcome.

@@ -101,6 +101,7 @@ describe("FeedbackService", () => {
             email: "c@example.com",
         });
     });
+
     it("does not create feedback when board lookup fails", async () => {
         const error = new PersistenceError(new Error("Board lookup failed"));
         mockGetBoardBySlug.mockResolvedValue(err(error));

@@ -129,6 +129,7 @@ describe("withPocketBaseResult", () => {
 
         await expect(result).rejects.toBe(error);
     });
+
     it("returns transport failures with the underlying diagnostics preserved", async () => {
         const cause = new TypeError("Connection lost after write");
         const error = new PocketBaseTransportError(cause);
