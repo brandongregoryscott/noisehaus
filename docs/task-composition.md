@@ -1,10 +1,9 @@
-# Task proof of concept
+# Task composition
 
-This prototype uses True Myth 9.4.0 behind an application-owned `Task<T, E>` in
-`packages/common/task.ts`. It changes three board-file service operations:
-`bulkInsert`, `delete`, and the private `getWritableFile` helper. Other operations
-retain `async`/`await` so both styles remain available for comparison. This is an
-experiment, not an application-wide migration decision.
+API services use an application-owned `Task<T, E>` backed by True Myth 9.4.0.
+The adapter lives in `packages/common/task.ts`. Stores continue to return
+`Promise<Result<T, E>>`; services compose those operations with Task and convert
+back to `Promise<Result<T, E>>` at their public boundary.
 
 ## Reading a dependent sequence
 
@@ -20,10 +19,10 @@ const deleteResult = await BoardFilesStore.delete(boardFile.id);
 return deleteResult.isErr ? deleteResult : ok(true);
 ```
 
-The prototype expresses that sequence as:
+Deletion now expresses that sequence as:
 
 ```ts
-return Task.fromPromise(() => getWritableFile(id, boardSlug, token))
+return getWritableFile(id, boardSlug, token)
     .andThen((boardFile) => BoardFilesStore.delete(boardFile.id))
     .map(() => true as const)
     .toPromise();
@@ -35,10 +34,22 @@ or another application Task. Error types accumulate as a union. `map` changes a
 successful value. Both skip their callbacks after a failure. The `boardFile`
 variable is the actual file, so there is no need for a wrapper variable or `.value`.
 
-`bulkInsert` demonstrates the less obvious tradeoff: authorization supplies a
-board that is needed after the quota check. The chain nests to retain that board
-in scope. The original early returns have a flatter layout. Task removes repeated
-checks here, but does not clearly improve every aspect of readability.
+Private helpers such as `getWritableFile`, `getByIdAndBoardId`,
+`verifyRemainingSize`, and `normalizeCreateInput` return Task directly. They can
+be chained without wrapping them again. For example, an upload checks capacity
+before writing:
+
+```ts
+.andThen((board) =>
+    verifyRemainingSize(board.id, incomingSizeInBytes)
+        .andThen(() => BoardFilesStore.bulkInsert(/* files for board.id */))
+)
+```
+
+This nesting keeps the board available to the write. Keep business branches
+inside callbacks when that reads more clearly; do not introduce data-carrying
+helpers only to flatten a chain. Callbacks returning different error types may
+need an explicit `Result<T, E>` return annotation to guide TypeScript inference.
 
 ## Integration and behavior
 
@@ -57,22 +68,29 @@ checks here, but does not clearly improve every aspect of readability.
 - The adapter uses safe constructors for both initial work and continuation
   callbacks. It does not use `fromUnsafePromise`, whose non-rejection assumption
   does not hold for our services. It also guards exceptions from mapping callbacks.
-- The prototype adds no retries, parallel writes, cancellation, or timeout policy.
+- Task composition adds no retries, parallel writes, cancellation, or timeout policy.
   Authorization, ownership checks, and quota checks still precede writes.
 
-## Assessment
+## Explicit decisions and boundaries
 
-The clearest benefit is a short linear dependency chain such as deletion or
-"authorize, then load". Existing `Promise<Result>` stores can participate without
-being migrated. Branch-heavy business logic and sequences that retain several
-intermediate values may remain clearer with `async`/`await`.
+Use `andThen` for dependent steps and `map` for successful value transformations.
+Keep domain decisions visible: an absent optional feedback board is allowed,
+whereas a missing or unauthorized requested board is not found. Branching on
+those values inside callbacks remains ordinary business logic.
 
-That benefit requires maintaining a small adapter: Result conversion, composition,
-and preservation of the application's exception boundary. Before expanding this
-pattern, compare the three changed operations in review and decide whether the
-removed checks justify another abstraction. This prototype intentionally omits
-recovery combinators and the rest of the True Myth Task API.
+Board creation retains its explicit Result-based retry decision. Only a confirmed
+slug conflict permits retry, with the existing attempt limit. A general automatic
+retry would be unsafe for writes with an ambiguous outcome.
 
+Transport error translation, HTTP response mapping, and the TanStack Query
+rejection adapter remain explicit boundaries. The frontend board creation flow
+also retains its handling of partial upload failure so the created board and token
+are always preserved. Task is used to compose service operations, rather than to
+replace every Result inspection in the application.
+
+The wrapper intentionally exposes a small composition API. It does not expose
+True Myth types, add recovery combinators, or change the application's exception
+policy.
 Reference: [True Myth Task API](https://true-myth.dev/api/task/classes/Task) and
 [Task constructors](https://true-myth.dev/api/task/). The installed 9.4.0 source
 was used to verify the constructor and callback exception behavior.

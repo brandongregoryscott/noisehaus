@@ -102,11 +102,9 @@ const bulkInsert = async (
         BoardsService.getByToken({ slug: boardSlug, token })
     )
         .andThen((board) =>
-            Task.fromPromise(() =>
-                verifyRemainingSize(
-                    board.id,
-                    sumBy(files, (file) => file.size)
-                )
+            verifyRemainingSize(
+                board.id,
+                sumBy(files, (file) => file.size)
             ).andThen(() =>
                 BoardFilesStore.bulkInsert(
                     files.map((file, index) => ({
@@ -122,174 +120,153 @@ const bulkInsert = async (
         .toPromise();
 };
 
-const _delete = async (
+const _delete = (
     id: string,
     boardSlug: string,
     token: string
-): Promise<Result<true, ServiceError>> => {
-    return Task.fromPromise(() => getWritableFile(id, boardSlug, token))
+): Promise<Result<true, ServiceError>> =>
+    getWritableFile(id, boardSlug, token)
         .andThen((boardFile) => BoardFilesStore.delete(boardFile.id))
         .map(() => true as const)
         .toPromise();
-};
 
-const insert = async (
+const insert = (
     options: CreateBoardFileOptions
 ): Promise<Result<BoardFile, ServiceError>> => {
     const { boardSlug, displayName, emoji, file, token } = options;
-    const boardFilesResult = await bulkInsert({
-        boardSlug,
-        displayNames: [displayName],
-        emojis: [emoji ?? "null"],
-        files: [file],
-        token,
-    });
-    return boardFilesResult.isErr
-        ? boardFilesResult
-        : ok(boardFilesResult.value[0]);
+    return Task.fromPromise(() =>
+        bulkInsert({
+            boardSlug,
+            displayNames: [displayName],
+            emojis: [emoji ?? "null"],
+            files: [file],
+            token,
+        })
+    )
+        .map((boardFiles) => boardFiles[0])
+        .toPromise();
 };
 
-const getWritableFile = async (
+const getWritableFile = (
     id: string,
     boardSlug: string,
     token: string
-): Promise<Result<BoardFile, ServiceError>> => {
+): Task<BoardFile, ServiceError> => {
     if (!isString(token) || isEmpty(token)) {
-        return err(BOARD_NOT_FOUND_ERROR);
+        return Task.fromResult(err(BOARD_NOT_FOUND_ERROR));
     }
 
     return Task.fromPromise(() =>
         BoardsService.getByToken({ slug: boardSlug, token })
+    ).andThen((board) => getByIdAndBoardId(id, board.id));
+};
+
+const get = (
+    options: GetBoardFileOptions
+): Promise<Result<BoardFile, ServiceError>> => {
+    const { boardSlug, id, token } = options;
+    if (token !== undefined && !isString(token)) {
+        return Task.fromResult(err(BOARD_NOT_FOUND_ERROR)).toPromise();
+    }
+
+    return Task.fromPromise(() =>
+        isEmpty(token)
+            ? BoardsService.getBySlug(boardSlug)
+            : BoardsService.getByToken({ slug: boardSlug, token: token! })
     )
         .andThen((board) => getByIdAndBoardId(id, board.id))
         .toPromise();
 };
 
-const get = async (
-    options: GetBoardFileOptions
-): Promise<Result<BoardFile, ServiceError>> => {
-    const { boardSlug, id, token } = options;
-    if (token !== undefined && !isString(token)) {
-        return err(BOARD_NOT_FOUND_ERROR);
-    }
-
-    const boardResult = await (isEmpty(token)
-        ? BoardsService.getBySlug(boardSlug)
-        : BoardsService.getByToken({ slug: boardSlug, token: token! }));
-
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    return getByIdAndBoardId(id, board.id);
-};
-
-const getByIdAndBoardId = async (
+const getByIdAndBoardId = (
     id: string,
     boardId: string
-): Promise<Result<BoardFile, ServiceError>> => {
-    const boardFileResult = await BoardFilesStore.findById(id);
-    if (boardFileResult.isErr) {
-        return boardFileResult;
-    }
-    const boardFile = boardFileResult.value;
-    if (boardFile === null || boardFile.boardId !== boardId) {
-        return err(BOARD_NOT_FOUND_ERROR);
-    }
+): Task<BoardFile, ServiceError> =>
+    Task.fromPromise(() => BoardFilesStore.findById(id)).andThen((boardFile) =>
+        boardFile === null || boardFile.boardId !== boardId
+            ? err(BOARD_NOT_FOUND_ERROR)
+            : ok(boardFile)
+    );
 
-    return ok(boardFile);
-};
-
-const listByBoardSlug = async (
+const listByBoardSlug = (
     boardSlug: string
-): Promise<Result<PresignedBoardFile[], ServiceError>> => {
-    const boardResult = await BoardsService.getBySlug(boardSlug);
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    return BoardFilesStore.listWithPresignedUrls(board.id);
-};
+): Promise<Result<PresignedBoardFile[], ServiceError>> =>
+    Task.fromPromise(() => BoardsService.getBySlug(boardSlug))
+        .andThen((board) => BoardFilesStore.listWithPresignedUrls(board.id))
+        .toPromise();
 
-const listByToken = async (
+const listByToken = (
     options: ListBoardFilesByTokenOptions
-): Promise<Result<PresignedBoardFile[], ServiceError>> => {
-    const boardResult = await BoardsService.getByToken(options);
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    return BoardFilesStore.listWithPresignedUrls(board.id);
-};
+): Promise<Result<PresignedBoardFile[], ServiceError>> =>
+    Task.fromPromise(() => BoardsService.getByToken(options))
+        .andThen((board) => BoardFilesStore.listWithPresignedUrls(board.id))
+        .toPromise();
 
-const update = async (
+const update = (
     options: UpdateBoardFileOptions
 ): Promise<Result<BoardFile, ServiceError>> => {
     const { boardSlug, displayName, emoji, file, id, token } = options;
-    const boardFileResult = await getWritableFile(id, boardSlug, token);
+    return getWritableFile(id, boardSlug, token)
+        .andThen((boardFile) => {
+            let updatedBoardFile: UpdateStoredBoardFileOptions = {};
+            if (!isEmpty(displayName)) {
+                updatedBoardFile = {
+                    ...updatedBoardFile,
+                    displayName: displayName!,
+                };
+            }
+            if (!isEmpty(emoji)) {
+                updatedBoardFile = {
+                    ...updatedBoardFile,
+                    emoji: normalizeEmoji(emoji),
+                };
+            }
+            if (file === undefined) {
+                return BoardFilesStore.update(id, updatedBoardFile);
+            }
 
-    if (boardFileResult.isErr) {
-        return boardFileResult;
-    }
-    const boardFile = boardFileResult.value;
-
-    let updatedBoardFile: UpdateStoredBoardFileOptions = {};
-    if (!isEmpty(displayName)) {
-        updatedBoardFile = { ...updatedBoardFile, displayName: displayName! };
-    }
-
-    if (!isEmpty(emoji)) {
-        updatedBoardFile = {
-            ...updatedBoardFile,
-            emoji: normalizeEmoji(emoji),
-        };
-    }
-
-    if (file !== undefined) {
-        const additionalSizeInBytes = Math.max(file.size - boardFile.size, 0);
-        const quotaResult = await verifyRemainingSize(
-            boardFile.boardId,
-            additionalSizeInBytes
-        );
-        if (quotaResult.isErr) {
-            return quotaResult;
-        }
-
-        return BoardFilesStore.update(id, {
-            ...updatedBoardFile,
-            file,
-            size: file.size,
-        });
-    }
-
-    return BoardFilesStore.update(id, updatedBoardFile);
+            const additionalSizeInBytes = Math.max(
+                file.size - boardFile.size,
+                0
+            );
+            return verifyRemainingSize(
+                boardFile.boardId,
+                additionalSizeInBytes
+            ).andThen(() =>
+                BoardFilesStore.update(id, {
+                    ...updatedBoardFile,
+                    file,
+                    size: file.size,
+                })
+            );
+        })
+        .toPromise();
 };
 
-const verifyRemainingSize = async (
+const verifyRemainingSize = (
     boardId: string,
     incomingSizeInBytes: number
-): Promise<Result<void, ServiceError>> => {
-    const boardFilesResult = await BoardFilesStore.listByBoardId(boardId);
-    if (boardFilesResult.isErr) {
-        return boardFilesResult;
-    }
-    const boardFiles = boardFilesResult.value;
-    const sizeInBytes = sumBy(boardFiles, (boardFile) => boardFile.size);
-    const remainingSizeInBytes = Math.max(
-        MAXIMUM_BOARD_SIZE_IN_BYTES - sizeInBytes,
-        0
+): Task<void, ServiceError> =>
+    Task.fromPromise(() => BoardFilesStore.listByBoardId(boardId)).andThen(
+        (boardFiles): Result<void, ServiceError> => {
+            const sizeInBytes = sumBy(
+                boardFiles,
+                (boardFile) => boardFile.size
+            );
+            const remainingSizeInBytes = Math.max(
+                MAXIMUM_BOARD_SIZE_IN_BYTES - sizeInBytes,
+                0
+            );
+            if (remainingSizeInBytes < incomingSizeInBytes) {
+                return err(
+                    new ValidationError(
+                        `The file(s) provided exceed the remaining size capacity for the board (${formatFileSize(remainingSizeInBytes)})`
+                    )
+                );
+            }
+            return ok(undefined);
+        }
     );
-    if (remainingSizeInBytes < incomingSizeInBytes) {
-        return err(
-            new ValidationError(
-                `The file(s) provided exceed the remaining size capacity for the board (${formatFileSize(
-                    remainingSizeInBytes
-                )})`
-            )
-        );
-    }
-    return ok(undefined);
-};
 
 const BoardFilesService = {
     bulkInsert,

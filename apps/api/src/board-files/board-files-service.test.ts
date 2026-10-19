@@ -69,6 +69,9 @@ describe("BoardFilesService", () => {
             ok([boardFile])
         );
         vi.spyOn(BoardFilesStore, "listByBoardId").mockResolvedValue(ok([]));
+        vi.spyOn(BoardFilesStore, "listWithPresignedUrls").mockResolvedValue(
+            ok([{ ...boardFile, signedUrl: "https://example.com/sound.wav" }])
+        );
     });
 
     afterEach(() => {
@@ -566,6 +569,139 @@ describe("BoardFilesService", () => {
         });
     });
 
+    describe("insert", () => {
+        it("unwraps the first file from a successful batch", async () => {
+            const file = {
+                buffer: Buffer.from("sound"),
+                mimetype: "audio/wav",
+                originalname: "sound.wav",
+                size: 5,
+            };
+            const options = {
+                boardSlug: board.slug,
+                displayName: "First",
+                emoji: undefined,
+                file,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.insert(options);
+
+            assert(result.isOk);
+            expect(result.value).toBe(boardFile);
+            expect(BoardFilesStore.bulkInsert).toHaveBeenCalledExactlyOnceWith([
+                {
+                    boardId: board.id,
+                    displayName: "First",
+                    emoji: "",
+                    file,
+                    size: file.size,
+                },
+            ]);
+        });
+
+        it("preserves a batch failure without mapping it to a file", async () => {
+            const error = new PersistenceError(new Error("Write unavailable"));
+            vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue(err(error));
+            const options = {
+                boardSlug: board.slug,
+                displayName: "First",
+                emoji: undefined,
+                file: { size: 5 } as UploadedBoardFile,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.insert(options);
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.bulkInsert).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("listByBoardSlug", () => {
+        it("lists signed files for the readable board", async () => {
+            const slug = board.slug;
+
+            const result = await BoardFilesService.listByBoardSlug(slug);
+
+            assert(result.isOk);
+            expect(result.value).toEqual([
+                { ...boardFile, signedUrl: "https://example.com/sound.wav" },
+            ]);
+            expect(BoardsService.getBySlug).toHaveBeenCalledExactlyOnceWith(
+                slug
+            );
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).toHaveBeenCalledExactlyOnceWith(board.id);
+        });
+
+        it("does not load files when the board cannot be read", async () => {
+            vi.mocked(BoardsService.getBySlug).mockResolvedValue(
+                err(BOARD_NOT_FOUND_ERROR)
+            );
+            const slug = board.slug;
+
+            const result = await BoardFilesService.listByBoardSlug(slug);
+
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("listByToken", () => {
+        it("lists signed files for the token-authorized board", async () => {
+            const options = { slug: board.slug, token: "token-a" };
+
+            const result = await BoardFilesService.listByToken(options);
+
+            assert(result.isOk);
+            expect(result.value).toEqual([
+                { ...boardFile, signedUrl: "https://example.com/sound.wav" },
+            ]);
+            expect(BoardsService.getByToken).toHaveBeenCalledExactlyOnceWith(
+                options
+            );
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).toHaveBeenCalledExactlyOnceWith(board.id);
+        });
+
+        it("does not load files when token authorization fails", async () => {
+            vi.mocked(BoardsService.getByToken).mockResolvedValue(
+                err(BOARD_NOT_FOUND_ERROR)
+            );
+            const options = { slug: board.slug, token: "invalid" };
+
+            const result = await BoardFilesService.listByToken(options);
+
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).not.toHaveBeenCalled();
+        });
+
+        it("preserves a signed-file lookup failure", async () => {
+            const error = new PersistenceError(
+                new Error("File token unavailable")
+            );
+            vi.mocked(BoardFilesStore.listWithPresignedUrls).mockResolvedValue(
+                err(error)
+            );
+            const options = { slug: board.slug, token: "token-a" };
+
+            const result = await BoardFilesService.listByToken(options);
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+        });
+    });
+
     describe("failure propagation", () => {
         it("stops uploads when quota storage cannot be read", async () => {
             const error = new PersistenceError(
@@ -593,6 +729,28 @@ describe("BoardFilesService", () => {
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
+        });
+
+        it("does not update metadata or audio when replacement quota lookup fails", async () => {
+            const error = new PersistenceError(
+                new Error("Quota lookup failed")
+            );
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                err(error)
+            );
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Changed",
+                file: { size: 20 } as UploadedBoardFile,
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.update(options);
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.update).not.toHaveBeenCalled();
         });
 
         it("preserves file-lookup failures without concealing them as not found", async () => {

@@ -247,6 +247,57 @@ describe("BoardsService", () => {
         });
     });
 
+    describe("getByToken", () => {
+        it("authorizes by id when both id and slug are supplied", async () => {
+            const options = {
+                id: board.id,
+                slug: "old-slug",
+                token: "token-a",
+            };
+
+            const result = await BoardsService.getByToken(options);
+
+            assert(result.isOk);
+            expect(result.value).toBe(board);
+            expect(BoardsStore.findById).toHaveBeenCalledExactlyOnceWith(
+                board.id
+            );
+            expect(BoardsStore.findBySlug).not.toHaveBeenCalled();
+            expect(
+                BoardTokensStore.findByBoardIdAndToken
+            ).toHaveBeenCalledExactlyOnceWith(board.id, options.token);
+        });
+
+        it("skips token lookup when the board is missing", async () => {
+            vi.mocked(BoardsStore.findBySlug).mockResolvedValue(ok(null));
+            const options = { slug: "missing", token: "token-a" };
+
+            const result = await BoardsService.getByToken(options);
+
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
+            expect(
+                BoardTokensStore.findByBoardIdAndToken
+            ).not.toHaveBeenCalled();
+        });
+
+        it("preserves id lookup failures without attempting token lookup", async () => {
+            const error = new PersistenceError(
+                new Error("Board lookup failed")
+            );
+            vi.mocked(BoardsStore.findById).mockResolvedValue(err(error));
+            const options = { id: board.id, token: "token-a" };
+
+            const result = await BoardsService.getByToken(options);
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(
+                BoardTokensStore.findByBoardIdAndToken
+            ).not.toHaveBeenCalled();
+        });
+    });
+
     describe("update", () => {
         it("updates the authorized board even if its old slug is reassigned", async () => {
             vi.mocked(BoardsStore.findBySlug)

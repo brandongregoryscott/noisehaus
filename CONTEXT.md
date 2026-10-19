@@ -36,18 +36,19 @@ decide whether absence means not found or is allowed (such as feedback without a
 matching board). Propagate failures before further reads or writes.
 When naming a Result wrapper after a domain value, include the `Result` suffix
 (for example, `boardResult` or `quotaResult`); a generic `result` is also clear.
-After returning early on failure, extract a successful value as `board` or
-`boardFile` when it makes the remaining business logic clearer. Keep domain
-names for domain values. Services use `async`/`await` and explicit
-early returns for asynchronous failure propagation. A limited Task proof of
-concept in `BoardFilesService.bulkInsert`, `delete`, and `getWritableFile` uses
-`Task` from `common` for dependent operations, then `.toPromise()` to preserve the
-service contract. See [the prototype assessment](docs/task-proof-of-concept.md)
-before extending this experimental pattern.
+Keep domain names for domain values. Services compose dependent operations with
+`Task` from `common`: `andThen` receives successful values and propagates failures;
+`map` transforms successful values. Callbacks may return a `Result`, a
+`Promise<Result>`, or another `Task`. Private composition helpers return `Task`
+directly; exported service operations convert with `.toPromise()` to keep the
+`Promise<Result>` contract. Keep dependent work inside callbacks so it only starts
+after prior checks succeed. Business branches and confirmed slug-conflict retries
+can still inspect a Result explicitly. See [Task composition](docs/task-composition.md)
+for examples and exception behavior.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes
-from `common`. Only `packages/common/result.ts` and the experimental
-`packages/common/task.ts` adapter import `true-myth`; their public contracts hide
+from `common`. Only `packages/common/result.ts` and
+`packages/common/task.ts` import `true-myth`; their public contracts hide
 library types and methods. Use `result.isErr` for any failure and
 specific predicates such as `result.isNotFoundError()`,
 `result.isValidationError()`, `result.isPersistenceError()`, and

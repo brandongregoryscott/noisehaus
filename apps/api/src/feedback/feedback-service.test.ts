@@ -115,4 +115,33 @@ describe("FeedbackService", () => {
         expect(result.error).toBe(error);
         expect(mockCreateFeedback).not.toHaveBeenCalled();
     });
+
+    it("preserves feedback persistence failures after board lookup succeeds", async () => {
+        const error = new PersistenceError(new Error("Feedback write failed"));
+        mockGetBoardBySlug.mockResolvedValue(ok({ id: "board-1" }));
+        mockCreateFeedback.mockResolvedValue(err(error));
+        const input = { boardSlug: "drums", comment: "Thanks" };
+
+        const result = await FeedbackService.create(input);
+
+        assert(result.isPersistenceError());
+        expect(result.error).toBe(error);
+        expect(mockCreateFeedback).toHaveBeenCalledExactlyOnceWith({
+            boardId: "board-1",
+            comment: "Thanks",
+        });
+    });
+
+    it("propagates unexpected board lookup exceptions before creating feedback", async () => {
+        const error = new Error("Broken configuration");
+        mockGetBoardBySlug.mockImplementation(() => {
+            throw error;
+        });
+        const input = { boardSlug: "drums", comment: "Thanks" };
+
+        const promise = FeedbackService.create(input);
+
+        await expect(promise).rejects.toBe(error);
+        expect(mockCreateFeedback).not.toHaveBeenCalled();
+    });
 });

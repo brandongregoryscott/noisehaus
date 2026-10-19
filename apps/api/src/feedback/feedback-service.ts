@@ -1,5 +1,5 @@
 import type { Feedback, Result, StoreError } from "common";
-import { ok } from "common";
+import { ok, Task } from "common";
 import type { CreateStoredFeedbackOptions } from "@/feedback/feedback-store";
 import { BoardsStore } from "@/boards/boards-store";
 import { FeedbackStore } from "@/feedback/feedback-store";
@@ -8,34 +8,27 @@ type CreateFeedbackOptions = {
     boardSlug?: string;
 } & CreateStoredFeedbackOptions;
 
-const create = async (
+const create = (
     input: CreateFeedbackOptions
-): Promise<Result<Feedback, StoreError>> => {
-    const createInputResult = await normalizeCreateInput(input);
-    if (createInputResult.isErr) {
-        return createInputResult;
-    }
-    return FeedbackStore.create(createInputResult.value);
-};
+): Promise<Result<Feedback, StoreError>> =>
+    normalizeCreateInput(input)
+        .andThen((createInput) => FeedbackStore.create(createInput))
+        .toPromise();
 
-const normalizeCreateInput = async (
+const normalizeCreateInput = (
     input: CreateFeedbackOptions
-): Promise<Result<CreateStoredFeedbackOptions, StoreError>> => {
+): Task<CreateStoredFeedbackOptions, StoreError> => {
     const { boardSlug } = input;
     if (boardSlug == null) {
-        return ok(omitBoardFields(input));
+        return Task.fromResult(ok(omitBoardFields(input)));
     }
 
-    const boardResult = await BoardsStore.findBySlug(boardSlug);
-    if (boardResult.isErr) {
-        return boardResult;
-    }
-    const board = boardResult.value;
-    if (board == null) {
-        return ok(omitBoardFields(input));
-    }
-
-    return ok({ ...omitBoardFields(input), boardId: board.id });
+    return Task.fromPromise(() => BoardsStore.findBySlug(boardSlug)).map(
+        (board) =>
+            board === null
+                ? omitBoardFields(input)
+                : { ...omitBoardFields(input), boardId: board.id }
+    );
 };
 
 const omitBoardFields = (
