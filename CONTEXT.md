@@ -84,9 +84,14 @@ in nested suites and test names. Descriptive outer names are appropriate for
 cross-cutting contracts, migrations, or modules testing several related exports
 without one primary subject.
 
-When test data has several properties, use a named `testCases` array of objects
-inside one test and iterate with `for...of`. Named properties make inputs and
-expected outcomes readable without tracking tuple positions in `it.each`.
+Use standalone tests when cases mock different methods, exercise different
+operations, or need different assertions. A case-specific arrange callback is a
+signal to split the cases into separate tests rather than abstract their setup.
+Use test-case arrays when the setup, operation, and assertions stay the same and
+only the data changes. When that data has several properties, use a named
+`testCases` array of objects inside one test and iterate with `for...of`. Named
+properties make inputs and expected outcomes readable without tracking tuple
+positions in `it.each`.
 Include the case name or error name in assertion messages to identify failures,
 and reset mocks between iterations so call counts and outcomes stay independent.
 Simple single-value `it.each` cases can remain parameterized.
