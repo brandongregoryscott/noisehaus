@@ -8,7 +8,8 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["src/*"]
-        }
+        },
+        "target": "ES2022"
     },
     "include": ["vite-env.d.ts", "**/*.ts", "**/*.tsx"],
     "exclude": ["node_modules", "dist"]

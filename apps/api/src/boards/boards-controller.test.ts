@@ -15,6 +15,7 @@ const request = {
 const createResponse = () =>
     ({
         json: vi.fn().mockReturnThis(),
+        req: request,
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 
@@ -113,9 +114,9 @@ describe("BoardsController", () => {
         vi.spyOn(PocketBaseClient, "createRecords").mockRejectedValue(error);
         const response = createResponse();
 
-        await expect(BoardsController.create(request, response)).rejects.toBe(
-            error
-        );
+        const result = BoardsController.create(request, response);
+
+        await expect(result).rejects.toBe(error);
         expect(response.status).not.toHaveBeenCalled();
     });
 });

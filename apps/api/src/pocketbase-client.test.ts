@@ -23,7 +23,9 @@ it("shares one health deadline across authentication and the native health reque
         .mockResolvedValueOnce(Response.json({ code: 200 }));
     vi.stubGlobal("fetch", request);
     const { PocketBaseClient } = await import("@/pocketbase-client");
+
     await PocketBaseClient.healthcheck();
+
     expect(timeout).toHaveBeenCalledWith(3000);
     expect(request).toHaveBeenNthCalledWith(
         1,
@@ -53,10 +55,11 @@ it("cancels a stalled authentication request when the health deadline expires", 
         )
     );
     const { PocketBaseClient } = await import("@/pocketbase-client");
+
     const pending = PocketBaseClient.healthcheck();
-    const rejected = expect(pending).rejects.toThrow("deadline expired");
     controller.abort(new Error("deadline expired"));
-    await rejected;
+
+    await expect(pending).rejects.toThrow("deadline expired");
 });
 
 it("submits related record creation as one multipart batch", async () => {
@@ -157,7 +160,10 @@ it("does not retry a batch when its response is lost", async () => {
         { collection: "boards", data: { slug: "a" } },
     ]);
 
-    await expect(result).rejects.toBe(error);
+    await expect(result).rejects.toMatchObject({
+        cause: error,
+        name: "PocketBaseTransportError",
+    });
     expect(fetch).toHaveBeenCalledTimes(2);
 });
 
@@ -207,5 +213,30 @@ it("looks up the first matching record without fetching later pages", async () =
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(new URL(fetch.mock.calls[1][0]).searchParams.get("perPage")).toBe(
         "1"
+    );
+});
+
+it("preserves parse failures as transport errors", async () => {
+    vi.resetModules();
+    vi.stubGlobal(
+        "fetch",
+        vi
+            .fn()
+            .mockResolvedValueOnce(Response.json({ token: "test-token" }))
+            .mockResolvedValueOnce(
+                new Response("invalid json", {
+                    headers: { "Content-Type": "application/json" },
+                })
+            )
+    );
+    const { PocketBaseClient, PocketBaseTransportError } =
+        await import("@/pocketbase-client");
+
+    const result = PocketBaseClient.healthcheck();
+
+    await expect(result).rejects.toBeInstanceOf(PocketBaseTransportError);
+    await expect(result).rejects.toHaveProperty(
+        "cause",
+        expect.any(SyntaxError)
     );
 });

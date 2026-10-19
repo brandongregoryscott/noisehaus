@@ -1,13 +1,9 @@
-import type {
-    ApiError,
-    ApiErrorResponse,
-    ListBoardFilesResponse,
-    PresignedBoardFile,
-} from "common";
+import type { ApiError, PresignedBoardFile } from "common";
 import { useQuery } from "@tanstack/react-query";
 import { LIST_BOARD_FILE_ROUTE } from "common";
 import { isEmpty } from "lodash-es";
 import { get } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseListBoardFilesOptions<TData> = {
@@ -32,15 +28,7 @@ const useListBoardFiles = <TData = PresignedBoardFile[]>(
                 },
                 queryParams
             );
-            const { data, error } = await get<
-                ApiErrorResponse | ListBoardFilesResponse
-            >(route);
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data;
+            return toQueryPromise(get<PresignedBoardFile[]>(route));
         },
         queryKey: [LIST_BOARD_FILE_ROUTE, boardSlug, token],
         select,

@@ -1,14 +1,13 @@
 import type {
-    ApiErrorResponse,
     Board,
     ApiError,
     DeleteBoardFileOptions,
     BoardFile,
-    DeleteBoardFileResponse,
 } from "common";
 import { useMutation } from "@tanstack/react-query";
 import { DELETE_BOARD_FILE_ROUTE } from "common";
 import { _delete } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseDeleteBoardFileOptions = {
@@ -27,16 +26,9 @@ const useDeleteBoardFile = (options?: UseDeleteBoardFileOptions) => {
             const { id, slug, token } = options;
             const route = generateRoute(DELETE_BOARD_FILE_ROUTE, { id, slug });
 
-            const { data, error } = await _delete<
-                DeleteBoardFileOptions,
-                ApiErrorResponse | DeleteBoardFileResponse
-            >(route, { token });
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data;
+            return toQueryPromise(
+                _delete<DeleteBoardFileOptions, true>(route, { token })
+            );
         },
         onError,
         onSuccess,

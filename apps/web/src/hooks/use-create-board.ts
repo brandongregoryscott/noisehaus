@@ -1,7 +1,5 @@
 import type {
     ApiError,
-    ApiErrorResponse,
-    ApiSuccessResponse,
     BoardFile,
     CreateBoardOptions,
     CreateBoardResult,
@@ -11,6 +9,7 @@ import { CREATE_BOARD_FILE_ROUTE, CREATE_BOARD_ROUTE, ErrorName } from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardFileOptions } from "@/hooks/use-create-board-file";
 import { post, postMultipartForm } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type CreateBoardMutationOptions = {
@@ -27,6 +26,12 @@ type UseCreateBoardOptions = {
     onSuccess?: (response: CreateBoardMutationResult) => void;
 };
 
+const unconfirmedUploadError: ApiError = {
+    message:
+        "Your board was created, but the upload could not be confirmed. Check its sounds before uploading again.",
+    name: ErrorName.ERROR_UNHANDLED,
+};
+
 const useCreateBoard = (options?: UseCreateBoardOptions) => {
     const { onError, onSuccess } = options ?? {};
     return useMutation<
@@ -36,13 +41,12 @@ const useCreateBoard = (options?: UseCreateBoardOptions) => {
     >({
         mutationFn: async (options) => {
             const { files, ...board } = options;
-            const { data: createdBoard, error } = await post<
-                CreateBoardOptions,
-                ApiErrorResponse | ApiSuccessResponse<CreateBoardResult>
-            >(CREATE_BOARD_ROUTE, board);
-            if (error !== null) {
-                throw error;
-            }
+            const createdBoard = await toQueryPromise(
+                post<CreateBoardOptions, CreateBoardResult>(
+                    CREATE_BOARD_ROUTE,
+                    board
+                )
+            );
 
             if (files === undefined || isEmpty(files)) {
                 return { data: createdBoard, error: null };
@@ -55,21 +59,22 @@ const useCreateBoard = (options?: UseCreateBoardOptions) => {
                 const route = generateRoute(CREATE_BOARD_FILE_ROUTE, {
                     slug: createdBoard.slug,
                 });
-                const { error: uploadError } = await postMultipartForm<
-                    ApiErrorResponse | ApiSuccessResponse<BoardFile[]>
-                >(route, formData);
-                if (uploadError === undefined) {
-                    throw new Error("Missing upload result");
+                const upload = await postMultipartForm<BoardFile[]>(
+                    route,
+                    formData
+                );
+                if (upload.isOk) {
+                    return { data: createdBoard, error: null };
                 }
+                const uploadError =
+                    upload.error.name === ErrorName.ERROR_UNHANDLED
+                        ? unconfirmedUploadError
+                        : upload.error;
                 return { data: createdBoard, error: uploadError };
             } catch {
                 return {
                     data: createdBoard,
-                    error: {
-                        message:
-                            "Your board was created, but the upload could not be confirmed. Check its sounds before uploading again.",
-                        name: ErrorName.ERROR_UNHANDLED,
-                    },
+                    error: unconfirmedUploadError,
                 };
             }
         },

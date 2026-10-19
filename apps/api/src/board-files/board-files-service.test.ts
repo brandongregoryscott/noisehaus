@@ -1,10 +1,26 @@
-import { MAXIMUM_BOARD_SIZE_IN_BYTES, ViewPermission } from "common";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Result, ServiceError } from "common";
+import {
+    PersistenceError,
+    ValidationError,
+    ok,
+    err,
+    MAXIMUM_BOARD_SIZE_IN_BYTES,
+    ViewPermission,
+    BOARD_NOT_FOUND_ERROR,
+} from "common";
+import {
+    afterEach,
+    beforeEach,
+    assert,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
 import type { UploadedBoardFile } from "@/board-files/board-files-store";
 import { BoardFilesService } from "@/board-files/board-files-service";
 import { BoardFilesStore } from "@/board-files/board-files-store";
 import { BoardsService } from "@/boards/boards-service";
-import { BOARD_NOT_FOUND_ERROR } from "@/utilities/errors";
 
 vi.mock("../boards/boards-service", () => ({
     BoardsService: {
@@ -35,26 +51,37 @@ const boardFile = {
 
 describe("BoardFilesService", () => {
     beforeEach(() => {
-        vi.mocked(BoardsService.getBySlug).mockReset().mockResolvedValue(board);
+        vi.mocked(BoardsService.getBySlug)
+            .mockReset()
+            .mockResolvedValue(ok(board));
         vi.mocked(BoardsService.getByToken)
             .mockReset()
-            .mockResolvedValue(board);
-        vi.spyOn(BoardFilesStore, "findById").mockResolvedValue(boardFile);
-        vi.spyOn(BoardFilesStore, "update").mockResolvedValue({
-            ...boardFile,
-            displayName: "Updated",
-        });
-        vi.spyOn(BoardFilesStore, "delete").mockResolvedValue();
-        vi.spyOn(BoardFilesStore, "bulkInsert").mockResolvedValue([boardFile]);
-        vi.spyOn(BoardFilesStore, "listByBoardId").mockResolvedValue([]);
+            .mockResolvedValue(ok(board));
+        vi.spyOn(BoardFilesStore, "findById").mockResolvedValue(ok(boardFile));
+        vi.spyOn(BoardFilesStore, "update").mockResolvedValue(
+            ok({
+                ...boardFile,
+                displayName: "Updated",
+            })
+        );
+        vi.spyOn(BoardFilesStore, "delete").mockResolvedValue(ok(undefined));
+        vi.spyOn(BoardFilesStore, "bulkInsert").mockResolvedValue(
+            ok([boardFile])
+        );
+        vi.spyOn(BoardFilesStore, "listByBoardId").mockResolvedValue(ok([]));
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
-    const expectNotFound = async (operation: Promise<unknown>) => {
-        await expect(operation).rejects.toBe(BOARD_NOT_FOUND_ERROR);
+    const expectNotFound = async (
+        operation: Promise<Result<unknown, ServiceError>>
+    ) => {
+        const result = await operation;
+
+        assert(result.isNotFoundError());
+        expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
         expect(BoardFilesStore.update).not.toHaveBeenCalled();
         expect(BoardFilesStore.delete).not.toHaveBeenCalled();
         expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
@@ -72,7 +99,8 @@ describe("BoardFilesService", () => {
 
             const result = await BoardFilesService.update(options);
 
-            expect(result).toMatchObject({
+            assert(result.isOk);
+            expect(result.value).toMatchObject({
                 displayName: "Updated",
                 id: boardFile.id,
             });
@@ -92,9 +120,9 @@ describe("BoardFilesService", () => {
                 originalname: "new.wav",
                 size: 15,
             };
-            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue([
-                { ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 5 },
-            ]);
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                ok([{ ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 5 }])
+            );
             const options = {
                 boardSlug: board.slug,
                 file,
@@ -117,9 +145,9 @@ describe("BoardFilesService", () => {
                 originalname: "new.wav",
                 size: 16,
             };
-            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue([
-                { ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 5 },
-            ]);
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                ok([{ ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 5 }])
+            );
             const options = {
                 boardSlug: board.slug,
                 displayName: "Changed",
@@ -128,17 +156,20 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.update(options);
+            const result = await BoardFilesService.update(options);
 
-            await expect(result).rejects.toThrow("remaining size capacity");
+            assert(result.isValidationError());
+            expect(result.error.message).toContain("remaining size capacity");
             expect(BoardFilesStore.update).not.toHaveBeenCalled();
         });
 
         it("rejects a file belonging to another board", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue({
-                ...boardFile,
-                boardId: "board-b",
-            });
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(
+                ok({
+                    ...boardFile,
+                    boardId: "board-b",
+                })
+            );
             const options = {
                 boardSlug: board.slug,
                 displayName: "Updated",
@@ -152,7 +183,7 @@ describe("BoardFilesService", () => {
         });
 
         it("conceals missing files with the same access error", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue(null);
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(ok(null));
             const options = {
                 boardSlug: board.slug,
                 displayName: "Updated",
@@ -166,8 +197,8 @@ describe("BoardFilesService", () => {
         });
 
         it("stops before file lookup when board authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockRejectedValue(
-                BOARD_NOT_FOUND_ERROR
+            vi.mocked(BoardsService.getByToken).mockResolvedValue(
+                err(BOARD_NOT_FOUND_ERROR)
             );
             const options = {
                 boardSlug: board.slug,
@@ -205,10 +236,12 @@ describe("BoardFilesService", () => {
         );
 
         it("rejects cross-board replacement before quota checks or writes", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue({
-                ...boardFile,
-                boardId: "board-b",
-            });
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(
+                ok({
+                    ...boardFile,
+                    boardId: "board-b",
+                })
+            );
             const options = {
                 boardSlug: board.slug,
                 file: { size: 20 } as UploadedBoardFile,
@@ -230,7 +263,8 @@ describe("BoardFilesService", () => {
 
             const result = await BoardFilesService.delete(id, slug, token);
 
-            expect(result).toBe(true);
+            assert(result.isOk);
+            expect(result.value).toBe(true);
             expect(BoardsService.getByToken).toHaveBeenCalledWith({
                 slug,
                 token,
@@ -239,10 +273,12 @@ describe("BoardFilesService", () => {
         });
 
         it("rejects a file belonging to another board", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue({
-                ...boardFile,
-                boardId: "board-b",
-            });
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(
+                ok({
+                    ...boardFile,
+                    boardId: "board-b",
+                })
+            );
             const { id } = boardFile;
             const { slug } = board;
             const token = "token-a";
@@ -253,7 +289,7 @@ describe("BoardFilesService", () => {
         });
 
         it("conceals missing files with the same access error", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue(null);
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(ok(null));
             const { id } = boardFile;
             const { slug } = board;
             const token = "token-a";
@@ -264,8 +300,8 @@ describe("BoardFilesService", () => {
         });
 
         it("stops before file lookup when board authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockRejectedValue(
-                BOARD_NOT_FOUND_ERROR
+            vi.mocked(BoardsService.getByToken).mockResolvedValue(
+                err(BOARD_NOT_FOUND_ERROR)
             );
             const { id } = boardFile;
             const { slug } = board;
@@ -316,14 +352,14 @@ describe("BoardFilesService", () => {
                 files: [file, file],
                 token: "token-a",
             };
-            vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue([
-                boardFile,
-                { ...boardFile, id: "file-b" },
-            ]);
+            vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue(
+                ok([boardFile, { ...boardFile, id: "file-b" }])
+            );
 
             const result = await BoardFilesService.bulkInsert(options);
 
-            expect(result.map((sound) => sound.id)).toEqual([
+            assert(result.isOk);
+            expect(result.value.map((sound) => sound.id)).toEqual([
                 boardFile.id,
                 "file-b",
             ]);
@@ -365,9 +401,9 @@ describe("BoardFilesService", () => {
         });
 
         it("rejects uploads exceeding the remaining quota before writing", async () => {
-            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue([
-                { ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 4 },
-            ]);
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                ok([{ ...boardFile, size: MAXIMUM_BOARD_SIZE_IN_BYTES - 4 }])
+            );
             const options = {
                 boardSlug: board.slug,
                 displayNames: ["Sound"],
@@ -376,15 +412,16 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.bulkInsert(options);
+            const result = await BoardFilesService.bulkInsert(options);
 
-            await expect(result).rejects.toThrow("remaining size capacity");
+            assert(result.isValidationError());
+            expect(result.error.message).toContain("remaining size capacity");
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
         });
 
         it("does not write when authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockRejectedValue(
-                BOARD_NOT_FOUND_ERROR
+            vi.mocked(BoardsService.getByToken).mockResolvedValue(
+                err(BOARD_NOT_FOUND_ERROR)
             );
             const options = {
                 boardSlug: board.slug,
@@ -408,9 +445,10 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.bulkInsert(options);
+            const result = await BoardFilesService.bulkInsert(options);
 
-            await expect(result).rejects.toThrow("Each uploaded file");
+            assert(result.isValidationError());
+            expect(result.error.message).toContain("Each uploaded file");
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
         });
     });
@@ -427,7 +465,8 @@ describe("BoardFilesService", () => {
 
                 const result = await BoardFilesService.get(options);
 
-                expect(result).toMatchObject({
+                assert(result.isOk);
+                expect(result.value).toMatchObject({
                     boardId: board.id,
                     id: boardFile.id,
                 });
@@ -447,7 +486,8 @@ describe("BoardFilesService", () => {
 
             const result = await BoardFilesService.get(options);
 
-            expect(result).toMatchObject({
+            assert(result.isOk);
+            expect(result.value).toMatchObject({
                 boardId: board.id,
                 id: boardFile.id,
             });
@@ -461,11 +501,11 @@ describe("BoardFilesService", () => {
         it.each([undefined, "invalid"])(
             "propagates denied board read permission (%s)",
             async (token) => {
-                vi.mocked(BoardsService.getBySlug).mockRejectedValue(
-                    BOARD_NOT_FOUND_ERROR
+                vi.mocked(BoardsService.getBySlug).mockResolvedValue(
+                    err(BOARD_NOT_FOUND_ERROR)
                 );
-                vi.mocked(BoardsService.getByToken).mockRejectedValue(
-                    BOARD_NOT_FOUND_ERROR
+                vi.mocked(BoardsService.getByToken).mockResolvedValue(
+                    err(BOARD_NOT_FOUND_ERROR)
                 );
                 const options = {
                     boardSlug: board.slug,
@@ -483,10 +523,12 @@ describe("BoardFilesService", () => {
         it.each([undefined, "token-a"])(
             "rejects cross-board reads (%s)",
             async (token) => {
-                vi.mocked(BoardFilesStore.findById).mockResolvedValue({
-                    ...boardFile,
-                    boardId: "board-b",
-                });
+                vi.mocked(BoardFilesStore.findById).mockResolvedValue(
+                    ok({
+                        ...boardFile,
+                        boardId: "board-b",
+                    })
+                );
                 const options = {
                     boardSlug: board.slug,
                     id: boardFile.id,
@@ -500,7 +542,7 @@ describe("BoardFilesService", () => {
         );
 
         it("conceals missing files with the same access error", async () => {
-            vi.mocked(BoardFilesStore.findById).mockResolvedValue(null);
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(ok(null));
             const options = { boardSlug: board.slug, id: boardFile.id };
 
             const result = BoardFilesService.get(options);
@@ -521,6 +563,75 @@ describe("BoardFilesService", () => {
             expect(BoardsService.getBySlug).not.toHaveBeenCalled();
             expect(BoardsService.getByToken).not.toHaveBeenCalled();
             expect(BoardFilesStore.findById).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("failure propagation", () => {
+        it("stops uploads when quota storage cannot be read", async () => {
+            const error = new PersistenceError(
+                new Error("Quota lookup failed")
+            );
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                err(error)
+            );
+
+            const result = await BoardFilesService.bulkInsert({
+                boardSlug: board.slug,
+                displayNames: ["Sound"],
+                emojis: ["null"],
+                files: [
+                    {
+                        buffer: Buffer.from("sound"),
+                        mimetype: "audio/wav",
+                        originalname: "sound.wav",
+                        size: 5,
+                    },
+                ],
+                token: "token-a",
+            });
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
+        });
+
+        it("preserves file-lookup failures without concealing them as not found", async () => {
+            const error = new PersistenceError(new Error("File lookup failed"));
+            vi.mocked(BoardFilesStore.findById).mockResolvedValue(err(error));
+
+            const result = await BoardFilesService.get({
+                boardSlug: board.slug,
+                id: boardFile.id,
+            });
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+        });
+
+        it("returns batch validation failures without retrying writes", async () => {
+            const error = new ValidationError(
+                "Quota exceeded during concurrent upload"
+            );
+            vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue(err(error));
+
+            const result = await BoardFilesService.bulkInsert({
+                boardSlug: board.slug,
+                displayNames: ["Sound"],
+                emojis: ["null"],
+                files: [
+                    {
+                        buffer: Buffer.from("sound"),
+                        mimetype: "audio/wav",
+                        originalname: "sound.wav",
+                        size: 5,
+                    },
+                ],
+                token: "token-a",
+            });
+
+            assert(result.isValidationError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.bulkInsert).toHaveBeenCalledTimes(1);
         });
     });
 });

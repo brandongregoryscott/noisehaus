@@ -1,4 +1,4 @@
-import { ViewPermission } from "common";
+import { ViewPermission, ErrorKind } from "common";
 import {
     afterEach,
     assert,
@@ -10,7 +10,6 @@ import {
 } from "vitest";
 import { BoardsStore } from "@/boards/boards-store";
 import { PocketBaseHttpError, PocketBaseClient } from "@/pocketbase-client";
-import { ErrorKind } from "@/utilities/errors";
 
 const board = {
     id: "board-a",
@@ -18,6 +17,7 @@ const board = {
     slug: "drums",
     viewPermission: ViewPermission.BySlug,
 };
+
 describe("BoardsStore", () => {
     beforeEach(() => {
         vi.spyOn(PocketBaseClient, "createRecords").mockResolvedValue([
@@ -127,9 +127,11 @@ describe("BoardsStore", () => {
         it("rejects malformed successful batches as unexpected failures", async () => {
             vi.mocked(PocketBaseClient.createRecords).mockResolvedValue([]);
 
-            await expect(
-                BoardsStore.createWithInitialToken({ ...board })
-            ).rejects.toThrow("'board creation result' was unexpectedly null.");
+            const result = BoardsStore.createWithInitialToken({ ...board });
+
+            await expect(result).rejects.toThrow(
+                "'board creation result' was unexpectedly null."
+            );
         });
 
         it("propagates a failed batch without retrying individual writes", async () => {

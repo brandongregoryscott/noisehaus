@@ -1,13 +1,9 @@
-import type {
-    ApiErrorResponse,
-    Board,
-    UpdateBoardOptions,
-    UpdateBoardResponse,
-} from "common";
+import type { Board, UpdateBoardOptions } from "common";
 import type { ApiError } from "common/api/errors";
 import { useMutation } from "@tanstack/react-query";
 import { UPDATE_BOARD_ROUTE } from "common";
 import { put } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseUpdateBoardOptions = {
@@ -28,16 +24,7 @@ const useUpdateBoard = (options: UseUpdateBoardOptions) => {
                 },
                 { token }
             );
-            const { data, error } = await put<
-                UpdateBoardOptions,
-                ApiErrorResponse | UpdateBoardResponse
-            >(route, board);
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data;
+            return toQueryPromise(put<UpdateBoardOptions, Board>(route, board));
         },
         mutationKey: [UPDATE_BOARD_ROUTE],
         onError,

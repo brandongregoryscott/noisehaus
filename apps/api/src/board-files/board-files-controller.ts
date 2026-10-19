@@ -1,9 +1,9 @@
 import type { Response, Request } from "express";
+import { ValidationError } from "common";
 import { isEmpty } from "lodash-es";
 import { BoardFilesService } from "@/board-files/board-files-service";
 import { arrify } from "@/utilities/collection-utils";
-import { ValidationError } from "@/utilities/errors";
-import { ok } from "@/utilities/responses";
+import { error, ok } from "@/utilities/responses";
 
 const BoardFilesController = {
     create: async (request: Request, response: Response): Promise<Response> => {
@@ -13,22 +13,29 @@ const BoardFilesController = {
         const displayNames = arrify<string>(request.body.displayNames);
         const emojis = arrify<string>(request.body.emojis);
         if (!Array.isArray(files) || isEmpty(files)) {
-            throw new ValidationError(
-                "'files' is required and must be an array."
+            return error(
+                response,
+                new ValidationError("'files' is required and must be an array.")
             );
         }
 
         if (displayNames.length !== files.length) {
-            throw new ValidationError("Each file must have a name defined");
-        }
-
-        if (emojis.length !== files.length) {
-            throw new ValidationError(
-                "Each file must have an emoji defined (or the string 'null' if no emoji is chosen)"
+            return error(
+                response,
+                new ValidationError("Each file must have a name defined")
             );
         }
 
-        const boardFiles = await BoardFilesService.bulkInsert({
+        if (emojis.length !== files.length) {
+            return error(
+                response,
+                new ValidationError(
+                    "Each file must have an emoji defined (or the string 'null' if no emoji is chosen)"
+                )
+            );
+        }
+
+        const boardFilesResult = await BoardFilesService.bulkInsert({
             boardSlug,
             displayNames,
             emojis,
@@ -36,7 +43,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFiles);
+        return ok(response, boardFilesResult);
     },
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
@@ -48,28 +55,32 @@ const BoardFilesController = {
     get: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFile = await BoardFilesService.get({ boardSlug, id, token });
+        const boardFileResult = await BoardFilesService.get({
+            boardSlug,
+            id,
+            token,
+        });
 
-        return ok(response, boardFile);
+        return ok(response, boardFileResult);
     },
     list: async (request: Request, response: Response): Promise<Response> => {
         const { slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFiles = await (isEmpty(token)
+        const boardFilesResult = await (isEmpty(token)
             ? BoardFilesService.listByBoardSlug(boardSlug)
             : BoardFilesService.listByToken({
                   slug: boardSlug,
                   token: token!,
               }));
 
-        return ok(response, boardFiles);
+        return ok(response, boardFilesResult);
     },
     update: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { file } = request;
         const { displayName, emoji, token } = request.body;
 
-        const boardFile = await BoardFilesService.update({
+        const boardFileResult = await BoardFilesService.update({
             boardSlug,
             displayName,
             emoji,
@@ -78,7 +89,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFile);
+        return ok(response, boardFileResult);
     },
 };
 

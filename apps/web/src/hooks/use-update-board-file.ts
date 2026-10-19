@@ -1,13 +1,9 @@
-import type {
-    ApiErrorResponse,
-    BoardFile,
-    UpdateBoardFileOptions,
-    UpdateBoardFileResponse,
-} from "common";
+import type { BoardFile, UpdateBoardFileOptions } from "common";
 import type { ApiError } from "common/api/errors";
 import { useMutation } from "@tanstack/react-query";
 import { UPDATE_BOARD_FILE_ROUTE } from "common";
 import { putMultipartForm } from "@/utils/fetch";
+import { toQueryPromise } from "@/utils/query-result";
 import { generateRoute } from "@/utils/route-utils";
 
 type UseUpdateBoardOptions = {
@@ -27,15 +23,7 @@ const useUpdateBoardFile = (options: UseUpdateBoardOptions) => {
             });
 
             const formData = getFormData(options);
-            const { data, error } = await putMultipartForm<
-                ApiErrorResponse | UpdateBoardFileResponse
-            >(route, formData);
-
-            if (error !== null) {
-                throw error;
-            }
-
-            return data;
+            return toQueryPromise(putMultipartForm<BoardFile>(route, formData));
         },
         mutationKey: [UPDATE_BOARD_FILE_ROUTE],
         onError,

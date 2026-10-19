@@ -1,8 +1,8 @@
 import type { Feedback } from "common";
+import { UnexpectedNullError } from "common";
 import { isEmpty } from "lodash-es";
 import { PocketBaseClient } from "@/pocketbase-client";
-import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
-import { UnexpectedNullError } from "@/utilities/errors";
+import { withPocketBaseResult } from "@/storage/pocketbase-errors";
 
 type CreateStoredFeedbackOptions = Partial<
     Pick<Feedback, "boardId" | "email">
@@ -30,7 +30,7 @@ const create = async (
 };
 
 const FeedbackStore = {
-    create: withPocketBaseErrors(create),
+    create: withPocketBaseResult(create),
 };
 
 const toFeedback = (record: FeedbackRecord): Feedback => ({

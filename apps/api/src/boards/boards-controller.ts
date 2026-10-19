@@ -1,43 +1,33 @@
 import type {
-    ApiErrorResponse,
     CreateBoardRequest,
-    CreateBoardResponse,
     DeleteBoardRequest,
-    DeleteBoardResponse,
     GetBoardRequest,
     ListBoardsRequest,
-    ListBoardsResponse,
     UpdateBoardRequest,
-    UpdateBoardResponse,
 } from "common";
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { BoardsService } from "@/boards/boards-service";
-import { sendErrorResponse } from "@/error-handler";
 import { created, ok } from "@/utilities/responses";
 
 const BoardsController = {
     create: async (
-        request: CreateBoardRequest & Request,
+        request: CreateBoardRequest,
         response: Response
-    ): Promise<Response<ApiErrorResponse> | Response<CreateBoardResponse>> => {
+    ): Promise<Response> => {
         const { body } = request;
         const result = await BoardsService.insert(body);
-        if (result.isErr) {
-            return sendErrorResponse(result.error, request, response);
-        }
-
-        return created(response, result.value);
+        return created(response, result);
     },
     delete: async (
         request: DeleteBoardRequest,
         response: Response
-    ): Promise<Response<DeleteBoardResponse>> => {
+    ): Promise<Response> => {
         const { body } = request;
         const { slug } = request.params;
         const { token } = body;
-        const data = await BoardsService.delete(slug, token);
+        const deleteResult = await BoardsService.delete(slug, token);
 
-        return ok(response, data);
+        return ok(response, deleteResult);
     },
     get: async (
         request: GetBoardRequest,
@@ -45,32 +35,32 @@ const BoardsController = {
     ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
-        const board = await BoardsService.get(slug, token);
+        const boardResult = await BoardsService.get(slug, token);
 
-        return ok(response, board);
+        return ok(response, boardResult);
     },
     list: async (
         _request: ListBoardsRequest,
         response: Response
-    ): Promise<Response<ListBoardsResponse>> => {
-        const boards = await BoardsService.getAllPublic();
+    ): Promise<Response> => {
+        const boardsResult = await BoardsService.getAllPublic();
 
-        return ok(response, boards);
+        return ok(response, boardsResult);
     },
     update: async (
         request: UpdateBoardRequest,
         response: Response
-    ): Promise<Response<UpdateBoardResponse>> => {
+    ): Promise<Response> => {
         const { body } = request;
         const { slug: originalSlug } = request.params;
         const { token, ...input } = body;
-        const board = await BoardsService.update({
+        const boardResult = await BoardsService.update({
             originalSlug,
             token,
             ...input,
         });
 
-        return ok(response, board);
+        return ok(response, boardResult);
     },
 };
 

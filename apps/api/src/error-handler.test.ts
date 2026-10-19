@@ -1,13 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
-import { ErrorName } from "common";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "@/error-handler";
-import { isDevelopment } from "@/utilities/environment";
 import {
+    ErrorName,
     PersistenceError,
     UniqueConstraintError,
     ValidationError,
-} from "@/utilities/errors";
+} from "common";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "@/error-handler";
+import { isDevelopment } from "@/utilities/environment";
 
 vi.mock("./utilities/environment", () => ({ isDevelopment: vi.fn() }));
 
@@ -16,6 +16,7 @@ const next = vi.fn() as NextFunction;
 const createResponse = () =>
     ({
         json: vi.fn().mockReturnThis(),
+        req: request,
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
 

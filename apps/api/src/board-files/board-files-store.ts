@@ -1,8 +1,8 @@
 import type { BoardFile, PresignedBoardFile } from "common";
+import { UnexpectedNullError } from "common";
 import { isEmpty } from "lodash-es";
 import { PocketBaseClient } from "@/pocketbase-client";
-import { withPocketBaseErrors } from "@/storage/pocketbase-errors";
-import { UnexpectedNullError } from "@/utilities/errors";
+import { withPocketBaseResult } from "@/storage/pocketbase-errors";
 
 type UploadedBoardFile = {
     buffer: Buffer;
@@ -144,12 +144,12 @@ const toBoardFile = (record: BoardFileRecord): BoardFile => ({
 });
 
 const BoardFilesStore = {
-    bulkInsert: withPocketBaseErrors(bulkInsert),
-    delete: withPocketBaseErrors(_delete),
-    findById: withPocketBaseErrors(findById),
-    listByBoardId: withPocketBaseErrors(listByBoardId),
-    listWithPresignedUrls: withPocketBaseErrors(listWithPresignedUrls),
-    update: withPocketBaseErrors(update),
+    bulkInsert: withPocketBaseResult(bulkInsert),
+    delete: withPocketBaseResult(_delete),
+    findById: withPocketBaseResult(findById),
+    listByBoardId: withPocketBaseResult(listByBoardId),
+    listWithPresignedUrls: withPocketBaseResult(listWithPresignedUrls),
+    update: withPocketBaseResult(update),
 };
 
 export type {

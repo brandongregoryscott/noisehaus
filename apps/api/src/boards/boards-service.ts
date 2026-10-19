@@ -1,12 +1,15 @@
-import type { Board } from "common";
-import { ViewPermission } from "common";
+import type { ServiceError, Board, StoreError, Result } from "common";
+import {
+    err,
+    ok,
+    ViewPermission,
+    BOARD_NOT_FOUND_ERROR,
+    ValidationError,
+} from "common";
 import { isEmpty } from "lodash-es";
 import type { CreateBoardResult } from "@/boards/boards-store";
-import type { StoreError } from "@/utilities/errors";
-import type { Result } from "@/utilities/result";
 import { BoardTokensStore } from "@/board-tokens/board-tokens-store";
 import { BoardsStore } from "@/boards/boards-store";
-import { BOARD_NOT_FOUND_ERROR, ValidationError } from "@/utilities/errors";
 import { randomSuffix } from "@/utilities/string-utils";
 
 type CreateBoardOptions = Pick<Board, "name" | "slug">;
@@ -47,53 +50,71 @@ const VALID_GET_BY_SLUG_PERMISSIONS = [
     ViewPermission.BySlug,
 ];
 
-const _delete = async (slug: string, token: string): Promise<true> => {
-    const board = await authorizeWritePermissionOrThrow({ slug, token });
-
-    await BoardsStore.delete(board.id);
-
-    return true;
+const _delete = async (
+    slug: string,
+    token: string
+): Promise<Result<true, ServiceError>> => {
+    const boardResult = await authorizeWritePermission({ slug, token });
+    if (boardResult.isErr) {
+        return boardResult;
+    }
+    const board = boardResult.value;
+    const deleteResult = await BoardsStore.delete(board.id);
+    return deleteResult.isErr ? deleteResult : ok(true);
 };
 
-const getAllPublic = async (): Promise<Board[]> => BoardsStore.getAllPublic();
+const getAllPublic = async (): Promise<Result<Board[], StoreError>> =>
+    BoardsStore.getAllPublic();
 
-const getBySlug = async (slug: string): Promise<Board> => {
-    const board = await BoardsStore.findBySlug(slug);
-
+const getBySlug = async (
+    slug: string
+): Promise<Result<Board, ServiceError>> => {
+    const boardResult = await BoardsStore.findBySlug(slug);
+    if (boardResult.isErr) {
+        return boardResult;
+    }
+    const board = boardResult.value;
     if (
         board === null ||
         !VALID_GET_BY_SLUG_PERMISSIONS.includes(
             board.viewPermission as ViewPermission
         )
     ) {
-        throw BOARD_NOT_FOUND_ERROR;
+        return err(BOARD_NOT_FOUND_ERROR);
     }
-
-    return board;
+    return ok(board);
 };
 
-const getByToken = async (options: GetBoardByTokenOptions): Promise<Board> => {
+const getByToken = async (
+    options: GetBoardByTokenOptions
+): Promise<Result<Board, ServiceError>> => {
     const { id = "", slug = "", token } = options;
     const hasId = !isEmpty(id);
     const hasSlug = !isEmpty(slug);
-
     if (!hasId && !hasSlug) {
-        throw new ValidationError("An id or slug is required");
+        return err(new ValidationError("An id or slug is required"));
     }
 
-    const board = hasId
+    const boardResult = hasId
         ? await BoardsStore.findById(id)
         : await BoardsStore.findBySlug(slug);
-    const boardToken =
-        board == null
-            ? null
-            : await BoardTokensStore.findByBoardIdAndToken(board.id, token);
-
-    if (board === null || boardToken === null) {
-        throw BOARD_NOT_FOUND_ERROR;
+    if (boardResult.isErr) {
+        return boardResult;
     }
-
-    return board;
+    const board = boardResult.value;
+    if (board === null) {
+        return err(BOARD_NOT_FOUND_ERROR);
+    }
+    const boardTokenResult = await BoardTokensStore.findByBoardIdAndToken(
+        board.id,
+        token
+    );
+    if (boardTokenResult.isErr) {
+        return boardTokenResult;
+    }
+    return boardTokenResult.value === null
+        ? err(BOARD_NOT_FOUND_ERROR)
+        : ok(board);
 };
 
 const insert = async (
@@ -105,52 +126,61 @@ const insert = async (
         slug = `${slug}-${randomSuffix()}`;
     }
 
-    const result = await BoardsStore.createWithInitialToken({
+    const boardResult = await BoardsStore.createWithInitialToken({
         name,
         slug,
         viewPermission: ViewPermission.BySlug,
     });
     if (
-        result.isUniqueConstraintError("slug") &&
+        boardResult.isUniqueConstraintError("slug") &&
         attempt < MAX_CREATE_ATTEMPTS
     ) {
         return insert({ ...options, attempt: attempt + 1 });
     }
 
-    return result;
+    return boardResult;
 };
 
-const update = async (input: UpdateBoardOptions): Promise<Board> => {
+const update = async (
+    input: UpdateBoardOptions
+): Promise<Result<Board, ServiceError>> => {
     const { originalSlug, token, ...updatedBoard } = input;
-    const board = await authorizeWritePermissionOrThrow({
+    const boardResult = await authorizeWritePermission({
         slug: originalSlug,
         token,
     });
+    if (boardResult.isErr) {
+        return boardResult;
+    }
+    const board = boardResult.value;
     return BoardsStore.update(board.id, updatedBoard);
 };
 
-const get = async (slug: string, token?: string): Promise<Board> => {
-    const board = await BoardsStore.findBySlug(slug);
-    if (board == null) {
-        throw BOARD_NOT_FOUND_ERROR;
+const get = async (
+    slug: string,
+    token?: string
+): Promise<Result<Board, ServiceError>> => {
+    const boardResult = await BoardsStore.findBySlug(slug);
+    if (boardResult.isErr) {
+        return boardResult;
     }
-
+    const board = boardResult.value;
+    if (board == null) {
+        return err(BOARD_NOT_FOUND_ERROR);
+    }
     // Ignore tokens for boards that can be read by slug.
     if (board.viewPermission !== ViewPermission.ByToken) {
-        return board;
+        return ok(board);
     }
-
     if (isEmpty(token)) {
-        throw BOARD_NOT_FOUND_ERROR;
+        return err(BOARD_NOT_FOUND_ERROR);
     }
-
-    await getByToken({ slug, token: token! });
-    return board;
+    return getByToken({ slug, token: token! });
 };
 
-const authorizeWritePermissionOrThrow = getByToken;
+const authorizeWritePermission = getByToken;
 const BoardsService = {
-    authorizeWritePermissionOrThrow,
+    authorizeWritePermission,
     delete: _delete,
     get,
     getAllPublic,

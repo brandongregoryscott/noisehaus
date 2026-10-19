@@ -1,13 +1,16 @@
-import { isObjectLike } from "lodash-es";
-import type { StoreError } from "@/utilities/errors";
-import type { Result } from "@/utilities/result";
-import { PocketBaseHttpError } from "@/pocketbase-client";
+import type { StoreError, Result } from "common";
 import {
     PersistenceError,
     UniqueConstraintError,
     ValidationError,
-} from "@/utilities/errors";
-import { err, ok } from "@/utilities/result";
+    err,
+    ok,
+} from "common";
+import { isObjectLike } from "lodash-es";
+import {
+    PocketBaseHttpError,
+    PocketBaseTransportError,
+} from "@/pocketbase-client";
 
 type ErrorBody = {
     data?: Record<string, { code?: string; message?: string }>;
@@ -42,7 +45,7 @@ const toStoreError = (error: PocketBaseHttpError): StoreError => {
         : new ValidationError(message, error);
 };
 
-// Only provider failures become results; programming errors still reject.
+// HTTP and transport failures become results; programming errors still reject.
 const withPocketBaseResult =
     <Args extends unknown[], Value>(
         operation: (...args: Args) => Promise<Value>
@@ -51,6 +54,9 @@ const withPocketBaseResult =
         try {
             return ok(await operation(...args));
         } catch (error) {
+            if (error instanceof PocketBaseTransportError) {
+                return err(new PersistenceError(error));
+            }
             if (!(error instanceof PocketBaseHttpError)) {
                 throw error;
             }
@@ -58,21 +64,4 @@ const withPocketBaseResult =
         }
     };
 
-// Stores expose application errors; the transport retains PocketBase diagnostics.
-const withPocketBaseErrors =
-    <Args extends unknown[], Result>(
-        operation: (...args: Args) => Promise<Result>
-    ): ((...args: Args) => Promise<Result>) =>
-    async (...args) => {
-        try {
-            return await operation(...args);
-        } catch (error) {
-            if (!(error instanceof PocketBaseHttpError)) {
-                throw error;
-            }
-
-            throw toStoreError(error);
-        }
-    };
-
-export { withPocketBaseErrors, withPocketBaseResult };
+export { withPocketBaseResult };

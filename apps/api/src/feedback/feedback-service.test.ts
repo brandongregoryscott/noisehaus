@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { err, PersistenceError, ok } from "common";
+import { beforeEach, assert, describe, expect, it, vi } from "vitest";
 
 const { mockCreateFeedback, mockGetBoardBySlug } = vi.hoisted(() => ({
     mockCreateFeedback: vi.fn(),
@@ -26,16 +27,20 @@ describe("FeedbackService", () => {
     });
 
     it("sets boardId when a matching board exists", async () => {
-        mockGetBoardBySlug.mockResolvedValue({
-            id: "board-1",
-            slug: "drums",
-        });
-        mockCreateFeedback.mockResolvedValue({
-            boardId: "board-1",
-            comment: "Nice work",
-            email: "a@example.com",
-            id: "feedback-1",
-        });
+        mockGetBoardBySlug.mockResolvedValue(
+            ok({
+                id: "board-1",
+                slug: "drums",
+            })
+        );
+        mockCreateFeedback.mockResolvedValue(
+            ok({
+                boardId: "board-1",
+                comment: "Nice work",
+                email: "a@example.com",
+                id: "feedback-1",
+            })
+        );
 
         await FeedbackService.create({
             boardSlug: "drums",
@@ -52,12 +57,14 @@ describe("FeedbackService", () => {
     });
 
     it("does not set board fields when boardSlug is not provided", async () => {
-        mockCreateFeedback.mockResolvedValue({
-            boardId: null,
-            comment: "Thanks",
-            email: "b@example.com",
-            id: "feedback-2",
-        });
+        mockCreateFeedback.mockResolvedValue(
+            ok({
+                boardId: null,
+                comment: "Thanks",
+                email: "b@example.com",
+                id: "feedback-2",
+            })
+        );
 
         await FeedbackService.create({
             comment: "Thanks",
@@ -72,13 +79,15 @@ describe("FeedbackService", () => {
     });
 
     it("does not set board fields when boardSlug does not exist", async () => {
-        mockGetBoardBySlug.mockResolvedValue(null);
-        mockCreateFeedback.mockResolvedValue({
-            boardId: null,
-            comment: "Neat",
-            email: "c@example.com",
-            id: "feedback-3",
-        });
+        mockGetBoardBySlug.mockResolvedValue(ok(null));
+        mockCreateFeedback.mockResolvedValue(
+            ok({
+                boardId: null,
+                comment: "Neat",
+                email: "c@example.com",
+                id: "feedback-3",
+            })
+        );
 
         await FeedbackService.create({
             boardSlug: "missing",
@@ -91,5 +100,19 @@ describe("FeedbackService", () => {
             comment: "Neat",
             email: "c@example.com",
         });
+    });
+
+    it("does not create feedback when board lookup fails", async () => {
+        const error = new PersistenceError(new Error("Board lookup failed"));
+        mockGetBoardBySlug.mockResolvedValue(err(error));
+
+        const result = await FeedbackService.create({
+            boardSlug: "drums",
+            comment: "Thanks",
+        });
+
+        assert(result.isPersistenceError());
+        expect(result.error).toBe(error);
+        expect(mockCreateFeedback).not.toHaveBeenCalled();
     });
 });
