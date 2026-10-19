@@ -97,22 +97,26 @@ const bulkInsert = async (
             )
         );
     }
-    const board = await BoardsService.getByToken({ slug: boardSlug, token });
+    const boardResult = await BoardsService.getByToken({
+        slug: boardSlug,
+        token,
+    });
 
-    if (board.isErr) {
-        return board;
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    const quota = await verifyRemainingSize(
-        board.value.id,
+    const board = boardResult.value;
+    const quotaResult = await verifyRemainingSize(
+        board.id,
         sumBy(files, (file) => file.size)
     );
-    if (quota.isErr) {
-        return quota;
+    if (quotaResult.isErr) {
+        return quotaResult;
     }
 
     return BoardFilesStore.bulkInsert(
         files.map((file, index) => ({
-            boardId: board.value.id,
+            boardId: board.id,
             displayName: displayNames[index],
             emoji: normalizeEmoji(emojis[index]),
             file,
@@ -126,26 +130,29 @@ const _delete = async (
     boardSlug: string,
     token: string
 ): Promise<Result<true, ServiceError>> => {
-    const boardFile = await getWritableFile(id, boardSlug, token);
-    if (boardFile.isErr) {
-        return boardFile;
+    const boardFileResult = await getWritableFile(id, boardSlug, token);
+    if (boardFileResult.isErr) {
+        return boardFileResult;
     }
-    const deleted = await BoardFilesStore.delete(boardFile.value.id);
-    return deleted.isErr ? deleted : ok(true);
+    const boardFile = boardFileResult.value;
+    const deleteResult = await BoardFilesStore.delete(boardFile.id);
+    return deleteResult.isErr ? deleteResult : ok(true);
 };
 
 const insert = async (
     options: CreateBoardFileOptions
 ): Promise<Result<BoardFile, ServiceError>> => {
     const { boardSlug, displayName, emoji, file, token } = options;
-    const result = await bulkInsert({
+    const boardFilesResult = await bulkInsert({
         boardSlug,
         displayNames: [displayName],
         emojis: [emoji ?? "null"],
         files: [file],
         token,
     });
-    return result.isErr ? result : ok(result.value[0]);
+    return boardFilesResult.isErr
+        ? boardFilesResult
+        : ok(boardFilesResult.value[0]);
 };
 
 const getWritableFile = async (
@@ -157,11 +164,15 @@ const getWritableFile = async (
         return err(BOARD_NOT_FOUND_ERROR);
     }
 
-    const board = await BoardsService.getByToken({ slug: boardSlug, token });
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsService.getByToken({
+        slug: boardSlug,
+        token,
+    });
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    return getByIdAndBoardId(id, board.value.id);
+    const board = boardResult.value;
+    return getByIdAndBoardId(id, board.id);
 };
 
 const get = async (
@@ -172,60 +183,65 @@ const get = async (
         return err(BOARD_NOT_FOUND_ERROR);
     }
 
-    const board = await (isEmpty(token)
+    const boardResult = await (isEmpty(token)
         ? BoardsService.getBySlug(boardSlug)
         : BoardsService.getByToken({ slug: boardSlug, token: token! }));
 
-    if (board.isErr) {
-        return board;
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    return getByIdAndBoardId(id, board.value.id);
+    const board = boardResult.value;
+    return getByIdAndBoardId(id, board.id);
 };
 
 const getByIdAndBoardId = async (
     id: string,
     boardId: string
 ): Promise<Result<BoardFile, ServiceError>> => {
-    const boardFile = await BoardFilesStore.findById(id);
-    if (boardFile.isErr) {
-        return boardFile;
+    const boardFileResult = await BoardFilesStore.findById(id);
+    if (boardFileResult.isErr) {
+        return boardFileResult;
     }
-    if (boardFile.value === null || boardFile.value.boardId !== boardId) {
+    const boardFile = boardFileResult.value;
+    if (boardFile === null || boardFile.boardId !== boardId) {
         return err(BOARD_NOT_FOUND_ERROR);
     }
 
-    return ok(boardFile.value);
+    return ok(boardFile);
 };
 
 const listByBoardSlug = async (
     boardSlug: string
 ): Promise<Result<PresignedBoardFile[], ServiceError>> => {
-    const board = await BoardsService.getBySlug(boardSlug);
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsService.getBySlug(boardSlug);
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    return BoardFilesStore.listWithPresignedUrls(board.value.id);
+    const board = boardResult.value;
+    return BoardFilesStore.listWithPresignedUrls(board.id);
 };
 
 const listByToken = async (
     options: ListBoardFilesByTokenOptions
 ): Promise<Result<PresignedBoardFile[], ServiceError>> => {
-    const board = await BoardsService.getByToken(options);
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsService.getByToken(options);
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    return BoardFilesStore.listWithPresignedUrls(board.value.id);
+    const board = boardResult.value;
+    return BoardFilesStore.listWithPresignedUrls(board.id);
 };
 
 const update = async (
     options: UpdateBoardFileOptions
 ): Promise<Result<BoardFile, ServiceError>> => {
     const { boardSlug, displayName, emoji, file, id, token } = options;
-    const boardFile = await getWritableFile(id, boardSlug, token);
+    const boardFileResult = await getWritableFile(id, boardSlug, token);
 
-    if (boardFile.isErr) {
-        return boardFile;
+    if (boardFileResult.isErr) {
+        return boardFileResult;
     }
+    const boardFile = boardFileResult.value;
 
     let updatedBoardFile: UpdateStoredBoardFileOptions = {};
     if (!isEmpty(displayName)) {
@@ -240,16 +256,13 @@ const update = async (
     }
 
     if (file !== undefined) {
-        const additionalSizeInBytes = Math.max(
-            file.size - boardFile.value.size,
-            0
-        );
-        const quota = await verifyRemainingSize(
-            boardFile.value.boardId,
+        const additionalSizeInBytes = Math.max(file.size - boardFile.size, 0);
+        const quotaResult = await verifyRemainingSize(
+            boardFile.boardId,
             additionalSizeInBytes
         );
-        if (quota.isErr) {
-            return quota;
+        if (quotaResult.isErr) {
+            return quotaResult;
         }
 
         return BoardFilesStore.update(id, {
@@ -266,11 +279,12 @@ const verifyRemainingSize = async (
     boardId: string,
     incomingSizeInBytes: number
 ): Promise<Result<void, ServiceError>> => {
-    const boardFiles = await BoardFilesStore.listByBoardId(boardId);
-    if (boardFiles.isErr) {
-        return boardFiles;
+    const boardFilesResult = await BoardFilesStore.listByBoardId(boardId);
+    if (boardFilesResult.isErr) {
+        return boardFilesResult;
     }
-    const sizeInBytes = sumBy(boardFiles.value, (boardFile) => boardFile.size);
+    const boardFiles = boardFilesResult.value;
+    const sizeInBytes = sumBy(boardFiles, (boardFile) => boardFile.size);
     const remainingSizeInBytes = Math.max(
         MAXIMUM_BOARD_SIZE_IN_BYTES - sizeInBytes,
         0

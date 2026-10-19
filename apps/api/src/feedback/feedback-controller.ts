@@ -9,9 +9,9 @@ const FeedbackController = {
         response: Response
     ): Promise<Response> => {
         const { body } = request;
-        const feedback = await FeedbackService.create(body);
+        const feedbackResult = await FeedbackService.create(body);
 
-        return created(response, feedback);
+        return created(response, feedbackResult);
     },
 };
 

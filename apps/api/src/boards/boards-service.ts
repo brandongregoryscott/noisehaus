@@ -54,12 +54,13 @@ const _delete = async (
     slug: string,
     token: string
 ): Promise<Result<true, ServiceError>> => {
-    const board = await authorizeWritePermission({ slug, token });
-    if (board.isErr) {
-        return board;
+    const boardResult = await authorizeWritePermission({ slug, token });
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    const deleted = await BoardsStore.delete(board.value.id);
-    return deleted.isErr ? deleted : ok(true);
+    const board = boardResult.value;
+    const deleteResult = await BoardsStore.delete(board.id);
+    return deleteResult.isErr ? deleteResult : ok(true);
 };
 
 const getAllPublic = async (): Promise<Result<Board[], StoreError>> =>
@@ -68,19 +69,20 @@ const getAllPublic = async (): Promise<Result<Board[], StoreError>> =>
 const getBySlug = async (
     slug: string
 ): Promise<Result<Board, ServiceError>> => {
-    const board = await BoardsStore.findBySlug(slug);
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsStore.findBySlug(slug);
+    if (boardResult.isErr) {
+        return boardResult;
     }
+    const board = boardResult.value;
     if (
-        board.value === null ||
+        board === null ||
         !VALID_GET_BY_SLUG_PERMISSIONS.includes(
-            board.value.viewPermission as ViewPermission
+            board.viewPermission as ViewPermission
         )
     ) {
         return err(BOARD_NOT_FOUND_ERROR);
     }
-    return ok(board.value);
+    return ok(board);
 };
 
 const getByToken = async (
@@ -93,25 +95,26 @@ const getByToken = async (
         return err(new ValidationError("An id or slug is required"));
     }
 
-    const board = hasId
+    const boardResult = hasId
         ? await BoardsStore.findById(id)
         : await BoardsStore.findBySlug(slug);
-    if (board.isErr) {
-        return board;
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    if (board.value === null) {
+    const board = boardResult.value;
+    if (board === null) {
         return err(BOARD_NOT_FOUND_ERROR);
     }
-    const boardToken = await BoardTokensStore.findByBoardIdAndToken(
-        board.value.id,
+    const boardTokenResult = await BoardTokensStore.findByBoardIdAndToken(
+        board.id,
         token
     );
-    if (boardToken.isErr) {
-        return boardToken;
+    if (boardTokenResult.isErr) {
+        return boardTokenResult;
     }
-    return boardToken.value === null
+    return boardTokenResult.value === null
         ? err(BOARD_NOT_FOUND_ERROR)
-        : ok(board.value);
+        : ok(board);
 };
 
 const insert = async (
@@ -123,46 +126,51 @@ const insert = async (
         slug = `${slug}-${randomSuffix()}`;
     }
 
-    const result = await BoardsStore.createWithInitialToken({
+    const boardResult = await BoardsStore.createWithInitialToken({
         name,
         slug,
         viewPermission: ViewPermission.BySlug,
     });
     if (
-        result.isUniqueConstraintError("slug") &&
+        boardResult.isUniqueConstraintError("slug") &&
         attempt < MAX_CREATE_ATTEMPTS
     ) {
         return insert({ ...options, attempt: attempt + 1 });
     }
 
-    return result;
+    return boardResult;
 };
 
 const update = async (
     input: UpdateBoardOptions
 ): Promise<Result<Board, ServiceError>> => {
     const { originalSlug, token, ...updatedBoard } = input;
-    const board = await authorizeWritePermission({ slug: originalSlug, token });
-    if (board.isErr) {
-        return board;
+    const boardResult = await authorizeWritePermission({
+        slug: originalSlug,
+        token,
+    });
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    return BoardsStore.update(board.value.id, updatedBoard);
+    const board = boardResult.value;
+    return BoardsStore.update(board.id, updatedBoard);
 };
 
 const get = async (
     slug: string,
     token?: string
 ): Promise<Result<Board, ServiceError>> => {
-    const board = await BoardsStore.findBySlug(slug);
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsStore.findBySlug(slug);
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    if (board.value == null) {
+    const board = boardResult.value;
+    if (board == null) {
         return err(BOARD_NOT_FOUND_ERROR);
     }
     // Ignore tokens for boards that can be read by slug.
-    if (board.value.viewPermission !== ViewPermission.ByToken) {
-        return ok(board.value);
+    if (board.viewPermission !== ViewPermission.ByToken) {
+        return ok(board);
     }
     if (isEmpty(token)) {
         return err(BOARD_NOT_FOUND_ERROR);

@@ -11,11 +11,11 @@ type CreateFeedbackOptions = {
 const create = async (
     input: CreateFeedbackOptions
 ): Promise<Result<Feedback, StoreError>> => {
-    const createInput = await normalizeCreateInput(input);
-    if (createInput.isErr) {
-        return createInput;
+    const createInputResult = await normalizeCreateInput(input);
+    if (createInputResult.isErr) {
+        return createInputResult;
     }
-    return FeedbackStore.create(createInput.value);
+    return FeedbackStore.create(createInputResult.value);
 };
 
 const normalizeCreateInput = async (
@@ -26,15 +26,16 @@ const normalizeCreateInput = async (
         return ok(omitBoardFields(input));
     }
 
-    const board = await BoardsStore.findBySlug(boardSlug);
-    if (board.isErr) {
-        return board;
+    const boardResult = await BoardsStore.findBySlug(boardSlug);
+    if (boardResult.isErr) {
+        return boardResult;
     }
-    if (board.value == null) {
+    const board = boardResult.value;
+    if (board == null) {
         return ok(omitBoardFields(input));
     }
 
-    return ok({ ...omitBoardFields(input), boardId: board.value.id });
+    return ok({ ...omitBoardFields(input), boardId: board.id });
 };
 
 const omitBoardFields = (

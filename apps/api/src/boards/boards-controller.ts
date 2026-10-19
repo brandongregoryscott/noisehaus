@@ -25,9 +25,9 @@ const BoardsController = {
         const { body } = request;
         const { slug } = request.params;
         const { token } = body;
-        const data = await BoardsService.delete(slug, token);
+        const deleteResult = await BoardsService.delete(slug, token);
 
-        return ok(response, data);
+        return ok(response, deleteResult);
     },
     get: async (
         request: GetBoardRequest,
@@ -35,17 +35,17 @@ const BoardsController = {
     ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
-        const board = await BoardsService.get(slug, token);
+        const boardResult = await BoardsService.get(slug, token);
 
-        return ok(response, board);
+        return ok(response, boardResult);
     },
     list: async (
         _request: ListBoardsRequest,
         response: Response
     ): Promise<Response> => {
-        const boards = await BoardsService.getAllPublic();
+        const boardsResult = await BoardsService.getAllPublic();
 
-        return ok(response, boards);
+        return ok(response, boardsResult);
     },
     update: async (
         request: UpdateBoardRequest,
@@ -54,13 +54,13 @@ const BoardsController = {
         const { body } = request;
         const { slug: originalSlug } = request.params;
         const { token, ...input } = body;
-        const board = await BoardsService.update({
+        const boardResult = await BoardsService.update({
             originalSlug,
             token,
             ...input,
         });
 
-        return ok(response, board);
+        return ok(response, boardResult);
     },
 };
 

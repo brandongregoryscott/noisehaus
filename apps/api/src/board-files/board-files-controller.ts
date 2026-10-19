@@ -35,7 +35,7 @@ const BoardFilesController = {
             );
         }
 
-        const boardFiles = await BoardFilesService.bulkInsert({
+        const boardFilesResult = await BoardFilesService.bulkInsert({
             boardSlug,
             displayNames,
             emojis,
@@ -43,7 +43,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFiles);
+        return ok(response, boardFilesResult);
     },
     delete: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
@@ -55,28 +55,32 @@ const BoardFilesController = {
     get: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFile = await BoardFilesService.get({ boardSlug, id, token });
+        const boardFileResult = await BoardFilesService.get({
+            boardSlug,
+            id,
+            token,
+        });
 
-        return ok(response, boardFile);
+        return ok(response, boardFileResult);
     },
     list: async (request: Request, response: Response): Promise<Response> => {
         const { slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
-        const boardFiles = await (isEmpty(token)
+        const boardFilesResult = await (isEmpty(token)
             ? BoardFilesService.listByBoardSlug(boardSlug)
             : BoardFilesService.listByToken({
                   slug: boardSlug,
                   token: token!,
               }));
 
-        return ok(response, boardFiles);
+        return ok(response, boardFilesResult);
     },
     update: async (request: Request, response: Response): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { file } = request;
         const { displayName, emoji, token } = request.body;
 
-        const boardFile = await BoardFilesService.update({
+        const boardFileResult = await BoardFilesService.update({
             boardSlug,
             displayName,
             emoji,
@@ -85,7 +89,7 @@ const BoardFilesController = {
             token,
         });
 
-        return ok(response, boardFile);
+        return ok(response, boardFileResult);
     },
 };
 

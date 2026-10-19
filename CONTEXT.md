@@ -34,6 +34,12 @@ Stores use `StoreError`; services add access and business failures through
 `ServiceError`. Missing records are successful `null` store results; services
 decide whether absence means not found or is allowed (such as feedback without a
 matching board). Propagate failures before further reads or writes.
+When naming a Result wrapper after a domain value, include the `Result` suffix
+(for example, `boardResult` or `quotaResult`); a generic `result` is also clear.
+After returning early on failure, extract a successful value as `board` or
+`boardFile` when it makes the remaining business logic clearer. Keep domain
+names for domain values. Services use `async`/`await` and explicit
+early returns for asynchronous failure propagation.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes
 from `common`. Only `packages/common/result.ts` imports `true-myth`; its public
