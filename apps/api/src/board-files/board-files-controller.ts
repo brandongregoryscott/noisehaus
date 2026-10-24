@@ -5,8 +5,14 @@ import { BoardFilesService } from "@/board-files/board-files-service";
 import { arrify } from "@/utilities/collection-utils";
 import { HttpResponse } from "@/utilities/responses";
 
+type BoardFileParams = { id: string; slug: string };
+type BoardParams = Pick<BoardFileParams, "slug">;
+
 const BoardFilesController = {
-    create: async (request: Request, response: Response): Promise<Response> => {
+    create: async (
+        request: Request<BoardParams>,
+        response: Response
+    ): Promise<Response> => {
         const { slug: boardSlug } = request.params;
         const { token } = request.body;
         const { files } = request;
@@ -45,7 +51,10 @@ const BoardFilesController = {
 
         return HttpResponse.ok(response, boardFilesResult);
     },
-    delete: async (request: Request, response: Response): Promise<Response> => {
+    delete: async (
+        request: Request<BoardFileParams>,
+        response: Response
+    ): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { token } = request.body;
         const result = await BoardFilesService.delete(
@@ -56,7 +65,10 @@ const BoardFilesController = {
 
         return HttpResponse.ok(response, result);
     },
-    get: async (request: Request, response: Response): Promise<Response> => {
+    get: async (
+        request: Request<BoardFileParams>,
+        response: Response
+    ): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
         const boardFileResult = await BoardFilesService.get({
@@ -67,7 +79,10 @@ const BoardFilesController = {
 
         return HttpResponse.ok(response, boardFileResult);
     },
-    list: async (request: Request, response: Response): Promise<Response> => {
+    list: async (
+        request: Request<BoardParams>,
+        response: Response
+    ): Promise<Response> => {
         const { slug: boardSlug } = request.params;
         const token = request.query.token as string | undefined;
         const boardFilesResult = await (
@@ -81,7 +96,10 @@ const BoardFilesController = {
 
         return HttpResponse.ok(response, boardFilesResult);
     },
-    update: async (request: Request, response: Response): Promise<Response> => {
+    update: async (
+        request: Request<BoardFileParams>,
+        response: Response
+    ): Promise<Response> => {
         const { id, slug: boardSlug } = request.params;
         const { file } = request;
         const { displayName, emoji, token } = request.body;
