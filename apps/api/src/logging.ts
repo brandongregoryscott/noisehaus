@@ -93,42 +93,68 @@ const sanitizeStack = (error: Error): string | undefined => {
         .join("\n");
 };
 
+const safeErrorCodes = new Set([
+    "EADDRINUSE",
+    "EADDRNOTAVAIL",
+    "EACCES",
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "ETIMEDOUT",
+    "ENOTFOUND",
+    "EPIPE",
+    "ENOENT",
+    "SQLITE_BUSY",
+    "SQLITE_CONSTRAINT",
+    "SQLITE_ERROR",
+]);
+
 const safeError = (value: unknown, depth = 0): SafeError => {
     if (!isError(value)) {
         return { type: "NonError" };
     }
-    const { name: type } = value.constructor;
-    const stack = sanitizeStack(value);
-    const status =
+
+    const result: SafeError = {
+        stack: sanitizeStack(value),
+        type: value.constructor.name,
+    };
+    if (
         "status" in value &&
         isNumber(value.status) &&
         value.status >= 100 &&
         value.status <= 599
-            ? value.status
-            : undefined;
-    const codes = new Set([
-        "EADDRINUSE",
-        "EADDRNOTAVAIL",
-        "EACCES",
-        "ECONNREFUSED",
-        "ECONNRESET",
-        "ETIMEDOUT",
-        "ENOTFOUND",
-        "EPIPE",
-        "ENOENT",
-        "SQLITE_BUSY",
-        "SQLITE_CONSTRAINT",
-        "SQLITE_ERROR",
-    ]);
-    const code =
-        "code" in value && isString(value.code) && codes.has(value.code)
-            ? value.code
-            : undefined;
-    const cause =
-        depth < 3 && "cause" in value && isError(value.cause)
-            ? safeError(value.cause, depth + 1)
-            : undefined;
-    return { cause, code, stack, status, type };
+    ) {
+        result.status = value.status;
+    }
+    if (
+        "code" in value &&
+        isString(value.code) &&
+        safeErrorCodes.has(value.code)
+    ) {
+        result.code = value.code;
+    }
+    if (depth < 3 && "cause" in value && isError(value.cause)) {
+        result.cause = safeError(value.cause, depth + 1);
+    }
+    return result;
+};
+
+const requestContextFields = (instance: Logger) => {
+    const active = context.getStore();
+    if (isNil(active)) {
+        return {};
+    }
+
+    const bound = instance.bindings();
+    const result: { method?: string; requestId?: string; route: string } = {
+        route: routeTemplate(active.request),
+    };
+    if (isNil(bound.method)) {
+        result.method = method(active.request);
+    }
+    if (isNil(bound.requestId)) {
+        result.requestId = active.requestId;
+    }
+    return result;
 };
 
 const createLogger = (
@@ -148,22 +174,8 @@ const createLogger = (
             },
             formatters: { level: (level) => ({ level }) },
             level: env.LOG_LEVEL ?? "info",
-            mixin: (_object, _level, instance) => {
-                const active = context.getStore();
-                if (isNil(active)) {
-                    return {};
-                }
-                const bound = instance.bindings();
-                return {
-                    ...(isNil(bound.method)
-                        ? { method: method(active.request) }
-                        : {}),
-                    ...(isNil(bound.requestId)
-                        ? { requestId: active.requestId }
-                        : {}),
-                    route: routeTemplate(active.request),
-                };
-            },
+            mixin: (_object, _level, instance) =>
+                requestContextFields(instance),
             redact: {
                 paths: [
                     "authorization",
@@ -214,6 +226,57 @@ const fields = (state: RequestState, response: ServerResponse) => ({
     statusCode: response.statusCode,
 });
 
+const completionLevel = (
+    state: RequestState,
+    response: ServerResponse
+): "debug" | "error" | "info" | "warn" => {
+    if (state.failed || response.statusCode >= 500) {
+        return "error";
+    }
+    if (
+        !state.stream &&
+        (!response.writableFinished || response.statusCode >= 400)
+    ) {
+        return "warn";
+    }
+    if (state.request.path === "/health" || state.request.path === "/ready") {
+        return "debug";
+    }
+    return "info";
+};
+
+const completionFields = (state: RequestState, response: ServerResponse) => {
+    const details = {
+        ...fields(state, response),
+        aborted: !response.writableFinished,
+    };
+    if (state.stream) {
+        return {
+            ...details,
+            connectionDurationMs: elapsed(state),
+            event: "stream.closed",
+        };
+    }
+
+    let event = "request.completed";
+    if (details.aborted) {
+        event = "request.aborted";
+    }
+    return { ...details, durationMs: elapsed(state), event };
+};
+
+const logCompletion = (state: RequestState, response: ServerResponse): void => {
+    if (state.done) {
+        return;
+    }
+    state.done = true;
+    requests.delete(response);
+
+    const level = completionLevel(state, response);
+    const details = completionFields(state, response);
+    state.logger[level](details, details.event);
+};
+
 const logRequestError = (response: Response, error: unknown): void => {
     const state = requests.get(response);
     if (!isNil(state)) {
@@ -257,40 +320,7 @@ const requestLogging =
             stream: false,
         };
         requests.set(response, state);
-        const complete = () => {
-            if (state.done) {
-                return;
-            }
-            state.done = true;
-            requests.delete(response);
-            const aborted = !response.writableFinished;
-            const event = state.stream
-                ? "stream.closed"
-                : aborted
-                  ? "request.aborted"
-                  : "request.completed";
-            const probe =
-                request.path === "/health" || request.path === "/ready";
-            const level =
-                state.failed || response.statusCode >= 500
-                    ? "error"
-                    : !state.stream && (aborted || response.statusCode >= 400)
-                      ? "warn"
-                      : probe
-                        ? "debug"
-                        : "info";
-            log[level](
-                {
-                    ...fields(state, response),
-                    aborted,
-                    event,
-                    ...(state.stream
-                        ? { connectionDurationMs: elapsed(state) }
-                        : { durationMs: elapsed(state) }),
-                },
-                event
-            );
-        };
+        const complete = () => logCompletion(state, response);
         response.once("finish", complete);
         response.once("close", complete);
         response.once("error", (error) => {
