@@ -11,7 +11,9 @@ import { isDevelopment } from "@/utilities/environment";
 
 vi.mock("./utilities/environment", () => ({ isDevelopment: vi.fn() }));
 
-const request = { logger: { error: vi.fn() } } as unknown as Request;
+const request = {
+    logger: { error: vi.fn(), warn: vi.fn() },
+} as unknown as Request;
 const next = vi.fn() as NextFunction;
 const createResponse = () =>
     ({

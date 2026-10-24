@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import type { Logger } from "pino";
 import bodyParser from "body-parser";
 import {
     MAX_FILE_COUNT_PER_UPLOAD,
@@ -16,50 +15,24 @@ import {
     CREATE_FEEDBACK_ROUTE,
 } from "common";
 import cors from "cors";
-import crypto from "crypto";
 import express from "express";
 import { BoardFilesController } from "@/board-files/board-files-controller";
 import { BoardsController } from "@/boards/boards-controller";
 import { errorHandler } from "@/error-handler";
 import { FeedbackController } from "@/feedback/feedback-controller";
+import { requestLogging } from "@/logging";
 import { createMetrics } from "@/metrics";
 import { PocketBaseClient } from "@/pocketbase-client";
-import { logger } from "@/utilities/logger";
 import { multer } from "@/utilities/multer";
 import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
-
-declare global {
-    namespace Express {
-        // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-        interface Request {
-            logger: Logger;
-        }
-    }
-}
 
 const app = express();
 const metrics = createMetrics();
 
+app.use(requestLogging());
 app.use(metrics.middleware);
 app.use(bodyParser.json());
 app.use(cors());
-
-app.use((request: Request, response: Response, next) => {
-    const start = Date.now();
-    const requestId = crypto.randomUUID().slice(0, 8);
-    request.logger = logger.child({ requestId });
-
-    response.on("finish", () => {
-        request.logger.info({
-            method: request.method,
-            path: request.originalUrl,
-            responseTime: Date.now() - start,
-            statusCode: response.statusCode,
-        });
-    });
-
-    next();
-});
 
 app.get(
     "/health",
@@ -68,7 +41,10 @@ app.get(
             await PocketBaseClient.healthcheck();
             return response.json({ ok: true });
         } catch (error) {
-            request.logger.error({ err: error }, "health check failed");
+            request.logger.error(
+                { err: error, event: "health-check-failed" },
+                "health check failed"
+            );
             return response.status(503).json({ ok: false });
         }
     }

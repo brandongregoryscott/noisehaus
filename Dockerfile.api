@@ -23,6 +23,8 @@ RUN npm run build --workspace=api
 
 # Runtime stage
 FROM node:24-slim
+ARG SOURCE_VERSION=unknown
+ENV APP_ENV=production APP_VERSION=$SOURCE_VERSION
 
 # Docker DNS resolves the Compose service; explicit environment values override it.
 ENV POCKETBASE_URL=http://pocketbase:8090

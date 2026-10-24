@@ -10,7 +10,7 @@ vi.mock("../utilities/environment", () => ({ isDevelopment: vi.fn() }));
 
 const request = {
     body: { name: "Drums", slug: "drums" },
-    logger: { error: vi.fn() },
+    logger: { error: vi.fn(), warn: vi.fn() },
 } as unknown as CreateBoardRequest & Request;
 const createResponse = () =>
     ({

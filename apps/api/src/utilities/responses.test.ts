@@ -9,16 +9,18 @@ import {
     ValidationError,
 } from "common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { logger } from "@/logging";
 import { isDevelopment } from "@/utilities/environment";
-import { logger } from "@/utilities/logger";
 import { HttpResponse } from "@/utilities/responses";
 
 vi.mock("./environment", () => ({ isDevelopment: vi.fn() }));
-vi.mock("./logger", () => ({ logger: { error: vi.fn() } }));
+vi.mock("@/logging", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 
 const createResponse = (log?: ReturnType<typeof vi.fn>): Response =>
     ({
-        ...(log === undefined ? {} : { req: { logger: { error: log } } }),
+        ...(log === undefined
+            ? {}
+            : { req: { logger: { error: log, warn: log } } }),
         json: vi.fn().mockReturnThis(),
         status: vi.fn().mockReturnThis(),
     }) as unknown as Response;
@@ -134,7 +136,16 @@ describe("HttpResponse", () => {
                 expect(
                     log,
                     `${helper}: ${name}`
-                ).toHaveBeenCalledExactlyOnceWith({ err: cause }, logMessage);
+                ).toHaveBeenCalledExactlyOnceWith(
+                    {
+                        err: cause,
+                        event:
+                            status < 500
+                                ? "request.rejected"
+                                : "request.failed",
+                    },
+                    logMessage
+                );
                 expect(logger.error, helper).not.toHaveBeenCalled();
             }
         }
@@ -146,8 +157,8 @@ describe("HttpResponse", () => {
 
         HttpResponse.error(response, cause);
 
-        expect(logger.error).toHaveBeenCalledExactlyOnceWith(
-            { err: cause },
+        expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+            { err: cause, event: "request.rejected" },
             "bad request"
         );
         expect(response.status).toHaveBeenCalledWith(400);

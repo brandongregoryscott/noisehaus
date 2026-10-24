@@ -17,6 +17,7 @@ services:
             - "3434:3434"
         env_file: apps/api/.env
         environment:
+            SOURCE_COMMIT: ${SOURCE_COMMIT:-}
             METRICS_HOST: 0.0.0.0
             METRICS_PORT: 9464
         networks:
