@@ -15,7 +15,7 @@ const BoardsController = {
         response: Response
     ): Promise<Response> => {
         const { body } = request;
-        const result = await BoardsService.insert(body);
+        const result = await BoardsService.insert(body).toPromise();
         return HttpResponse.created(response, result);
     },
     delete: async (
@@ -25,7 +25,10 @@ const BoardsController = {
         const { body } = request;
         const { slug } = request.params;
         const { token } = body;
-        const deleteResult = await BoardsService.delete(slug, token);
+        const deleteResult = await BoardsService.delete(
+            slug,
+            token
+        ).toPromise();
 
         return HttpResponse.ok(response, deleteResult);
     },
@@ -35,7 +38,7 @@ const BoardsController = {
     ): Promise<Response> => {
         const { slug } = request.params;
         const token = request.query.token;
-        const boardResult = await BoardsService.get(slug, token);
+        const boardResult = await BoardsService.get(slug, token).toPromise();
 
         return HttpResponse.ok(response, boardResult);
     },
@@ -43,7 +46,7 @@ const BoardsController = {
         _request: ListBoardsRequest,
         response: Response
     ): Promise<Response> => {
-        const boardsResult = await BoardsService.getAllPublic();
+        const boardsResult = await BoardsService.getAllPublic().toPromise();
 
         return HttpResponse.ok(response, boardsResult);
     },
@@ -58,7 +61,7 @@ const BoardsController = {
             originalSlug,
             token,
             ...input,
-        });
+        }).toPromise();
 
         return HttpResponse.ok(response, boardResult);
     },

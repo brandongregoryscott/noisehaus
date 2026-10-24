@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { ok } from "common";
+import { Task } from "common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockCreateFeedback } = vi.hoisted(() => ({
@@ -27,8 +27,8 @@ describe("FeedbackController", () => {
 
     it("creates feedback and returns the created response", async () => {
         const response = createMockResponse();
-        mockCreateFeedback.mockResolvedValue(
-            ok({
+        mockCreateFeedback.mockReturnValue(
+            Task.ok({
                 boardId: "board-1",
                 comment: "Nice work",
                 email: "a@example.com",

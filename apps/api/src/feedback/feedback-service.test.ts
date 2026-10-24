@@ -46,7 +46,7 @@ describe("FeedbackService", () => {
             boardSlug: "drums",
             comment: "Nice work",
             email: "a@example.com",
-        });
+        }).toPromise();
 
         expect(mockGetBoardBySlug).toHaveBeenCalledWith("drums");
         expect(mockCreateFeedback).toHaveBeenCalledWith({
@@ -69,7 +69,7 @@ describe("FeedbackService", () => {
         await FeedbackService.create({
             comment: "Thanks",
             email: "b@example.com",
-        });
+        }).toPromise();
 
         expect(mockGetBoardBySlug).not.toHaveBeenCalled();
         expect(mockCreateFeedback).toHaveBeenCalledWith({
@@ -93,7 +93,7 @@ describe("FeedbackService", () => {
             boardSlug: "missing",
             comment: "Neat",
             email: "c@example.com",
-        });
+        }).toPromise();
 
         expect(mockGetBoardBySlug).toHaveBeenCalledWith("missing");
         expect(mockCreateFeedback).toHaveBeenCalledWith({
@@ -109,10 +109,39 @@ describe("FeedbackService", () => {
         const result = await FeedbackService.create({
             boardSlug: "drums",
             comment: "Thanks",
-        });
+        }).toPromise();
 
         assert(result.isPersistenceError());
         expect(result.error).toBe(error);
+        expect(mockCreateFeedback).not.toHaveBeenCalled();
+    });
+
+    it("preserves feedback persistence failures after board lookup succeeds", async () => {
+        const error = new PersistenceError(new Error("Feedback write failed"));
+        mockGetBoardBySlug.mockResolvedValue(ok({ id: "board-1" }));
+        mockCreateFeedback.mockResolvedValue(err(error));
+        const input = { boardSlug: "drums", comment: "Thanks" };
+
+        const result = await FeedbackService.create(input).toPromise();
+
+        assert(result.isPersistenceError());
+        expect(result.error).toBe(error);
+        expect(mockCreateFeedback).toHaveBeenCalledExactlyOnceWith({
+            boardId: "board-1",
+            comment: "Thanks",
+        });
+    });
+
+    it("propagates unexpected board lookup exceptions before creating feedback", async () => {
+        const error = new Error("Broken configuration");
+        mockGetBoardBySlug.mockImplementation(() => {
+            throw error;
+        });
+        const input = { boardSlug: "drums", comment: "Thanks" };
+
+        const promise = FeedbackService.create(input).toPromise();
+
+        await expect(promise).rejects.toBe(error);
         expect(mockCreateFeedback).not.toHaveBeenCalled();
     });
 });

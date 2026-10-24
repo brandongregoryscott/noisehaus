@@ -29,21 +29,33 @@ validation, quota checks, and retry policy. Stores own persistence operations,
 record mapping, file transport, and translation of provider errors. Controllers
 call services; services call stores. Stores do not call services.
 
-API stores and services return `Promise<Result<T, E>>` for expected failures.
+API stores return `Promise<Result<T, E>>`; services return the application-owned
+`Task<T, E>` for expected failures.
 Stores use `StoreError`; services add access and business failures through
 `ServiceError`. Missing records are successful `null` store results; services
 decide whether absence means not found or is allowed (such as feedback without a
 matching board). Propagate failures before further reads or writes.
 When naming a Result wrapper after a domain value, include the `Result` suffix
 (for example, `boardResult` or `quotaResult`); a generic `result` is also clear.
-After returning early on failure, extract a successful value as `board` or
-`boardFile` when it makes the remaining business logic clearer. Keep domain
-names for domain values. Services use `async`/`await` and explicit
-early returns for asynchronous failure propagation.
+Keep domain names for domain values. Services compose dependent operations with
+`Task` from `common`: `andThen` receives successful values and propagates failures;
+`map` transforms successful values. Callbacks may return a `Result`, a
+`Promise<Result>`, or another `Task`. Service operations and their private
+composition helpers return `Task` directly. Controllers await `.toPromise()`
+at the HTTP boundary before passing the application Result to `HttpResponse`.
+Use `Task.ok(value)` and `Task.err(error)` for immediate outcomes, and
+`Task.fromPromise(() => storeOperation())` to start a store operation. Services
+chain other services directly. Keep dependent work inside callbacks so it only
+starts after prior checks succeed. Use `orElse` for selective recovery such as
+confirmed slug-conflict retries. Use `orElseResult` when recovery needs Result
+predicates such as `isUniqueConstraintError("slug")`; it receives a known `Err`.
+Unexpected exceptions bypass both recovery methods.
+See [Task composition](docs/task-composition.md) for examples and exception behavior.
 
 Both apps import the application-owned `Result`, `ok`, `err`, and error classes
-from `common`. Only `packages/common/result.ts` imports `true-myth`; its public
-contract hides library types and methods. Use `result.isErr` for any failure and
+from `common`. Only `packages/common/result.ts` and
+`packages/common/task.ts` import `true-myth`; their public contracts hide
+library types and methods. Use `result.isErr` for any failure and
 specific predicates such as `result.isNotFoundError()`,
 `result.isValidationError()`, `result.isPersistenceError()`, and
 `result.isUniqueConstraintError(field?)` to narrow failures. Shared error types

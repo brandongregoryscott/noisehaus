@@ -1,5 +1,6 @@
 import type { Result, ServiceError } from "common";
 import {
+    Task,
     PersistenceError,
     ValidationError,
     ok,
@@ -53,10 +54,10 @@ describe("BoardFilesService", () => {
     beforeEach(() => {
         vi.mocked(BoardsService.getBySlug)
             .mockReset()
-            .mockResolvedValue(ok(board));
+            .mockReturnValue(Task.ok(board));
         vi.mocked(BoardsService.getByToken)
             .mockReset()
-            .mockResolvedValue(ok(board));
+            .mockReturnValue(Task.ok(board));
         vi.spyOn(BoardFilesStore, "findById").mockResolvedValue(ok(boardFile));
         vi.spyOn(BoardFilesStore, "update").mockResolvedValue(
             ok({
@@ -69,6 +70,9 @@ describe("BoardFilesService", () => {
             ok([boardFile])
         );
         vi.spyOn(BoardFilesStore, "listByBoardId").mockResolvedValue(ok([]));
+        vi.spyOn(BoardFilesStore, "listWithPresignedUrls").mockResolvedValue(
+            ok([{ ...boardFile, signedUrl: "https://example.com/sound.wav" }])
+        );
     });
 
     afterEach(() => {
@@ -97,7 +101,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardFilesService.update(options);
+            const result = await BoardFilesService.update(options).toPromise();
 
             assert(result.isOk);
             expect(result.value).toMatchObject({
@@ -130,7 +134,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            await BoardFilesService.update(options);
+            await BoardFilesService.update(options).toPromise();
 
             expect(BoardFilesStore.update).toHaveBeenCalledWith(boardFile.id, {
                 file,
@@ -156,7 +160,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardFilesService.update(options);
+            const result = await BoardFilesService.update(options).toPromise();
 
             assert(result.isValidationError());
             expect(result.error.message).toContain("remaining size capacity");
@@ -177,7 +181,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.update(options);
+            const result = BoardFilesService.update(options).toPromise();
 
             await expectNotFound(result);
         });
@@ -191,14 +195,14 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.update(options);
+            const result = BoardFilesService.update(options).toPromise();
 
             await expectNotFound(result);
         });
 
         it("stops before file lookup when board authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockResolvedValue(
-                err(BOARD_NOT_FOUND_ERROR)
+            vi.mocked(BoardsService.getByToken).mockReturnValue(
+                Task.err(BOARD_NOT_FOUND_ERROR)
             );
             const options = {
                 boardSlug: board.slug,
@@ -207,7 +211,7 @@ describe("BoardFilesService", () => {
                 token: "invalid",
             };
 
-            const result = BoardFilesService.update(options);
+            const result = BoardFilesService.update(options).toPromise();
 
             await expectNotFound(result);
             expect(BoardsService.getByToken).toHaveBeenCalledWith({
@@ -227,7 +231,7 @@ describe("BoardFilesService", () => {
                     token: token as string,
                 };
 
-                const result = BoardFilesService.update(options);
+                const result = BoardFilesService.update(options).toPromise();
 
                 await expectNotFound(result);
                 expect(BoardsService.getByToken).not.toHaveBeenCalled();
@@ -249,7 +253,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.update(options);
+            const result = BoardFilesService.update(options).toPromise();
 
             await expectNotFound(result);
         });
@@ -261,7 +265,11 @@ describe("BoardFilesService", () => {
             const { slug } = board;
             const token = "token-a";
 
-            const result = await BoardFilesService.delete(id, slug, token);
+            const result = await BoardFilesService.delete(
+                id,
+                slug,
+                token
+            ).toPromise();
 
             assert(result.isOk);
             expect(result.value).toBe(true);
@@ -283,7 +291,11 @@ describe("BoardFilesService", () => {
             const { slug } = board;
             const token = "token-a";
 
-            const result = BoardFilesService.delete(id, slug, token);
+            const result = BoardFilesService.delete(
+                id,
+                slug,
+                token
+            ).toPromise();
 
             await expectNotFound(result);
         });
@@ -294,20 +306,28 @@ describe("BoardFilesService", () => {
             const { slug } = board;
             const token = "token-a";
 
-            const result = BoardFilesService.delete(id, slug, token);
+            const result = BoardFilesService.delete(
+                id,
+                slug,
+                token
+            ).toPromise();
 
             await expectNotFound(result);
         });
 
         it("stops before file lookup when board authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockResolvedValue(
-                err(BOARD_NOT_FOUND_ERROR)
+            vi.mocked(BoardsService.getByToken).mockReturnValue(
+                Task.err(BOARD_NOT_FOUND_ERROR)
             );
             const { id } = boardFile;
             const { slug } = board;
             const token = "invalid";
 
-            const result = BoardFilesService.delete(id, slug, token);
+            const result = BoardFilesService.delete(
+                id,
+                slug,
+                token
+            ).toPromise();
 
             await expectNotFound(result);
             expect(BoardsService.getByToken).toHaveBeenCalledWith({
@@ -327,7 +347,7 @@ describe("BoardFilesService", () => {
                     id,
                     slug,
                     token as string
-                );
+                ).toPromise();
 
                 await expectNotFound(result);
                 expect(BoardsService.getByToken).not.toHaveBeenCalled();
@@ -356,7 +376,8 @@ describe("BoardFilesService", () => {
                 ok([boardFile, { ...boardFile, id: "file-b" }])
             );
 
-            const result = await BoardFilesService.bulkInsert(options);
+            const result =
+                await BoardFilesService.bulkInsert(options).toPromise();
 
             assert(result.isOk);
             expect(result.value.map((sound) => sound.id)).toEqual([
@@ -393,7 +414,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = BoardFilesService.bulkInsert(options);
+            const result = BoardFilesService.bulkInsert(options).toPromise();
 
             await expect(result).rejects.toBe(error);
             expect(BoardFilesStore.bulkInsert).toHaveBeenCalledTimes(1);
@@ -412,7 +433,8 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardFilesService.bulkInsert(options);
+            const result =
+                await BoardFilesService.bulkInsert(options).toPromise();
 
             assert(result.isValidationError());
             expect(result.error.message).toContain("remaining size capacity");
@@ -420,8 +442,8 @@ describe("BoardFilesService", () => {
         });
 
         it("does not write when authorization fails", async () => {
-            vi.mocked(BoardsService.getByToken).mockResolvedValue(
-                err(BOARD_NOT_FOUND_ERROR)
+            vi.mocked(BoardsService.getByToken).mockReturnValue(
+                Task.err(BOARD_NOT_FOUND_ERROR)
             );
             const options = {
                 boardSlug: board.slug,
@@ -431,7 +453,7 @@ describe("BoardFilesService", () => {
                 token: "invalid",
             };
 
-            const result = BoardFilesService.bulkInsert(options);
+            const result = BoardFilesService.bulkInsert(options).toPromise();
 
             await expectNotFound(result);
         });
@@ -445,7 +467,8 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardFilesService.bulkInsert(options);
+            const result =
+                await BoardFilesService.bulkInsert(options).toPromise();
 
             assert(result.isValidationError());
             expect(result.error.message).toContain("Each uploaded file");
@@ -463,7 +486,7 @@ describe("BoardFilesService", () => {
                     token,
                 };
 
-                const result = await BoardFilesService.get(options);
+                const result = await BoardFilesService.get(options).toPromise();
 
                 assert(result.isOk);
                 expect(result.value).toMatchObject({
@@ -484,7 +507,7 @@ describe("BoardFilesService", () => {
                 token: "token-a",
             };
 
-            const result = await BoardFilesService.get(options);
+            const result = await BoardFilesService.get(options).toPromise();
 
             assert(result.isOk);
             expect(result.value).toMatchObject({
@@ -501,11 +524,11 @@ describe("BoardFilesService", () => {
         it.each([undefined, "invalid"])(
             "propagates denied board read permission (%s)",
             async (token) => {
-                vi.mocked(BoardsService.getBySlug).mockResolvedValue(
-                    err(BOARD_NOT_FOUND_ERROR)
+                vi.mocked(BoardsService.getBySlug).mockReturnValue(
+                    Task.err(BOARD_NOT_FOUND_ERROR)
                 );
-                vi.mocked(BoardsService.getByToken).mockResolvedValue(
-                    err(BOARD_NOT_FOUND_ERROR)
+                vi.mocked(BoardsService.getByToken).mockReturnValue(
+                    Task.err(BOARD_NOT_FOUND_ERROR)
                 );
                 const options = {
                     boardSlug: board.slug,
@@ -513,7 +536,7 @@ describe("BoardFilesService", () => {
                     token,
                 };
 
-                const result = BoardFilesService.get(options);
+                const result = BoardFilesService.get(options).toPromise();
 
                 await expectNotFound(result);
                 expect(BoardFilesStore.findById).not.toHaveBeenCalled();
@@ -535,7 +558,7 @@ describe("BoardFilesService", () => {
                     token,
                 };
 
-                const result = BoardFilesService.get(options);
+                const result = BoardFilesService.get(options).toPromise();
 
                 await expectNotFound(result);
             }
@@ -545,7 +568,7 @@ describe("BoardFilesService", () => {
             vi.mocked(BoardFilesStore.findById).mockResolvedValue(ok(null));
             const options = { boardSlug: board.slug, id: boardFile.id };
 
-            const result = BoardFilesService.get(options);
+            const result = BoardFilesService.get(options).toPromise();
 
             await expectNotFound(result);
         });
@@ -557,12 +580,150 @@ describe("BoardFilesService", () => {
                 token: ["token-a", "token-b"] as unknown as string,
             };
 
-            const result = BoardFilesService.get(options);
+            const result = BoardFilesService.get(options).toPromise();
 
             await expectNotFound(result);
             expect(BoardsService.getBySlug).not.toHaveBeenCalled();
             expect(BoardsService.getByToken).not.toHaveBeenCalled();
             expect(BoardFilesStore.findById).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("insert", () => {
+        it("unwraps the first file from a successful batch", async () => {
+            const file = {
+                buffer: Buffer.from("sound"),
+                mimetype: "audio/wav",
+                originalname: "sound.wav",
+                size: 5,
+            };
+            const options = {
+                boardSlug: board.slug,
+                displayName: "First",
+                emoji: undefined,
+                file,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.insert(options).toPromise();
+
+            assert(result.isOk);
+            expect(result.value).toBe(boardFile);
+            expect(BoardFilesStore.bulkInsert).toHaveBeenCalledExactlyOnceWith([
+                {
+                    boardId: board.id,
+                    displayName: "First",
+                    emoji: "",
+                    file,
+                    size: file.size,
+                },
+            ]);
+        });
+
+        it("preserves a batch failure without mapping it to a file", async () => {
+            const error = new PersistenceError(new Error("Write unavailable"));
+            vi.mocked(BoardFilesStore.bulkInsert).mockResolvedValue(err(error));
+            const options = {
+                boardSlug: board.slug,
+                displayName: "First",
+                emoji: undefined,
+                file: { size: 5 } as UploadedBoardFile,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.insert(options).toPromise();
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.bulkInsert).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("listByBoardSlug", () => {
+        it("lists signed files for the readable board", async () => {
+            const slug = board.slug;
+
+            const result =
+                await BoardFilesService.listByBoardSlug(slug).toPromise();
+
+            assert(result.isOk);
+            expect(result.value).toEqual([
+                { ...boardFile, signedUrl: "https://example.com/sound.wav" },
+            ]);
+            expect(BoardsService.getBySlug).toHaveBeenCalledExactlyOnceWith(
+                slug
+            );
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).toHaveBeenCalledExactlyOnceWith(board.id);
+        });
+
+        it("does not load files when the board cannot be read", async () => {
+            vi.mocked(BoardsService.getBySlug).mockReturnValue(
+                Task.err(BOARD_NOT_FOUND_ERROR)
+            );
+            const slug = board.slug;
+
+            const result =
+                await BoardFilesService.listByBoardSlug(slug).toPromise();
+
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("listByToken", () => {
+        it("lists signed files for the token-authorized board", async () => {
+            const options = { slug: board.slug, token: "token-a" };
+
+            const result =
+                await BoardFilesService.listByToken(options).toPromise();
+
+            assert(result.isOk);
+            expect(result.value).toEqual([
+                { ...boardFile, signedUrl: "https://example.com/sound.wav" },
+            ]);
+            expect(BoardsService.getByToken).toHaveBeenCalledExactlyOnceWith(
+                options
+            );
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).toHaveBeenCalledExactlyOnceWith(board.id);
+        });
+
+        it("does not load files when token authorization fails", async () => {
+            vi.mocked(BoardsService.getByToken).mockReturnValue(
+                Task.err(BOARD_NOT_FOUND_ERROR)
+            );
+            const options = { slug: board.slug, token: "invalid" };
+
+            const result =
+                await BoardFilesService.listByToken(options).toPromise();
+
+            assert(result.isNotFoundError());
+            expect(result.error).toBe(BOARD_NOT_FOUND_ERROR);
+            expect(
+                BoardFilesStore.listWithPresignedUrls
+            ).not.toHaveBeenCalled();
+        });
+
+        it("preserves a signed-file lookup failure", async () => {
+            const error = new PersistenceError(
+                new Error("File token unavailable")
+            );
+            vi.mocked(BoardFilesStore.listWithPresignedUrls).mockResolvedValue(
+                err(error)
+            );
+            const options = { slug: board.slug, token: "token-a" };
+
+            const result =
+                await BoardFilesService.listByToken(options).toPromise();
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
         });
     });
 
@@ -588,11 +749,33 @@ describe("BoardFilesService", () => {
                     },
                 ],
                 token: "token-a",
-            });
+            }).toPromise();
 
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
             expect(BoardFilesStore.bulkInsert).not.toHaveBeenCalled();
+        });
+
+        it("does not update metadata or audio when replacement quota lookup fails", async () => {
+            const error = new PersistenceError(
+                new Error("Quota lookup failed")
+            );
+            vi.mocked(BoardFilesStore.listByBoardId).mockResolvedValue(
+                err(error)
+            );
+            const options = {
+                boardSlug: board.slug,
+                displayName: "Changed",
+                file: { size: 20 } as UploadedBoardFile,
+                id: boardFile.id,
+                token: "token-a",
+            };
+
+            const result = await BoardFilesService.update(options).toPromise();
+
+            assert(result.isPersistenceError());
+            expect(result.error).toBe(error);
+            expect(BoardFilesStore.update).not.toHaveBeenCalled();
         });
 
         it("preserves file-lookup failures without concealing them as not found", async () => {
@@ -602,7 +785,7 @@ describe("BoardFilesService", () => {
             const result = await BoardFilesService.get({
                 boardSlug: board.slug,
                 id: boardFile.id,
-            });
+            }).toPromise();
 
             assert(result.isPersistenceError());
             expect(result.error).toBe(error);
@@ -627,7 +810,7 @@ describe("BoardFilesService", () => {
                     },
                 ],
                 token: "token-a",
-            });
+            }).toPromise();
 
             assert(result.isValidationError());
             expect(result.error).toBe(error);
