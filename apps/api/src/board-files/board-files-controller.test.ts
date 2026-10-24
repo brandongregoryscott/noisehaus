@@ -7,7 +7,7 @@ import { BoardFilesService } from "@/board-files/board-files-service";
 const request = {
     body: { displayNames: ["Sound"], emojis: ["null"], token: "token-a" },
     files: [{ originalname: "sound.wav", size: 5 }],
-    logger: { error: vi.fn() },
+    logger: { error: vi.fn(), warn: vi.fn() },
     params: { id: "sound-a", slug: "drums" },
     query: {},
 } as unknown as Request;

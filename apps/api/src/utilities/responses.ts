@@ -49,7 +49,7 @@ class HttpResponse {
         const log = response.req?.logger ?? logger;
 
         if (isNotFoundError(cause)) {
-            log.error({ err: cause }, "not found");
+            log.warn({ err: cause, event: "request.rejected" }, "not found");
             return HttpResponse.notFound(response, cause);
         }
 
@@ -58,12 +58,15 @@ class HttpResponse {
             (cause.name === ErrorName.ERROR_MULTER ||
                 cause.name === ErrorName.ERROR_VALIDATION)
         ) {
-            log.error({ err: cause }, "bad request");
+            log.warn({ err: cause, event: "request.rejected" }, "bad request");
             return HttpResponse.badRequest(response, cause);
         }
 
         if (cause instanceof UniqueConstraintError) {
-            log.error({ err: cause }, "unique constraint");
+            log.warn(
+                { err: cause, event: "request.rejected" },
+                "unique constraint"
+            );
             return HttpResponse.conflict(response, {
                 message: cause.message,
                 name: cause.name,
@@ -71,14 +74,17 @@ class HttpResponse {
         }
 
         if (cause instanceof PersistenceError) {
-            log.error({ err: cause }, "persistence error");
+            log.error(
+                { err: cause, event: "request.failed" },
+                "persistence error"
+            );
             return HttpResponse.internalError(
                 response,
                 isDevelopment() ? cause.cause : new UnhandledError()
             );
         }
 
-        log.error({ err: cause }, "unhandled error");
+        log.error({ err: cause, event: "request.failed" }, "unhandled error");
         return HttpResponse.internalError(response, cause);
     }
 

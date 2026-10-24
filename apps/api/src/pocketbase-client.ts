@@ -171,7 +171,14 @@ const request = async <T>(
         headers.set("Content-Type", "application/json");
     }
 
-    logger.debug({ method, path }, "pocketbase request");
+    logger.debug(
+        {
+            dependency: "pocketbase",
+            dependencyMethod: method,
+            event: "dependency.request",
+        },
+        "pocketbase request"
+    );
     const start = Date.now();
 
     const { body, response } = await fetchResponse(path, {
@@ -184,7 +191,13 @@ const request = async <T>(
     }
 
     logger.warn(
-        { duration: Date.now() - start, method, path, status: response.status },
+        {
+            dependency: "pocketbase",
+            dependencyMethod: method,
+            durationMs: Date.now() - start,
+            event: "dependency.failed",
+            statusCode: response.status,
+        },
         "pocketbase request failed"
     );
 
