@@ -24,8 +24,11 @@ type RequestState = {
     start: bigint;
     stream: boolean;
 };
+
 const context = new AsyncLocalStorage<RequestContext>();
+
 const requests = new WeakMap<ServerResponse, RequestState>();
+
 const methods = new Set([
     "GET",
     "POST",
@@ -35,8 +38,10 @@ const methods = new Set([
     "HEAD",
     "OPTIONS",
 ]);
+
 const method = (request: Request) =>
     methods.has(request.method) ? request.method : "OTHER";
+
 const routeTemplate = (request?: Request): string => {
     const path = (request?.route as { path?: unknown } | undefined)?.path;
     return typeof path === "string" ? path : "__unmatched__";
@@ -51,6 +56,7 @@ type SafeError = {
     status?: number;
     type: string;
 };
+
 const safeError = (value: unknown, depth = 0): SafeError => {
     if (!(value instanceof Error)) {
         return { type: "NonError" };
@@ -192,8 +198,10 @@ const createLogger = (
     );
 
 const logger = createLogger("noisehaus-api");
+
 const elapsed = (state: RequestState) =>
     Number(process.hrtime.bigint() - state.start) / 1e6;
+
 const fields = (state: RequestState, response: ServerResponse) => ({
     route: routeTemplate(state.request),
     statusCode: response.statusCode,
