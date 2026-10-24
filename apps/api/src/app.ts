@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import bodyParser from "body-parser";
 import {
     MAX_FILE_COUNT_PER_UPLOAD,
     DELETE_BOARD_FILE_ROUTE,
@@ -31,7 +30,11 @@ const metrics = createMetrics();
 
 app.use(requestLogging());
 app.use(metrics.middleware);
-app.use(bodyParser.json());
+app.use(express.json(), (request, _response, next) => {
+    // Existing handlers expect the old parser's empty object for unparsed bodies.
+    request.body ??= {};
+    next();
+});
 app.use(cors());
 
 app.get(

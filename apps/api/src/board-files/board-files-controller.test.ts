@@ -1,8 +1,10 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { Task, BOARD_NOT_FOUND_ERROR, ValidationError } from "common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BoardFilesController } from "@/board-files/board-files-controller";
 import { BoardFilesService } from "@/board-files/board-files-service";
+
+type BoardFileRequest = Parameters<typeof BoardFilesController.update>[0];
 
 const request = {
     body: { displayNames: ["Sound"], emojis: ["null"], token: "token-a" },
@@ -10,7 +12,7 @@ const request = {
     logger: { error: vi.fn(), warn: vi.fn() },
     params: { id: "sound-a", slug: "drums" },
     query: {},
-} as unknown as Request;
+} as unknown as BoardFileRequest;
 const createResponse = () =>
     ({
         json: vi.fn().mockReturnThis(),
@@ -133,7 +135,7 @@ describe("BoardFilesController", () => {
         const response = createResponse();
 
         await BoardFilesController.create(
-            { ...request, files: [] } as unknown as Request,
+            { ...request, files: [] } as unknown as BoardFileRequest,
             response
         );
 
