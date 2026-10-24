@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from "express";
 import type { ServerResponse } from "node:http";
 import type { DestinationStream, Logger } from "pino";
+import { isError, isNil, isNumber, isString } from "lodash-es";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import pino from "pino";
@@ -44,7 +45,7 @@ const method = (request: Request) =>
 
 const routeTemplate = (request?: Request): string => {
     const path = (request?.route as { path?: unknown } | undefined)?.path;
-    return typeof path === "string" ? path : "__unmatched__";
+    return isString(path) ? path : "__unmatched__";
 };
 
 // Exception messages and SDK payloads can echo credentials or request bodies.
@@ -79,7 +80,7 @@ const sanitizeStackFrame = (frame: string): string =>
 const sanitizeStack = (error: Error): string | undefined => {
     const prefix =
         error.message === "" ? error.name : `${error.name}: ${error.message}`;
-    if (typeof error.stack !== "string" || !error.stack.startsWith(prefix)) {
+    if (!isString(error.stack) || !error.stack.startsWith(prefix)) {
         return undefined;
     }
 
@@ -93,14 +94,14 @@ const sanitizeStack = (error: Error): string | undefined => {
 };
 
 const safeError = (value: unknown, depth = 0): SafeError => {
-    if (!(value instanceof Error)) {
+    if (!isError(value)) {
         return { type: "NonError" };
     }
     const { name: type } = value.constructor;
     const stack = sanitizeStack(value);
     const status =
         "status" in value &&
-        typeof value.status === "number" &&
+        isNumber(value.status) &&
         value.status >= 100 &&
         value.status <= 599
             ? value.status
@@ -120,13 +121,11 @@ const safeError = (value: unknown, depth = 0): SafeError => {
         "SQLITE_ERROR",
     ]);
     const code =
-        "code" in value &&
-        typeof value.code === "string" &&
-        codes.has(value.code)
+        "code" in value && isString(value.code) && codes.has(value.code)
             ? value.code
             : undefined;
     const cause =
-        depth < 3 && "cause" in value && value.cause instanceof Error
+        depth < 3 && "cause" in value && isError(value.cause)
             ? safeError(value.cause, depth + 1)
             : undefined;
     return { cause, code, stack, status, type };
@@ -144,22 +143,22 @@ const createLogger = (
                 service,
                 version:
                     [env.SOURCE_COMMIT, env.APP_VERSION].find(
-                        (value) => value != null && value.trim() !== ""
+                        (value) => !isNil(value) && value.trim() !== ""
                     ) ?? "unknown",
             },
             formatters: { level: (level) => ({ level }) },
             level: env.LOG_LEVEL ?? "info",
             mixin: (_object, _level, instance) => {
                 const active = context.getStore();
-                if (active == null) {
+                if (isNil(active)) {
                     return {};
                 }
                 const bound = instance.bindings();
                 return {
-                    ...(bound.method == null
+                    ...(isNil(bound.method)
                         ? { method: method(active.request) }
                         : {}),
-                    ...(bound.requestId == null
+                    ...(isNil(bound.requestId)
                         ? { requestId: active.requestId }
                         : {}),
                     route: routeTemplate(active.request),
@@ -217,7 +216,7 @@ const fields = (state: RequestState, response: ServerResponse) => ({
 
 const logRequestError = (response: Response, error: unknown): void => {
     const state = requests.get(response);
-    if (state != null) {
+    if (!isNil(state)) {
         state.failed = true;
     }
     const log = state?.logger ?? response.req?.logger ?? logger;
@@ -227,7 +226,7 @@ const logRequestError = (response: Response, error: unknown): void => {
 
 const logStreamOpen = (response: ServerResponse): void => {
     const state = requests.get(response);
-    if (state == null || state.stream || state.done) {
+    if (isNil(state) || state.stream || state.done) {
         return;
     }
     state.stream = true;
