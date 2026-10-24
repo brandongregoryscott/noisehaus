@@ -9,12 +9,12 @@ import {
     ValidationError,
 } from "common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { logger } from "@/logging";
 import { isDevelopment } from "@/utilities/environment";
-import { logger } from "@/utilities/logger";
 import { HttpResponse } from "@/utilities/responses";
 
 vi.mock("./environment", () => ({ isDevelopment: vi.fn() }));
-vi.mock("./logger", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
+vi.mock("@/logging", () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 
 const createResponse = (log?: ReturnType<typeof vi.fn>): Response =>
     ({

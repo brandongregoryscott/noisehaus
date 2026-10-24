@@ -4,7 +4,7 @@ import {
     POCKETBASE_SUPERUSER_PASSWORD,
     POCKETBASE_URL,
 } from "@/config";
-import { logger } from "@/utilities/logger";
+import { logger } from "@/logging";
 
 type ListResult<T> = {
     items: T[];

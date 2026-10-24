@@ -7,8 +7,8 @@ import {
     UniqueConstraintError,
     PersistenceError,
 } from "common";
+import { logger } from "@/logging";
 import { isDevelopment } from "@/utilities/environment";
-import { logger } from "@/utilities/logger";
 
 type ResultResponse<T> =
     | Response<ApiErrorResponse>
