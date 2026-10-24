@@ -54,38 +54,3 @@ If you would like to see a feature, and it isn't [already documented](https://gi
 Application routes are unversioned and start at the API origin, without an `/api` prefix. `GET /health` returns HTTP 200 with `{ "ok": true }`. Previous application paths have been removed; deploy the matching API and frontend builds together.
 
 The health check includes authenticated PocketBase connectivity with a three-second timeout; failure returns HTTP 503 with `{ "ok": false }`. PocketBase retains its native `/api` routes for storage, authentication, and files.
-
-## API metrics
-
-The API exposes Prometheus metrics on a separate listener at
-`http://127.0.0.1:9464/metrics` for native development. Configure it with
-`METRICS_HOST` and `METRICS_PORT`; use a different port when running multiple APIs
-natively on one machine. The public API port does not expose `/metrics`.
-
-Metrics match Bingo's contract: `http_request_duration_seconds` histogram with
-`method`, `route`, and `status_code` labels, using the same latency buckets.
-Its `_count` series provides request counts. Routes are registered templates;
-unmatched and early-rejected requests use `__unmatched__`. Labels never contain
-raw URLs, board slugs, file IDs, query strings, or tokens. Health probes are
-excluded. Node process metrics include memory, CPU, event loop lag, and GC.
-
-The production Compose file joins the shared external `observability` network
-with alias `noisehaus-api-metrics`, binding metrics internally on port 9464.
-Deploy the [shared observability stack](https://github.com/brandongregoryscott/observability)
-first so the network exists. The automatically loaded local override creates its
-own isolated network and does not require that stack. No metrics host port is
-published, and neither public tunnel forwards the metrics listener.
-
-After merging and deploying this API, add the following entry to
-`prometheus/targets/apis.yml` in the observability repository and redeploy that
-stack:
-
-```yaml
-- targets: ["noisehaus-api-metrics:9464"]
-  labels:
-      service: noisehaus-api
-      environment: production
-```
-
-The existing **API overview** dashboard and alert rules then cover Noisehaus.
-Service and environment labels are assigned by Prometheus's target configuration.
