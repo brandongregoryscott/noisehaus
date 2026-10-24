@@ -16,6 +16,14 @@ services:
         ports:
             - "3434:3434"
         env_file: apps/api/.env
+        environment:
+            METRICS_HOST: 0.0.0.0
+            METRICS_PORT: 9464
+        networks:
+            default:
+            observability:
+                aliases:
+                    - noisehaus-api-metrics
         depends_on:
             - pocketbase
         healthcheck:
@@ -50,3 +58,8 @@ services:
         volumes:
             - /root/.ssh/tuns_ed25519:/root/.ssh/id_ed25519:ro
         restart: always
+
+networks:
+    observability:
+        external: true
+        name: observability

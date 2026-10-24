@@ -22,6 +22,7 @@ import { BoardFilesController } from "@/board-files/board-files-controller";
 import { BoardsController } from "@/boards/boards-controller";
 import { errorHandler } from "@/error-handler";
 import { FeedbackController } from "@/feedback/feedback-controller";
+import { createMetrics } from "@/metrics";
 import { PocketBaseClient } from "@/pocketbase-client";
 import { logger } from "@/utilities/logger";
 import { multer } from "@/utilities/multer";
@@ -37,7 +38,9 @@ declare global {
 }
 
 const app = express();
+const metrics = createMetrics();
 
+app.use(metrics.middleware);
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -95,4 +98,4 @@ app.post(CREATE_FEEDBACK_ROUTE, FeedbackController.create);
 app.use(errorHandler);
 app.use(readRateLimiter);
 
-export { app };
+export { app, metrics };
