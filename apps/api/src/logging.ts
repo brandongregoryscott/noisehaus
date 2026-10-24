@@ -57,39 +57,47 @@ type SafeError = {
     type: string;
 };
 
+const sanitizeSourceLocation = (location: string): string => {
+    try {
+        const url = new URL(location);
+        if (url.protocol !== "file:") {
+            return `${url.origin}/[source]`;
+        }
+
+        const origin = url.origin === "null" ? "file://" : url.origin;
+        return `${origin}${url.pathname}`;
+    } catch {
+        return "[source]";
+    }
+};
+
+const sanitizeStackFrame = (frame: string): string =>
+    frame
+        .replace(/(?:https?|file):\/\/[^\s)]+/g, sanitizeSourceLocation)
+        .slice(0, 1000);
+
+const sanitizeStack = (error: Error): string | undefined => {
+    const prefix =
+        error.message === "" ? error.name : `${error.name}: ${error.message}`;
+    if (typeof error.stack !== "string" || !error.stack.startsWith(prefix)) {
+        return undefined;
+    }
+
+    return error.stack
+        .slice(prefix.length)
+        .split("\n")
+        .filter((frame) => /^\s+at /.test(frame))
+        .slice(0, 20)
+        .map(sanitizeStackFrame)
+        .join("\n");
+};
+
 const safeError = (value: unknown, depth = 0): SafeError => {
     if (!(value instanceof Error)) {
         return { type: "NonError" };
     }
     const { name: type } = value.constructor;
-    const prefix =
-        value.message === "" ? value.name : `${value.name}: ${value.message}`;
-    const stack =
-        typeof value.stack === "string" && value.stack.startsWith(prefix)
-            ? value.stack
-                  .slice(prefix.length)
-                  .split("\n")
-                  .filter((frame) => /^\s+at /.test(frame))
-                  .slice(0, 20)
-                  .map((frame) =>
-                      frame
-                          .replace(
-                              /(?:https?|file):\/\/[^\s)]+/g,
-                              (location) => {
-                                  try {
-                                      const url = new URL(location);
-                                      return url.protocol === "file:"
-                                          ? `${url.origin === "null" ? "file://" : url.origin}${url.pathname}`
-                                          : `${url.origin}/[source]`;
-                                  } catch {
-                                      return "[source]";
-                                  }
-                              }
-                          )
-                          .slice(0, 1000)
-                  )
-                  .join("\n")
-            : undefined;
+    const stack = sanitizeStack(value);
     const status =
         "status" in value &&
         typeof value.status === "number" &&
