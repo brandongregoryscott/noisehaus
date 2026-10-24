@@ -1,6 +1,7 @@
 {
     "dependencies": {
         "@faker-js/faker": "10.3.0",
+        "@prometheus-io/client": "0.16.1",
         "body-parser": "1.20.2",
         "common": "*",
         "cors": "2.8.5",
@@ -29,7 +30,7 @@
     "name": "api",
     "private": true,
     "scripts": {
-        "build": "tsc && esbuild src/server.ts --bundle --platform=node --target=node24 --tsconfig=tsconfig.json --outfile=dist/server.js --external:pino --external:pino-pretty",
+        "build": "tsc && esbuild src/server.ts --bundle --platform=node --target=node24 --tsconfig=tsconfig.json --outfile=dist/server.js --external:pino --external:pino-pretty --external:@prometheus-io/client",
         "clean": "rm -rf dist",
         "dev": "concurrently --names esbuild,nodemon \"npm run build -- --watch\" \"nodemon -q dist/server.js\"",
         "start": "node dist/server.js",
