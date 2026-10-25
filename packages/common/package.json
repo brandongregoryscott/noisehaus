@@ -6,7 +6,8 @@
     "version": "0.0.0",
     "scripts": {
         "lint": "eslint \"**/*.{ts,js}\"",
-        "lint:fix": "eslint \"**/*.{ts,js}\" --fix"
+        "lint:fix": "eslint \"**/*.{ts,js}\" --fix",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "true-myth": "9.4.0"

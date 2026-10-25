@@ -29,7 +29,13 @@ const EditBoardFilePage: React.FC = () => {
         return <FullScreenErrorDisplay {...error} />;
     }
 
-    return <EditBoardFileForm boardFile={boardFile!} boardSlug={slug} token={token} />;
+    return (
+        <EditBoardFileForm
+            boardFile={boardFile!}
+            boardSlug={slug}
+            token={token}
+        />
+    );
 };
 
 const Route = createFileRoute("/boards/$slug/token/$token/edit/sounds/$id")({

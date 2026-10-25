@@ -54,7 +54,12 @@ const EditBoardFileForm: React.FC<EditBoardFileFormProps> = (props) => {
         isPending,
         name,
         setFile,
-    } = useEditBoardFile({ boardFile, boardSlug, onSuccess: handleSuccess, token });
+    } = useEditBoardFile({
+        boardFile,
+        boardSlug,
+        onSuccess: handleSuccess,
+        token,
+    });
 
     const handleBack = () => {
         router.history.back();
