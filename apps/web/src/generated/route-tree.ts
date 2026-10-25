@@ -9,24 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './../routes/__root'
-import { Route as CreateBoardRouteImport } from './../routes/create-board'
 import { Route as IndexRouteImport } from './../routes/index'
-import { Route as BoardsSlugIndexRouteImport } from './../routes/boards/$slug/index'
+import { Route as CreateBoardRouteImport } from './../routes/create-board'
 import { Route as BSlugIndexRouteImport } from './../routes/b/$slug/index'
-import { Route as BoardsSlugTokenTokenIndexRouteImport } from './../routes/boards/$slug/token/$token/index'
+import { Route as BoardsSlugIndexRouteImport } from './../routes/boards/$slug/index'
 import { Route as BSlugTTokenIndexRouteImport } from './../routes/b/$slug/t/$token/index'
+import { Route as BoardsSlugTokenTokenIndexRouteImport } from './../routes/boards/$slug/token/$token/index'
 import { Route as BoardsSlugTokenTokenEditIndexRouteImport } from './../routes/boards/$slug/token/$token/edit/index'
-import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/create'
 import { Route as BoardsSlugTokenTokenEditSoundsIdRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/$id'
+import { Route as BoardsSlugTokenTokenEditSoundsCreateRouteImport } from './../routes/boards/$slug/token/$token/edit/sounds/create'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CreateBoardRoute = CreateBoardRouteImport.update({
   id: '/create-board',
   path: '/create-board',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const BSlugIndexRoute = BSlugIndexRouteImport.update({
+  id: '/b/$slug/',
+  path: '/b/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardsSlugIndexRoute = BoardsSlugIndexRouteImport.update({
@@ -34,9 +39,9 @@ const BoardsSlugIndexRoute = BoardsSlugIndexRouteImport.update({
   path: '/boards/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BSlugIndexRoute = BSlugIndexRouteImport.update({
-  id: '/b/$slug/',
-  path: '/b/$slug/',
+const BSlugTTokenIndexRoute = BSlugTTokenIndexRouteImport.update({
+  id: '/b/$slug/t/$token/',
+  path: '/b/$slug/t/$token/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardsSlugTokenTokenIndexRoute =
@@ -45,27 +50,22 @@ const BoardsSlugTokenTokenIndexRoute =
     path: '/boards/$slug/token/$token/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const BSlugTTokenIndexRoute = BSlugTTokenIndexRouteImport.update({
-  id: '/b/$slug/t/$token/',
-  path: '/b/$slug/t/$token/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BoardsSlugTokenTokenEditIndexRoute =
   BoardsSlugTokenTokenEditIndexRouteImport.update({
     id: '/boards/$slug/token/$token/edit/',
     path: '/boards/$slug/token/$token/edit/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const BoardsSlugTokenTokenEditSoundsCreateRoute =
-  BoardsSlugTokenTokenEditSoundsCreateRouteImport.update({
-    id: '/boards/$slug/token/$token/edit/sounds/create',
-    path: '/boards/$slug/token/$token/edit/sounds/create',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const BoardsSlugTokenTokenEditSoundsIdRoute =
   BoardsSlugTokenTokenEditSoundsIdRouteImport.update({
     id: '/boards/$slug/token/$token/edit/sounds/$id',
     path: '/boards/$slug/token/$token/edit/sounds/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BoardsSlugTokenTokenEditSoundsCreateRoute =
+  BoardsSlugTokenTokenEditSoundsCreateRouteImport.update({
+    id: '/boards/$slug/token/$token/edit/sounds/create',
+    path: '/boards/$slug/token/$token/edit/sounds/create',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -153,13 +153,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/create-board': {
-      id: '/create-board'
-      path: '/create-board'
-      fullPath: '/create-board'
-      preLoaderRoute: typeof CreateBoardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -167,11 +160,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/': {
-      id: '/boards/$slug/'
-      path: '/boards/$slug'
-      fullPath: '/boards/$slug/'
-      preLoaderRoute: typeof BoardsSlugIndexRouteImport
+    '/create-board': {
+      id: '/create-board'
+      path: '/create-board'
+      fullPath: '/create-board'
+      preLoaderRoute: typeof CreateBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/b/$slug/': {
@@ -181,11 +174,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/token/$token/': {
-      id: '/boards/$slug/token/$token/'
-      path: '/boards/$slug/token/$token'
-      fullPath: '/boards/$slug/token/$token/'
-      preLoaderRoute: typeof BoardsSlugTokenTokenIndexRouteImport
+    '/boards/$slug/': {
+      id: '/boards/$slug/'
+      path: '/boards/$slug'
+      fullPath: '/boards/$slug/'
+      preLoaderRoute: typeof BoardsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/b/$slug/t/$token/': {
@@ -195,6 +188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BSlugTTokenIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/boards/$slug/token/$token/': {
+      id: '/boards/$slug/token/$token/'
+      path: '/boards/$slug/token/$token'
+      fullPath: '/boards/$slug/token/$token/'
+      preLoaderRoute: typeof BoardsSlugTokenTokenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/boards/$slug/token/$token/edit/': {
       id: '/boards/$slug/token/$token/edit/'
       path: '/boards/$slug/token/$token/edit'
@@ -202,18 +202,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardsSlugTokenTokenEditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/boards/$slug/token/$token/edit/sounds/create': {
-      id: '/boards/$slug/token/$token/edit/sounds/create'
-      path: '/boards/$slug/token/$token/edit/sounds/create'
-      fullPath: '/boards/$slug/token/$token/edit/sounds/create'
-      preLoaderRoute: typeof BoardsSlugTokenTokenEditSoundsCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/boards/$slug/token/$token/edit/sounds/$id': {
       id: '/boards/$slug/token/$token/edit/sounds/$id'
       path: '/boards/$slug/token/$token/edit/sounds/$id'
       fullPath: '/boards/$slug/token/$token/edit/sounds/$id'
       preLoaderRoute: typeof BoardsSlugTokenTokenEditSoundsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boards/$slug/token/$token/edit/sounds/create': {
+      id: '/boards/$slug/token/$token/edit/sounds/create'
+      path: '/boards/$slug/token/$token/edit/sounds/create'
+      fullPath: '/boards/$slug/token/$token/edit/sounds/create'
+      preLoaderRoute: typeof BoardsSlugTokenTokenEditSoundsCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
