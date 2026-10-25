@@ -16,14 +16,11 @@ const DeviceSelect: React.FC<DeviceSelectProps> = (props) => {
         enabled: true,
     });
     const { device, setDevice } = useAudioContext();
-    const options = audioDevices.map(
-        (audioDevice): SelectOption => ({
-            icon:
-                audioDevice.kind === "audioinput" ? "Microphone" : "Headphones",
-            label: audioDevice.label,
-            value: audioDevice.deviceId,
-        })
-    );
+    const options = audioDevices.map((audioDevice): SelectOption => ({
+        icon: audioDevice.kind === "audioinput" ? "Microphone" : "Headphones",
+        label: audioDevice.label,
+        value: audioDevice.deviceId,
+    }));
 
     const handleChange = (deviceId: string) => {
         const selectedDevice = audioDevices.find(

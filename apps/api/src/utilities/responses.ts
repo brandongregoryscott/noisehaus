@@ -11,8 +11,7 @@ import { logger } from "@/logging";
 import { isDevelopment } from "@/utilities/environment";
 
 type ResultResponse<T> =
-    | Response<ApiErrorResponse>
-    | Response<ApiSuccessResponse<T>>;
+    Response<ApiErrorResponse> | Response<ApiSuccessResponse<T>>;
 
 class HttpResponse {
     // eslint-disable-next-line collation/prefer-native-private-syntax -- JavaScript has no private constructor syntax.

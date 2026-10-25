@@ -7,7 +7,7 @@ import { styled } from "@/utils/theme";
 
 type ButtonProps = {
     align?: "center" | "left" | "right";
-    as?: keyof JSX.IntrinsicElements;
+    as?: keyof React.JSX.IntrinsicElements;
     autoFocus?: boolean;
     colorType?: "Destructive" | "Neutral";
     /**
