@@ -15,11 +15,7 @@ type UseEditBoardFileOptions = {
 
 const useEditBoardFile = (options: UseEditBoardFileOptions) => {
     const { boardFile, boardSlug, onError, onSuccess, token } = options;
-    const {
-        displayName: initialName,
-        emoji: initialEmoji,
-        id,
-    } = boardFile;
+    const { displayName: initialName, emoji: initialEmoji, id } = boardFile;
     const [name, setName] = useState(initialName);
     const [errors, setErrors] = useState<{
         file?: string[];
