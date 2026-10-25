@@ -17,13 +17,13 @@
         "@types/node": "26.6.5",
         "@types/react": "18.2.15",
         "@types/react-dom": "18.2.7",
-        "@vitejs/plugin-react": "6.1.1",
+        "@vitejs/plugin-react": "6.1.2",
         "eslint-config-custom": "*",
         "serve": "14.2.5",
         "tsconfig": "*",
-        "typescript": "5.9.3",
-        "vite": "8.3.2",
-        "vitest": "4.1.11"
+        "typescript": "6.0.3",
+        "vite": "8.3.5",
+        "vitest": "5.0.5"
     },
     "overrides": {
         "react": "18.2.0",

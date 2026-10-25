@@ -1,14 +1,14 @@
 {
     "devDependencies": {
-        "@turbo/gen": "2.8.11",
-        "eslint": "9.39.3",
+        "@turbo/gen": "2.11.10",
+        "eslint": "9.39.5",
         "eslint-config-custom": "*",
-        "prettier": "3.8.1",
-        "turbo": "2.8.11",
+        "prettier": "3.9.10",
+        "turbo": "2.11.10",
         "gagen": "0.8.0",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
         "@types/node": "26.6.5",
-        "typescript-eslint": "8.56.1"
+        "typescript-eslint": "8.72.0"
     },
     "name": "noisehaus",
     "packageManager": "npm@11.20.0",
