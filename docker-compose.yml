@@ -14,9 +14,11 @@ services:
             context: .
             dockerfile: Dockerfile.api
         ports:
-            - "3434:3434"
+            # Public requests must pass through the header-rewriting HTTP tunnel.
+            - "127.0.0.1:3434:3434"
         env_file: apps/api/.env
         environment:
+            TRUST_PROXY_HOPS: "1"
             SOURCE_COMMIT: ${SOURCE_COMMIT:-}
             METRICS_HOST: 0.0.0.0
             METRICS_PORT: 9464

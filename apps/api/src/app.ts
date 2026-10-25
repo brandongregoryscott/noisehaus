@@ -17,6 +17,7 @@ import cors from "cors";
 import express from "express";
 import { BoardFilesController } from "@/board-files/board-files-controller";
 import { BoardsController } from "@/boards/boards-controller";
+import { TRUST_PROXY_HOPS } from "@/config";
 import { errorHandler } from "@/error-handler";
 import { FeedbackController } from "@/feedback/feedback-controller";
 import { requestLogging } from "@/logging";
@@ -27,6 +28,8 @@ import { createRateLimiter, readRateLimiter } from "@/utilities/rate-limiter";
 
 const app = express();
 const metrics = createMetrics();
+
+app.set("trust proxy", TRUST_PROXY_HOPS);
 
 app.use(requestLogging());
 app.use(metrics.middleware);
@@ -53,6 +56,8 @@ app.get(
     }
 );
 
+app.use(readRateLimiter);
+
 app.delete(DELETE_BOARD_ROUTE, BoardsController.delete);
 app.put(UPDATE_BOARD_ROUTE, BoardsController.update);
 app.post(CREATE_BOARD_ROUTE, createRateLimiter, BoardsController.create);
@@ -75,6 +80,5 @@ app.delete(DELETE_BOARD_FILE_ROUTE, BoardFilesController.delete);
 app.post(CREATE_FEEDBACK_ROUTE, FeedbackController.create);
 
 app.use(errorHandler);
-app.use(readRateLimiter);
 
 export { app, metrics };

@@ -66,3 +66,34 @@ describe("metrics configuration", () => {
         await expect(configuration).rejects.toThrow("Invalid METRICS_HOST.");
     });
 });
+
+describe("trusted proxy configuration", () => {
+    it("trusts no forwarding hops by default", async () => {
+        vi.stubEnv("TRUST_PROXY_HOPS", undefined);
+
+        const { TRUST_PROXY_HOPS } = await import("@/config");
+
+        expect(TRUST_PROXY_HOPS).toBe(0);
+    });
+
+    it("accepts the single HTTP tunnel hop", async () => {
+        vi.stubEnv("TRUST_PROXY_HOPS", "1");
+
+        const { TRUST_PROXY_HOPS } = await import("@/config");
+
+        expect(TRUST_PROXY_HOPS).toBe(1);
+    });
+
+    it.each(["-1", "1.5", "invalid", "Infinity", "9007199254740992"])(
+        "rejects invalid proxy hop count %s",
+        async (hops) => {
+            vi.stubEnv("TRUST_PROXY_HOPS", hops);
+
+            const configuration = import("@/config");
+
+            await expect(configuration).rejects.toThrow(
+                "Invalid TRUST_PROXY_HOPS."
+            );
+        }
+    );
+});
