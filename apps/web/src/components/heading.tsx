@@ -3,7 +3,7 @@ import * as React from "react";
 type HeadingProps = {
     children: React.ReactNode;
     size: Extract<
-        keyof JSX.IntrinsicElements,
+        keyof React.JSX.IntrinsicElements,
         "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
     >;
 };
